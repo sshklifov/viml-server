@@ -1,33 +1,55 @@
 %{
 #define YYDEBUG 1
 #define YYFPRINTF fprintf
+
 #include <cstdio>
+#include <string>
+#include "Node.h"
+
+#define YYSTYPE Node*
 void yyerror(const char*);
 int yylex();
+
+Node* root = NULL;
 %}
 
 %token ID AUTOLOAD NUMBER STR ANGLE
 
 %%
 input:
-     %empty
-     | input line             { printf("4.2\n"); }
+     %empty                   { $$ = nullptr; }
+     | line input             { root = new LineNode($1, $2); $$ = root; }
 ;
 
 line:
-    '\n'                       { printf("3.1\n"); }
-    | expr '\n'                { printf("3.2\n"); }
+    '\n'                          { $$ = nullptr; }
+    | command '\n'                { $$ = $1; }
 ;
 
-expr:
-    tok tok               { printf("2.2\n"); }
+command:
+       tok qargs           { $$ = new CommandNode($1, $2); }
+;
+
+qargs:
+     %empty              { $$ = nullptr; }
+     | term qargs        { $$ = new QargsNode($1, $2); }
+;
+
+term:
+    tok '(' fargs ')'    { $$ = new TermNode($1, $3); }
+    | tok               { $$ = $1; }
+
+fargs:
+    %empty                  { $$ = nullptr; }
+    | term                  { $$ = new FargsNode($1, nullptr); }
+    | term ',' fargs        { $$ = new FargsNode($1, $3); }
 
 tok:
-   ID                        { printf("1.1\n"); }
-   | AUTOLOAD                { printf("1.2\n"); }
-   | NUMBER                  { printf("1.3\n"); }
-   | STR                     { printf("1.4\n"); }
-   | ANGLE                   { printf("1.5\n"); }
+   ID                        { $$ = yylval; }
+   | AUTOLOAD                { $$ = yylval; }
+   | NUMBER                  { $$ = yylval; }
+   | STR                     { $$ = yylval; }
+   | ANGLE                   { $$ = yylval; }
 ;
 %%
 
@@ -41,28 +63,23 @@ void yyerror (const char* s) {
 
 int main() {
     yydebug = 0;
-
-    char program[512];
-    memset(program, 0, 512);
-
-    const char* s = "function\n";
-    strcpy(program, s);
     
-    //yy_scan_buffer(program, strlen(program) + 2);
-    yyparse();
+    const int do_parse = 1;
+    if (do_parse) {
+        yyparse();
+        std::string s = root->getString();
+        printf("%s\n", s.c_str());
+    } else {
+        int yychar = 0;
+        do {
+            yychar = yylex();
+            yysymbol_kind_t tr = YYTRANSLATE(yychar);
+            
+            printf("Lex=%s\n", yysymbol_name(tr));
+        }
+        while (yychar != 0);
+    }
 
-    // int a = yylex();
-    // printf("a=%d\n", a);
-    // int b = yylex();
-    // printf("b=%d\n", b);
-    // int c = yylex();
-    // printf("c=%d\n", c);
-    // int d = yylex();
-    // printf("d=%d\n", d);
-    // int e = yylex();
-    // printf("e=%d\n", e);
-    // int f = yylex();
-    // printf("f=%d\n", f);
 
     return 0;
 }

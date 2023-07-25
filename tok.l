@@ -19,9 +19,7 @@ number [0-9]+
 forward .|"\n"
 
 %{
-#include <string>
-#include <vector>
-std::vector<std::string> toks;
+#include "Node.h"
 %}
 
 %%
@@ -29,33 +27,33 @@ std::vector<std::string> toks;
 {space} {}
 
 {id} {
+    yylval = new LexemNode(yytext);
     return ID;
-    // printf("id(%s)", yytext);
 }
 
 {autoload} {
+    yylval = new LexemNode(yytext);
     return AUTOLOAD;
-    // printf("aufun(%s)", yytext);
 }
 
 {number} {
+    yylval = new LexemNode(yytext);
     return NUMBER;
-    // printf("num(%s)", yytext);
 }
 
 {str} {
+    yylval = new LexemNode(yytext);
     return STR;
-    // printf("str(%s)", yytext);
 }
 
 {quote} {
+    yylval = new LexemNode(yytext);
     return STR;
-    // printf("str(%s)", yytext);
 }
 
 {angle} {
+    yylval = new LexemNode(yytext);
     return ANGLE;
-    // printf("angle(%s)", yytext);
 }
 
 {forward} {
@@ -64,3 +62,4 @@ std::vector<std::string> toks;
 %%
 
 // TODO comment ignore
+// TODO empty lines ignore
