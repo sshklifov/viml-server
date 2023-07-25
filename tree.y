@@ -11,54 +11,27 @@ int yylex();
 %%
 input:
      %empty
-     | input line             { printf("4\n"); }
+     | input line             { printf("4.2\n"); }
 ;
 
 line:
-    '\n'
-    | expr '\n'                { printf("3\n"); }
+    '\n'                       { printf("3.1\n"); }
+    | expr '\n'                { printf("3.2\n"); }
 ;
 
 expr:
-    tok                      { printf("2\n"); }
-    | expr tok               { printf("2\n"); }
+    tok tok               { printf("2.2\n"); }
 
 tok:
-   ID                        { printf("1\n"); }
-   | AUTOLOAD
-   | NUMBER
-   | STR
-   | ANGLE                   { printf("1\n"); }
+   ID                        { printf("1.1\n"); }
+   | AUTOLOAD                { printf("1.2\n"); }
+   | NUMBER                  { printf("1.3\n"); }
+   | STR                     { printf("1.4\n"); }
+   | ANGLE                   { printf("1.5\n"); }
 ;
 %%
 
-// #include "tok.c"
-int yylex() {
-    static int invocation = 0;
-    int cnt = invocation;
-    ++invocation;
-
-    if (cnt == 0) {
-        return ID;
-    } else if (cnt == 1) {
-        //return ' ';
-        return '\n';
-    } else if (cnt == 2) {
-        //return ID;
-        return YYEOF;
-    } else if (cnt == 3) {
-        //return '\n';
-        return YYEOF;
-    } else if (cnt == 4) {
-        return YYEOF;
-    } else if (cnt == 5) {
-        return YYEOF;
-    } else if (cnt == 6) {
-        return YYEOF;
-    } else {
-        return YYEOF;
-    }
-}
+#include "tok.c"
 
 void yyerror (const char* s) {
     printf ("%s\n", s);
@@ -69,13 +42,13 @@ void yyerror (const char* s) {
 int main() {
     yydebug = 0;
 
-    // char program[512];
-    // memset(program, 0, 512);
+    char program[512];
+    memset(program, 0, 512);
 
-    // const char* s = "function\n";
-    // strcpy(program, s);
+    const char* s = "function\n";
+    strcpy(program, s);
     
-    // yy_scan_buffer(program, strlen(program) + 2);
+    //yy_scan_buffer(program, strlen(program) + 2);
     yyparse();
 
     // int a = yylex();

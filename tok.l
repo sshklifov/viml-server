@@ -1,6 +1,7 @@
 %option noyywrap
 
 comment ^["].*$
+space [ ]
 
 angle [<][^ <>]+[>] 
 
@@ -15,6 +16,7 @@ id {scope}?{name}
 autoload {name}+[#]{name}+
 
 number [0-9]+
+forward .|"\n"
 
 %{
 #include <string>
@@ -23,6 +25,9 @@ std::vector<std::string> toks;
 %}
 
 %%
+{comment} {}
+{space} {}
+
 {id} {
     return ID;
     // printf("id(%s)", yytext);
@@ -51,6 +56,10 @@ std::vector<std::string> toks;
 {angle} {
     return ANGLE;
     // printf("angle(%s)", yytext);
+}
+
+{forward} {
+    return yytext[0];
 }
 %%
 
