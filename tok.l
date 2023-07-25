@@ -24,40 +24,34 @@ std::vector<std::string> toks;
 
 %%
 {id} {
-    printf("id");
-}
-
-{comment} {
-    printf("com");
+    return ID;
+    // printf("id(%s)", yytext);
 }
 
 {autoload} {
-    printf("aufun");
+    return AUTOLOAD;
+    // printf("aufun(%s)", yytext);
 }
 
 {number} {
-    printf("num");
+    return NUMBER;
+    // printf("num(%s)", yytext);
 }
 
 {str} {
-    printf("str()");
+    return STR;
+    // printf("str(%s)", yytext);
 }
 
 {quote} {
-    printf("q()");
+    return STR;
+    // printf("str(%s)", yytext);
 }
 
 {angle} {
-    printf("angle");
+    return ANGLE;
+    // printf("angle(%s)", yytext);
 }
 %%
 
-int main() {
-    yylex();
-    //printf("{\n");
-    //for (std::string s : toks) {
-        //printf("\'%s\'\n", s.c_str());
-    //}
-    //printf("}\n");
-    return 0;
-}
+// TODO comment ignore
