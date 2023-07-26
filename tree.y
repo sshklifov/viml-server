@@ -33,11 +33,23 @@ qargs: %empty            { $$ = nullptr; }
      | term qargs        { $$ = new QargsNode($1, $2); }
 ;
 
-term: fname '(' fargs ')'  { $$ = new FunCallNode($1, $3); }
-    | '!' term             { $$ = new PrefixOpNode($2, '!'); }
-    | term '.' term        { $$ = new InfixOpNode($1, $3, '.'); }
-    | term '+' term        { $$ = new InfixOpNode($1, $3, '+'); }
-    | term '-' term        { $$ = new InfixOpNode($1, $3, '-'); }
+term: fname '(' fargs ')'      { $$ = new FunCallNode($1, $3); }
+    | '!' term                 { $$ = new PrefixOpNode($2, "!"); }
+    | term '*' term            { $$ = new InfixOpNode($1, $3, "*"); }
+    | term '/' term            { $$ = new InfixOpNode($1, $3, "/"); }
+    | term '%' term            { $$ = new InfixOpNode($1, $3, "%"); }
+    | term '.' term            { $$ = new InfixOpNode($1, $3, "."); }
+    | term '+' term            { $$ = new InfixOpNode($1, $3, "+"); }
+    | term '-' term            { $$ = new InfixOpNode($1, $3, "-"); }
+    | term '<' term            { $$ = new InfixOpNode($1, $3, "<"); }
+    | term '>' term            { $$ = new InfixOpNode($1, $3, ">"); }
+    | term '<' '=' term        { $$ = new InfixOpNode($1, $4, "<="); }
+    | term '>' '=' term        { $$ = new InfixOpNode($1, $4, ">="); }
+    | term '=' '=' term        { $$ = new InfixOpNode($1, $4, "=="); }
+    | term '!' '=' term        { $$ = new InfixOpNode($1, $4, "!="); }
+    // TODO MORE with regex matching shiet
+    | term '&' '&' term        { $$ = new InfixOpNode($1, $4, "&&"); }
+    | term '|' '|' term        { $$ = new InfixOpNode($1, $4, "&&"); }
     | var                  { $$ = $1; }
     | STR                  { $$ = $1; }
     | ANGLE                { $$ = $1; }

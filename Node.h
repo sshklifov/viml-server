@@ -85,7 +85,7 @@ private:
 };
 
 struct InfixOpNode : public Node {
-    InfixOpNode(Node* lhs, Node* rhs, char op) : lhs(lhs), rhs(rhs), op(op) {
+    InfixOpNode(Node* lhs, Node* rhs, const char* op) : lhs(lhs), rhs(rhs), op(op) {
         debugMessage();
     }
 
@@ -105,11 +105,11 @@ struct InfixOpNode : public Node {
 private:
     Node* lhs;
     Node* rhs;
-    char op;
+    std::string op;
 };
 
 struct PrefixOpNode : public Node {
-    PrefixOpNode(Node* node, char op) : node(node), op(op) {
+    PrefixOpNode(Node* node, const char* op) : node(node), op(op) {
         debugMessage();
     }
 
@@ -127,7 +127,7 @@ struct PrefixOpNode : public Node {
 
 private:
     Node* node;
-    char op;
+    std::string op;
 };
 
 struct CommandNode : public Node {
