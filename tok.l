@@ -12,8 +12,10 @@ quote [']({quote_loop}*|\\.)*[']
 
 name [a-zA-Z_][a-zA-Z0-9_]*
 scope [gbwtslav]:
-id {scope}?{name}
-autoload {name}+[#]{name}+
+scoped_id {scope}{name}
+bang_id {name}[!]
+au_id {name}[#]{name}
+id {name}
 
 number [0-9]+
 forward .|"\n"
@@ -25,21 +27,6 @@ forward .|"\n"
 %%
 {comment} {}
 {space} {}
-
-{id} {
-    yylval = new LexemNode(yytext);
-    return ID;
-}
-
-{autoload} {
-    yylval = new LexemNode(yytext);
-    return AUTOLOAD;
-}
-
-{number} {
-    yylval = new LexemNode(yytext);
-    return NUMBER;
-}
 
 {str} {
     yylval = new LexemNode(yytext);
@@ -54,6 +41,31 @@ forward .|"\n"
 {angle} {
     yylval = new LexemNode(yytext);
     return ANGLE;
+}
+
+{bang_id} {
+    yylval = new LexemNode(yytext);
+    return BANG_ID;
+}
+
+{au_id} {
+    yylval = new LexemNode(yytext);
+    return AU_ID;
+}
+
+{scoped_id} {
+    yylval = new LexemNode(yytext);
+    return SCOPED_ID;
+}
+
+{id} {
+    yylval = new LexemNode(yytext);
+    return ID;
+}
+
+{number} {
+    yylval = new LexemNode(yytext);
+    return NUMBER;
 }
 
 {forward} {

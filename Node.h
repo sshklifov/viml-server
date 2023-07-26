@@ -84,13 +84,17 @@ private:
     Node* args;
 };
 
-struct ConcatNode : public Node {
-    ConcatNode(Node* lhs, Node* rhs) : lhs(lhs), rhs(rhs) {
+struct InfixOpNode : public Node {
+    InfixOpNode(Node* lhs, Node* rhs, char op) : lhs(lhs), rhs(rhs), op(op) {
         debugMessage();
     }
 
     std::string getString() override {
-        std::string res = "concat(";
+        std::string res = "op(";
+        res += "'";
+        res += op;
+        res += "', ";
+
         res += lhs->getString();
         res += ", ";
         res += rhs->getString();
@@ -101,18 +105,16 @@ struct ConcatNode : public Node {
 private:
     Node* lhs;
     Node* rhs;
+    char op;
 };
 
 struct CommandNode : public Node {
-    CommandNode(Node* name, Node* args, char bang = '\0') : name(name), args(args), bang(bang) {
+    CommandNode(Node* name, Node* args) : name(name), args(args) {
         debugMessage();
     }
 
     std::string getString() override {
         std::string res = "command(";
-        if (bang) {
-            res += "bang(), ";
-        }
         res += name->getString();
         res += ", ";
 
@@ -129,7 +131,6 @@ struct CommandNode : public Node {
 private:
     Node* name;
     Node* args;
-    char bang;
 };
 
 struct FargsNode : public Node {

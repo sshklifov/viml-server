@@ -1,6 +1,7 @@
 %{
 #define YYDEBUG 1
 #define YYFPRINTF fprintf
+#define YYPRINT
 
 #include <cstdio>
 #include <string>
@@ -13,7 +14,7 @@ int yylex();
 Node* root = NULL;
 %}
 
-%token ID AUTOLOAD NUMBER STR ANGLE
+%token STR ANGLE BANG_ID AU_ID SCOPED_ID ID NUMBER
 
 %%
 input: %empty                 { $$ = nullptr; }
@@ -24,21 +25,26 @@ line: '\n'                        { $$ = nullptr; }
     | command '\n'                { $$ = $1; }
 ;
 
-command: fname qargs               { $$ = new CommandNode($1, $2); }
-       | fname '!' qargs           { $$ = new CommandNode($1, $3, '!'); }
+command: ID qargs                  { $$ = new CommandNode($1, $2); }
+       | BANG_ID qargs             { $$ = new CommandNode($1, $2); }
 ;
 
 qargs: %empty            { $$ = nullptr; }
      | term qargs        { $$ = new QargsNode($1, $2); }
 ;
 
-term: term '.' term        { $$ = new ConcatNode($1, $3); }
-    | fname '(' fargs ')'  { $$ = new FunCallNode($1, $3); }
-    | ID                   { $$ = $1; }
-    | NUMBER               { $$ = $1; }
+term: fname '(' fargs ')'  { $$ = new FunCallNode($1, $3); }
+    | term '.' term        { $$ = new InfixOpNode($1, $3, '.'); }
+    | term '+' term        { $$ = new InfixOpNode($1, $3, '+'); }
+    | term '-' term        { $$ = new InfixOpNode($1, $3, '-'); }
+    | var                  { $$ = $1; }
     | STR                  { $$ = $1; }
     | ANGLE                { $$ = $1; }
+    | NUMBER               { $$ = $1; }
 ;
+
+var: ID              { $$ = $1; }
+   | SCOPED_ID       { $$ = $1; }
 
 fargs: %empty                { $$ = nullptr; }
      | term                  { $$ = new FargsNode($1, nullptr); }
@@ -46,7 +52,8 @@ fargs: %empty                { $$ = nullptr; }
 ;
 
 fname: ID                   { $$ = $1; }
-     | AUTOLOAD             { $$ = $1; }
+     | AU_ID                { $$ = $1; }
+     | SCOPED_ID            { $$ = $1; }
 ;
 %%
 
@@ -70,9 +77,9 @@ int main() {
         int yychar = 0;
         do {
             yychar = yylex();
-            yysymbol_kind_t tr = YYTRANSLATE(yychar);
+            int tr = yytoknum[yychar];
             
-            printf("Lex=%s\n", yysymbol_name(tr));
+            printf("Lex=%s\n", yytname[tr]);
         }
         while (yychar != 0);
     }
