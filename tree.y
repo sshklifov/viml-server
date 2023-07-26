@@ -32,7 +32,8 @@ qargs: %empty            { $$ = nullptr; }
      | term qargs        { $$ = new QargsNode($1, $2); }
 ;
 
-term: fname '(' fargs ')'  { $$ = new FunCallNode($1, $3); }
+term: term '.' term        { $$ = new ConcatNode($1, $3); }
+    | fname '(' fargs ')'  { $$ = new FunCallNode($1, $3); }
     | ID                   { $$ = $1; }
     | NUMBER               { $$ = $1; }
     | STR                  { $$ = $1; }

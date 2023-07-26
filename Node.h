@@ -84,7 +84,25 @@ private:
     Node* args;
 };
 
-// bang
+struct ConcatNode : public Node {
+    ConcatNode(Node* lhs, Node* rhs) : lhs(lhs), rhs(rhs) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "concat(";
+        res += lhs->getString();
+        res += ", ";
+        res += rhs->getString();
+        res += ")";
+        return res;
+    }
+
+private:
+    Node* lhs;
+    Node* rhs;
+};
+
 struct CommandNode : public Node {
     CommandNode(Node* name, Node* args, char bang = '\0') : name(name), args(args), bang(bang) {
         debugMessage();
