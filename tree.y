@@ -34,6 +34,7 @@ qargs: %empty            { $$ = nullptr; }
 ;
 
 term: fname '(' fargs ')'  { $$ = new FunCallNode($1, $3); }
+    | '!' term             { $$ = new PrefixOpNode($2, '!'); }
     | term '.' term        { $$ = new InfixOpNode($1, $3, '.'); }
     | term '+' term        { $$ = new InfixOpNode($1, $3, '+'); }
     | term '-' term        { $$ = new InfixOpNode($1, $3, '-'); }

@@ -108,6 +108,28 @@ private:
     char op;
 };
 
+struct PrefixOpNode : public Node {
+    PrefixOpNode(Node* node, char op) : node(node), op(op) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "prefix(";
+        res += "'";
+        res += op;
+        res += "', ";
+
+        res += node->getString();
+        res += ")";
+
+        return res;
+    }
+
+private:
+    Node* node;
+    char op;
+};
+
 struct CommandNode : public Node {
     CommandNode(Node* name, Node* args) : name(name), args(args) {
         debugMessage();
