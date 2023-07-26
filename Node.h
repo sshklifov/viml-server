@@ -86,12 +86,15 @@ private:
 
 // bang
 struct CommandNode : public Node {
-    CommandNode(Node* name, Node* args) : name(name), args(args) {
+    CommandNode(Node* name, Node* args, char bang = '\0') : name(name), args(args), bang(bang) {
         debugMessage();
     }
 
     std::string getString() override {
         std::string res = "command(";
+        if (bang) {
+            res += "bang(), ";
+        }
         res += name->getString();
         res += ", ";
 
@@ -108,6 +111,7 @@ struct CommandNode : public Node {
 private:
     Node* name;
     Node* args;
+    char bang;
 };
 
 struct FargsNode : public Node {

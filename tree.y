@@ -26,8 +26,8 @@ line:
     | command '\n'                { $$ = $1; }
 ;
 
-command:
-       tok qargs           { $$ = new CommandNode($1, $2); }
+command: fname qargs               { $$ = new CommandNode($1, $2); }
+       | fname '!' qargs           { $$ = new CommandNode($1, $3, '!'); }
 ;
 
 qargs:
