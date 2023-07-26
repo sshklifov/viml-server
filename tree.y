@@ -14,7 +14,7 @@ int yylex();
 Node* root = NULL;
 %}
 
-%token STR ANGLE BANG_ID AU_ID SCOPED_ID ID NUMBER
+%token IF ENDIF STR ANGLE BANG_ID AU_ID SCOPED_ID ID NUMBER
 
 %left '*'
 %left '/'
@@ -35,8 +35,12 @@ Node* root = NULL;
 %nonassoc "!="
 
 %%
-input: %empty                 { $$ = nullptr; }
-     | line input             { root = new LineNode($1, $2); $$ = root; }
+input: %empty                       { $$ = nullptr; }
+     | if_block input               { root = new LineNode($1, $2); $$ = root; }
+     | line input                   { root = new LineNode($1, $2); $$ = root; }
+;
+
+if_block: IF term '\n' input ENDIF '\n'     { $$ = new IfBlockNode($2, $4); }
 ;
 
 line: '\n'                        { $$ = nullptr; }
@@ -117,7 +121,7 @@ int main() {
         int yychar = 0;
         do {
             yychar = yylex();
-            int tr = yytoknum[yychar];
+            int tr = YYTRANSLATE(yychar);
             
             printf("Lex=%s\n", yytname[tr]);
         }

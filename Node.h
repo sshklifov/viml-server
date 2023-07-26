@@ -40,9 +40,8 @@ struct LineNode : public Node {
 
         std::string res;
         if (head) {
-            res += "-->";
             res += head->getString();
-            res += "<--\n";
+            res += "\n";
         } else {
             res += "<empty-line>\n";
         }
@@ -201,6 +200,30 @@ struct ListNode : public Node {
 
 private:
     Node* args;
+};
+
+struct IfBlockNode : public Node {
+    IfBlockNode(Node* cond, Node* body) : cond(cond), body(body) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "if ";
+        res += cond->getString();
+        res += "\n";
+        if (body) {
+            res += body->getString();
+        } else {
+            res += "<empty-body>";
+        }
+        res += "\n";
+        res += "endif";
+        return res;
+    }
+
+private:
+    Node* cond;
+    Node* body;
 };
 
 using QargsNode = FargsNode;

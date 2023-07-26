@@ -28,6 +28,14 @@ forward .|"\n"
 {comment} {}
 {space} {}
 
+"if" {
+    return IF;
+}
+
+"endif" {
+    return ENDIF;
+}
+
 {str} {
     yylval = new LexemNode(yytext);
     return STR;
