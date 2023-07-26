@@ -187,4 +187,20 @@ private:
     Node* tail;
 };
 
+struct ListNode : public Node {
+    ListNode(Node* args) : args(args) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "list(";
+        res += args->getString();
+        res += ")";
+        return res;
+    }
+
+private:
+    Node* args;
+};
+
 using QargsNode = FargsNode;
