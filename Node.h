@@ -59,8 +59,8 @@ private:
     Node* tail;
 };
 
-struct TermNode : public Node {
-    TermNode(Node* name, Node* args) : name(name), args(args) {
+struct FunCallNode : public Node {
+    FunCallNode(Node* name, Node* args) : name(name), args(args) {
         debugMessage();
     }
 
