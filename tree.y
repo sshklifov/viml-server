@@ -117,7 +117,7 @@ fname: ID                   { $$ = $1; }
 ;
 %%
 
-#include "tok.c"
+#include "lex.c"
 
 void yyerror (const char* s) {
     printf ("%s\n", s);
