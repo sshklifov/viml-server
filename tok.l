@@ -36,6 +36,22 @@ forward .|"\n"
     return ENDIF;
 }
 
+"function" {
+    return FUNCTION;
+}
+
+"function!" {
+    return BANG_FUNCTION;
+}
+
+"endfunction" {
+    return ENDFUNCTION;
+}
+
+"let" {
+    return LET;
+}
+
 {str} {
     yylval = new LexemNode(yytext);
     return STR;
@@ -69,6 +85,30 @@ forward .|"\n"
 {id} {
     yylval = new LexemNode(yytext);
     return ID;
+}
+
+"==" {
+    return EQ;
+}
+
+"!=" {
+    return NOT_EQ;
+}
+
+">=" {
+    return GR_EQ;
+}
+
+"<=" {
+    return LESS_EQ;
+}
+
+"&&" {
+    return AND;
+}
+
+"||" {
+    return OR;
 }
 
 {number} {

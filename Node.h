@@ -214,9 +214,8 @@ struct IfBlockNode : public Node {
         if (body) {
             res += body->getString();
         } else {
-            res += "<empty-body>";
+            res += "<empty-body>\n";
         }
-        res += "\n";
         res += "endif";
         return res;
     }
@@ -227,3 +226,81 @@ private:
 };
 
 using QargsNode = FargsNode;
+
+struct ParamsNode : public Node {
+    ParamsNode(Node* head, Node* tail) : head(head), tail(tail) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        if (!head) {
+            return "params()";
+        }
+
+        std::string res;
+        res += "params(";
+        res += head->getString();
+
+        if (tail) {
+            res += ", ";
+            res += tail->getString();
+        }
+
+        res += ")";
+        return res;
+    }
+
+private:
+    Node* head;
+    Node* tail;
+};
+
+struct FunctionBlockNode : public Node {
+    FunctionBlockNode(Node* name, Node* args, Node* body) : name(name), args(args), body(body) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "function ";
+        res += name->getString();
+        res += " ";
+        if (args) {
+            res += args->getString();
+        } else {
+            res += "<empty-args>";
+        }
+        res += "\n";
+
+        if (body) {
+            res += body->getString();
+        } else {
+            res += "<empty-body>\n";
+        }
+        res += "endfunction";
+        return res;
+    }
+
+private:
+    Node* name;
+    Node* args;
+    Node* body;
+};
+
+struct LetNode : public Node {
+    LetNode(Node* name, Node* value) : name(name), value(value) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "let ";
+        res += name->getString();
+        res += " = ";
+        res += value->getString();
+
+        return res;
+    }
+
+private:
+    Node* name;
+    Node* value;
+};
