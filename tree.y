@@ -20,6 +20,7 @@ Node* root = NULL;
 %token BANG_FUNCTION FUNCTION ENDFUNCTION IF ENDIF
 %token LET
 %token BANG_COMMAND COMMAND COMMAND_ATTR COMMAND_REPLACE
+%token SET_COMMAND
 
 %left '*'
 %left '/'
@@ -61,7 +62,7 @@ line: '\n'                        { $$ = nullptr; }
     | command '\n'                { $$ = $1; }
 ;
 
-command: ex_command | let_command | cmd_command
+command: ex_command | let_command | cmd_command | SET_COMMAND
 ;
 
 ex_command: ID qargs       { $$ = new ExNode($1, $2); }

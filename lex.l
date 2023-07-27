@@ -61,6 +61,11 @@ forward .|"\n"
     return BANG_COMMAND;
 }
 
+"set "[^\n]+ {
+    yylval = new LexemNode(yytext);
+    return SET_COMMAND;
+}
+
 {attr} {
     yylval = new LexemNode(yytext);
     return COMMAND_ATTR;
@@ -135,5 +140,14 @@ forward .|"\n"
 }
 %%
 
-// TODO comment ignore
-// TODO empty lines ignore
+// option_name [a-z]+
+// option_val [^\n]+
+// option "set "{option_name}
+// show_option {option}[?]
+// no_option "set no"{option_name}
+// inv_option ("set "{option_name}[!])|("set inv"{option_name})
+// reset_option "set "{option_name}[&]("vi"|"vim")?
+// set_option "set "{option_name}[=:]{option_val}
+// add_option "set "{option_name}"+="{option_val}
+// mult_option "set "{option_name}"^="{option_val}
+// sub_option "set "{option_name}"-="{option_val}
