@@ -3,8 +3,6 @@
 comment ^["].*[\n]
 space [ ]
 
-angle [<][^ <>]+[>] 
-
 str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
 quote_loop [ -~]{-}[\\']
@@ -16,6 +14,9 @@ scoped_id {scope}{name}
 bang_id {name}[!]
 au_id {name}[#]{name}
 id {name}
+
+attr -[a-z]+(=[^ ]+)?
+replace "<line1>"|"<line2>"|"<range>"|"<count>"|"<bang>"|"<mods>"|"<reg>"|"<args>"|"<lt>"|"<q-args>"|"<f-args>"
 
 number [0-9]+
 forward .|"\n"
@@ -52,6 +53,24 @@ forward .|"\n"
     return LET;
 }
 
+"command" {
+    return COMMAND;
+}
+
+"command!" {
+    return BANG_COMMAND;
+}
+
+{attr} {
+    yylval = new LexemNode(yytext);
+    return COMMAND_ATTR;
+}
+
+{replace} {
+    yylval = new LexemNode(yytext);
+    return COMMAND_REPLACE;
+}
+
 {str} {
     yylval = new LexemNode(yytext);
     return STR;
@@ -60,11 +79,6 @@ forward .|"\n"
 {quote} {
     yylval = new LexemNode(yytext);
     return STR;
-}
-
-{angle} {
-    yylval = new LexemNode(yytext);
-    return ANGLE;
 }
 
 {bang_id} {

@@ -19,6 +19,7 @@ Node* root = NULL;
 %token AND OR
 %token BANG_FUNCTION FUNCTION ENDFUNCTION IF ENDIF
 %token LET
+%token BANG_COMMAND COMMAND COMMAND_ATTR COMMAND_REPLACE
 
 %left '*'
 %left '/'
@@ -60,15 +61,25 @@ line: '\n'                        { $$ = nullptr; }
     | command '\n'                { $$ = $1; }
 ;
 
-command: ID qargs                  { $$ = new CommandNode($1, $2); }
-       | BANG_ID qargs             { $$ = new CommandNode($1, $2); }
-       | let_command               { $$ = $1; }
+command: ex_command | let_command | cmd_command
 ;
 
-let_command: LET var '=' term { $$ = new LetNode($2, $4); } 
+ex_command: ID qargs       { $$ = new ExNode($1, $2); }
+          | BANG_ID qargs  { $$ = new ExNode($1, $2); }
 
 qargs: %empty            { $$ = nullptr; }
      | term qargs        { $$ = new QargsNode($1, $2); }
+;
+
+let_command: LET var '=' term { $$ = new LetNode($2, $4); } 
+;
+
+cmd_command: COMMAND cmd_attr_list ID ex_command            { $$ = new CommandNode($3, $2, $4); }
+           | BANG_COMMAND cmd_attr_list ID ex_command       { $$ = new CommandNode($3, $2, $4); }
+;
+
+cmd_attr_list: %empty                                  { $$ = nullptr; }
+             | COMMAND_ATTR cmd_attr_list              { $$ = new AttrsNode($1, $2); }
 ;
 
 term: val_term | arith_op | logical_op | cmp_op
@@ -100,6 +111,7 @@ val_term: fname '(' fargs ')'      { $$ = new FunCallNode($1, $3); }
         | STR                      { $$ = $1; }
         | ANGLE                    { $$ = $1; }
         | NUMBER                   { $$ = $1; }
+        | COMMAND_REPLACE          { $$ = $1; }
 ;
 
 var: ID              { $$ = $1; }

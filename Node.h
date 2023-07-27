@@ -129,13 +129,13 @@ private:
     std::string op;
 };
 
-struct CommandNode : public Node {
-    CommandNode(Node* name, Node* args) : name(name), args(args) {
+struct ExNode : public Node {
+    ExNode(Node* name, Node* args) : name(name), args(args) {
         debugMessage();
     }
 
     std::string getString() override {
-        std::string res = "command(";
+        std::string res = "ex(";
         res += name->getString();
         res += ", ";
 
@@ -303,4 +303,56 @@ struct LetNode : public Node {
 private:
     Node* name;
     Node* value;
+};
+
+struct AttrsNode : public Node {
+    AttrsNode(Node* head, Node* tail) : head(head), tail(tail) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        if (!head) {
+            return "attrs()";
+        }
+
+        std::string res;
+        res += "attrs(";
+        res += head->getString();
+
+        if (tail) {
+            res += " ";
+            res += tail->getString();
+        }
+
+        res += ")";
+        return res;
+    }
+
+private:
+    Node* head;
+    Node* tail;
+};
+
+struct CommandNode : public Node {
+    CommandNode(Node* name, Node* attrs, Node* body) : name(name), attrs(attrs), body(body) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "command(";
+        res += name->getString();
+        res += ", ";
+        if (attrs) {
+            res += attrs->getString();
+            res += ", ";
+        }
+
+        res += body->getString();
+        return res;
+    }
+
+private:
+    Node* name;
+    Node* attrs;
+    Node* body;
 };
