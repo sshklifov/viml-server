@@ -139,15 +139,3 @@ forward .|"\n"
     return yytext[0];
 }
 %%
-
-// option_name [a-z]+
-// option_val [^\n]+
-// option "set "{option_name}
-// show_option {option}[?]
-// no_option "set no"{option_name}
-// inv_option ("set "{option_name}[!])|("set inv"{option_name})
-// reset_option "set "{option_name}[&]("vi"|"vim")?
-// set_option "set "{option_name}[=:]{option_val}
-// add_option "set "{option_name}"+="{option_val}
-// mult_option "set "{option_name}"^="{option_val}
-// sub_option "set "{option_name}"-="{option_val}
