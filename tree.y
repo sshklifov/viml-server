@@ -14,7 +14,7 @@ int yylex();
 Node* root = NULL;
 %}
 
-%token STR ANGLE BANG_ID AU_ID SCOPED_ID ID NUMBER
+%token STR BANG_ID AU_ID SCOPED_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ
 %token AND OR
 %token BANG_FUNCTION FUNCTION ENDFUNCTION IF ENDIF
@@ -110,7 +110,6 @@ val_term: fname '(' fargs ')'      { $$ = new FunCallNode($1, $3); }
         | '[' fargs ']'            { $$ = new ListNode($2); }
         | var                      { $$ = $1; }
         | STR                      { $$ = $1; }
-        | ANGLE                    { $$ = $1; }
         | NUMBER                   { $$ = $1; }
         | COMMAND_REPLACE          { $$ = $1; }
 ;
