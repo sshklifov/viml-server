@@ -17,3 +17,10 @@ clean:
 .PHONY: test
 test:
 	./viml-server < test.txt
+
+
+help.c: help.l
+	flex -L -o help.c help.l
+
+help: help.c
+	g++ help.c -o help
