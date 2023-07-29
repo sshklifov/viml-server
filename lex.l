@@ -18,7 +18,7 @@ scope [a-zA-Z]:
 id {scope}?{curly_name}
 sid_id "<SID>"{curly_name}
 au_id {scope}?({curly_name}[#])+{curly_name}
-opt_id "&"{curly_name}
+opt_id "&"{scope}?{curly_name}
 reg_id "@"{curly_name}
 env_id "$"{curly_name}
 

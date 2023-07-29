@@ -374,11 +374,15 @@ struct LetNode : public Node {
 
     std::string getString() override {
         std::string res = "let ";
-        res += name->getString();
-        res += " ";
-        res += op;
-        res += " ";
-        res += value->getString();
+        if (name) {
+            res += name->getString();
+            res += " ";
+            res += op;
+        }
+        if (value) {
+            res += " ";
+            res += value->getString();
+        }
 
         return res;
     }

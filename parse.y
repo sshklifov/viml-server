@@ -89,18 +89,23 @@ line: '\n'                        { $$ = nullptr; }
 command: let_command | cmd_command | ex_command
 ;
 
-let_command: LET let_var '=' expr1 { $$ = new LetNode($2, $4, "="); }
+let_command: LET let_var '=' expr1    { $$ = new LetNode($2, $4, "="); }
            | LET let_var ADD_EQ expr1 { $$ = new LetNode($2, $4, "+="); }
            | LET let_var SUB_EQ expr1 { $$ = new LetNode($2, $4, "-="); }
            | LET let_var MUL_EQ expr1 { $$ = new LetNode($2, $4, "*="); }
            | LET let_var DIV_EQ expr1 { $$ = new LetNode($2, $4, "/="); }
            | LET let_var MOD_EQ expr1 { $$ = new LetNode($2, $4, "%="); }
            | LET let_var CON_EQ expr1 { $$ = new LetNode($2, $4, ".="); }
+           | LET let_var CONCAT       { $$ = new LetNode($2, nullptr, ".."); }
+           | LET                      { $$ = new LetNode(nullptr, nullptr, nullptr); }
 ;
 
 let_var: var
        | var '[' expr1 ']'              { $$ = new IndexNode($1, $3); }
        | var '[' expr1 ':' expr1 ']'    { $$ = new IndexNode($1, $3); }
+       | OPT_ID                         { $$ = $1; }
+       | ENV_ID                         { $$ = $1; }
+       | REG_ID                         { $$ = $1; }
        | unpack                         { $$ = $1; }
 ;
 

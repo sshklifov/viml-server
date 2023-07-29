@@ -1,5 +1,1 @@
-let asd = "def"
-let defan = "3"
-let res = {asd}an
-echo res
-
+let &l:asd = "WTF"
