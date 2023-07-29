@@ -1,1 +1,1 @@
-let matches = filter(a:data, {i, d -> !empty(d)})
+let a = sp[1] =~ '^[0-9]\+$'

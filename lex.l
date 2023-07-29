@@ -179,7 +179,7 @@ extern Node* yylval;
     return OR;
 }
 
-"=!" {
+"=~" {
     return MATCH;
 }
 
