@@ -210,6 +210,7 @@ expr9: NUMBER
      | '(' expr1 ')'                            { $$ = $2; }
      | '{' args ARROW expr1 '}'                 { $$ = new LambdaNode($2, $4); }
      | '&' ID                                   { $$ = new OptionNode($2); }
+     | '@' ID                                   { $$ = new RegNode($2); }
      | ID
      | AU_ID
      | VA
