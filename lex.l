@@ -10,6 +10,7 @@ str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
 quote_loop [ -~]{-}[\\']
 quote [']({quote_loop}*|\\.)*[']
+blob "0z"[0-9a-fA-F.]+
 
 name [a-zA-Z_][a-zA-Z0-9_]*
 scope [gbwtslav]:
@@ -36,6 +37,7 @@ extern Node* yylval;
     SID_ID,
     ID,
     NUMBER,
+    BLOB,
     EQ,
     NOT_EQ,
     LESS_EQ,
@@ -263,6 +265,11 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
 {number} {
     yylval = new LexemNode(yytext);
     return NUMBER;
+}
+
+{blob} {
+    yylval = new LexemNode(yytext);
+    return BLOB;
 }
 
 <CMD_TRAILING>[ \t]+ {

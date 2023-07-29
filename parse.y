@@ -1,4 +1,4 @@
-%token STR AU_ID SID_ID ID NUMBER
+%token STR AU_ID SID_ID ID NUMBER BLOB
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token ADD_EQ SUB_EQ MUL_EQ DIV_EQ MOD_EQ CON_EQ
 %token AND OR
@@ -199,6 +199,7 @@ fname: ID | AU_ID | SID_ID
 ;
 
 expr9: NUMBER
+     | BLOB
      | STR
      | '[' expr1_list ']'                         { $$ = new ListNode($2); }
      | '{' expr1_pairs '}'                      { $$ = new DictNode($2); }

@@ -1,6 +1,2 @@
-  if n == 0
-    echo "No results"
-  elseif a
-    cc
-  else
-    copen
+let a = 0z1234.5679
+
