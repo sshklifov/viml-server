@@ -217,6 +217,7 @@ key: ID | STR | NUMBER
 
 void yyerror (const char* s) {
     printf ("%s\n", s);
+    exit(5);
 }
 
 int main() {

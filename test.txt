@@ -1,1 +1,2 @@
-let [_, lnum1, col1 ; rest] = getpos("'<")
+function! s:SynStack()
+endfunc

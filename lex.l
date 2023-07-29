@@ -68,65 +68,70 @@ extern Node* yylval;
     VA,
     ARROW
   };
+
+bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong) {
+    int shortLen = strlen(vimShort);
+    int longLen = strlen(vimLong);
+    if (n < shortLen || n > longLen) {
+        return false;
+    }
+    return strncmp(name, vimLong, n) == 0;
+}
 %}
 
 %%
 {comment} {}
 
-{anchor}"if" {
-    return IF;
-}
-
-{anchor}"else" {
-    return ELSE;
-}
-
-{anchor}"endif" {
-    return ENDIF;
-}
-
-{anchor}"while" {
-    return WHILE;
-}
-
-{anchor}"endwhile" {
-    return ENDWHILE;
-}
-
-{anchor}"for" {
-    return FOR;
-}
-
-{anchor}"endfor" {
-    return ENDFOR;
-}
-
-{anchor}"function"[!]? {
-    return FUNCTION;
-}
-
-{anchor}"endfunction" {
-    return ENDFUNCTION;
-}
-
-{anchor}"let" {
-    return LET;
-}
-
-{anchor}"command"[!]? {
-    BEGIN(CMD_NAME);
-    return COMMAND;
-}
-
-{anchor}{id} {
-    const char* text = yytext;
-    while(text < yytext + yyleng) {
-        if (*text != ' ' && *text != '\t') {
+{anchor}{id}"!"? {
+    const char* id = yytext;
+    int len = yyleng;
+    while(id < yytext + yyleng) {
+        if (*id != ' ' && *id != '\t') {
             break;
         }
-        ++text;
+        ++id;
+        --len;
     }
-    yylval = new LexemNode(text);
+    if (id[len - 1] == '!') {
+        --len;
+    }
+    
+    if (isVimCmd(id, len, "if", "if")) {
+        return IF;
+    }
+    if (isVimCmd(id, len, "el", "else")) {
+        return ELSE;
+    }
+    if (isVimCmd(id, len, "en", "endif")) {
+        return ENDIF;
+    }
+    if (isVimCmd(id, len, "wh", "while")) {
+        return WHILE;
+    }
+    if (isVimCmd(id, len, "endw", "endwhile")) {
+        return WHILE;
+    }
+    if (isVimCmd(id, len, "for", "for")) {
+        return FOR;
+    }
+    if (isVimCmd(id, len, "endfo", "endfor")) {
+        return ENDFOR;
+    }
+    if (isVimCmd(id, len, "fu", "function")) {
+        return FUNCTION;
+    }
+    if (isVimCmd(id, len, "endf", "endfunction")) {
+        return ENDFUNCTION;
+    }
+    if (isVimCmd(id, len, "let", "let")) {
+        return LET;
+    }
+    if (isVimCmd(id, len, "com", "command")) {
+        BEGIN(CMD_NAME);
+        return COMMAND;
+    }
+
+    yylval = new LexemNode(id);
     BEGIN(CMD_TRAILING);
     return EX;
 }
