@@ -18,6 +18,7 @@ Node* root = NULL;
 
 %token STR AU_ID SID_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
+%token ADD_EQ SUB_EQ MUL_EQ DIV_EQ MOD_EQ CON_EQ
 %token AND OR
 %token FUNCTION ENDFUNCTION IF ELSE ENDIF WHILE ENDWHILE FOR ENDFOR
 %token LET
@@ -66,7 +67,13 @@ line: '\n'                        { $$ = nullptr; }
 command: let_command | cmd_command | ex_command
 ;
 
-let_command: LET let_var '=' expr1 { $$ = new LetNode($2, $4); } 
+let_command: LET let_var '=' expr1 { $$ = new LetNode($2, $4, "="); }
+           | LET let_var ADD_EQ expr1 { $$ = new LetNode($2, $4, "+="); }
+           | LET let_var SUB_EQ expr1 { $$ = new LetNode($2, $4, "-="); }
+           | LET let_var MUL_EQ expr1 { $$ = new LetNode($2, $4, "*="); }
+           | LET let_var DIV_EQ expr1 { $$ = new LetNode($2, $4, "/="); }
+           | LET let_var MOD_EQ expr1 { $$ = new LetNode($2, $4, "%="); }
+           | LET let_var CON_EQ expr1 { $$ = new LetNode($2, $4, ".="); }
 ;
 
 let_var: var_name

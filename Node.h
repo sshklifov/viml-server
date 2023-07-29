@@ -368,20 +368,23 @@ private:
 };
 
 struct LetNode : public Node {
-    LetNode(Node* name, Node* value) : name(name), value(value) {
+    LetNode(Node* name, Node* value, const char* op) : name(name), value(value), op(op) {
         debugMessage();
     }
 
     std::string getString() override {
         std::string res = "let ";
         res += name->getString();
-        res += " = ";
+        res += " ";
+        res += op;
+        res += " ";
         res += value->getString();
 
         return res;
     }
 
 private:
+    const char* op;
     Node* name;
     Node* value;
 };

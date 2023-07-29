@@ -1,2 +1,1 @@
-for progress in serverProgress
-endfor
+let totalDone += progress[0]

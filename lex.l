@@ -41,6 +41,12 @@ extern Node* yylval;
     MATCH,
     NOT_MATCH,
     CONCAT,
+    ADD_EQ,
+    SUB_EQ,
+    MUL_EQ,
+    DIV_EQ,
+    MOD_EQ,
+    CON_EQ,
     AND,
     OR,
     FUNCTION,
@@ -201,6 +207,34 @@ extern Node* yylval;
 
 "!~" {
     return NOT_MATCH;
+}
+
+"+=" {
+    return ADD_EQ;
+}
+
+"-=" {
+    return SUB_EQ;
+}
+
+"*=" {
+    return MUL_EQ;
+}
+
+"/=" {
+    return DIV_EQ;
+}
+
+"%=" {
+    return MOD_EQ;
+}
+
+".=" {
+    return CON_EQ;
+}
+
+"..=" {
+    return CON_EQ;
 }
 
 ".." {
