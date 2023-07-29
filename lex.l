@@ -11,10 +11,9 @@ quote [']({quote_loop}*|\\.)*[']
 
 name [a-zA-Z_][a-zA-Z0-9_]*
 scope [gbwtslav]:
-scoped_id {scope}{name}
-au_id {name}[#]{name}
+id {scope}?{name}
 sid_id "<SID>"{name}
-id {name}
+au_id {scope}?({name}[#])+{name}
 
 attr -[a-z]+(=[^ ]+)?
 replace "<line1>"|"<line2>"|"<range>"|"<count>"|"<bang>"|"<mods>"|"<reg>"|"<args>"|"<lt>"|"<q-args>"|"<f-args>"
@@ -33,7 +32,6 @@ extern Node* yylval;
     STR = 258,
     AU_ID,
     SID_ID,
-    SCOPED_ID,
     ID,
     NUMBER,
     EQ,
@@ -133,11 +131,6 @@ extern Node* yylval;
     return STR;
 }
 
-{au_id} {
-    yylval = new LexemNode(yytext);
-    return AU_ID;
-}
-
 {sid_id} {
     yylval = new LexemNode(yytext);
     return SID_ID;
@@ -148,9 +141,9 @@ extern Node* yylval;
     return VA;
 }
 
-{scoped_id} {
+{au_id} {
     yylval = new LexemNode(yytext);
-    return SCOPED_ID;
+    return AU_ID;
 }
 
 {id} {

@@ -1,1 +1,2 @@
-let title = getqflist()['title']
+let g:airline#extensions#xkblayout#enabled = 0
+

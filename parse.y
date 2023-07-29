@@ -16,7 +16,7 @@ int yylex();
 Node* root = NULL;
 %}
 
-%token STR AU_ID SID_ID SCOPED_ID ID NUMBER
+%token STR AU_ID SID_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token AND OR
 %token FUNCTION ENDFUNCTION IF ELSE ENDIF
@@ -61,7 +61,7 @@ let_var: var_name
        | var_name '[' expr1 ':' expr1 ']'    { $$ = new IndexNode($1, $3); }
 ;
 
-var_name: ID | SCOPED_ID
+var_name: ID | AU_ID
 ;
 
 cmd_command: COMMAND cmd_attr_list ID QARGS            { $$ = new CommandNode($3, $2, $4); }
@@ -156,7 +156,7 @@ expr8: expr9
      | fname '(' fargs ')'               { $$ = new FunCallNode($1, $3); }
 ;
 
-fname: ID | SCOPED_ID | AU_ID | SID_ID
+fname: ID | AU_ID | SID_ID
 ;
 
 expr9: NUMBER
@@ -166,7 +166,7 @@ expr9: NUMBER
      | '(' expr1 ')'                         { $$ = $2; }
      | '{' fargs ARROW expr1 '}'             { $$ = new LambdaNode($2, $4); }
      | ID
-     | SCOPED_ID
+     | AU_ID
      | VA
      | COMMAND_REPLACE
 ;
