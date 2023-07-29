@@ -71,7 +71,10 @@ var_list: var                       { $$ = new ParamsNode($1, nullptr); }
 var: ID | AU_ID | VA
 ;
 
-function_block: FUNCTION fname '(' args ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
+function_block: FUNCTION fname '(' args ')' '\n' input ENDFUNCTION '\n'        { $$ = new FunctionBlockNode($2, $4, $7); }
+              | FUNCTION ID '.' ID '(' args ')' '\n' input ENDFUNCTION '\n'    { $$ = new FunctionBlockNode(new InfixOpNode($2, $4, "."), $6, $9); }
+              | FUNCTION AU_ID '.' ID '(' args ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode(new InfixOpNode($2, $4, "."), $6, $9); }
+
 ;
 
 args: %empty                  { $$ = nullptr; }
@@ -202,11 +205,11 @@ expr9: NUMBER
      | FLOAT
      | BLOB
      | STR
-     | '[' expr1_list ']'                         { $$ = new ListNode($2); }
+     | '[' expr1_list ']'                       { $$ = new ListNode($2); }
      | '{' expr1_pairs '}'                      { $$ = new DictNode($2); }
-     | '(' expr1 ')'                         { $$ = $2; }
-     | '{' args ARROW expr1 '}'             { $$ = new LambdaNode($2, $4); }
-     | '&' ID                                { $$ = new OptionNode($2); }
+     | '(' expr1 ')'                            { $$ = $2; }
+     | '{' args ARROW expr1 '}'                 { $$ = new LambdaNode($2, $4); }
+     | '&' ID                                   { $$ = new OptionNode($2); }
      | ID
      | AU_ID
      | VA
