@@ -58,7 +58,8 @@ extern Node* yylval;
     COMMAND_REPLACE = 280,         /* COMMAND_REPLACE  */
     QARGS = 281,                   /* QARGS  */
     EX = 282,                      /* EX */
-    VA = 283                       /* VA */
+    VA_DOTS = 283,                 /* VA_DOTS */
+    VA = 284                       /* VA */
   };
 %}
 
@@ -138,6 +139,11 @@ extern Node* yylval;
     return AU_ID;
 }
 
+"a:"{number}? {
+    yylval = new LexemNode(yytext);
+    return VA;
+}
+
 {scoped_id} {
     yylval = new LexemNode(yytext);
     return SCOPED_ID;
@@ -185,7 +191,7 @@ extern Node* yylval;
 }
 
 "..." {
-    return VA;
+    return VA_DOTS;
 }
 
 {number} {

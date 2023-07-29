@@ -24,7 +24,7 @@ Node* root = NULL;
 %token COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token QARGS
 %token EX
-%token VA
+%token VA_DOTS VA
 
 %%
 input: %empty                             { $$ = nullptr; }
@@ -41,7 +41,7 @@ function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ =
 ;
 
 params: %empty                   { $$ = nullptr; }
-    | VA                         { $$ = new ParamsNode(new LexemNode("..."), nullptr); }
+    | VA_DOTS                    { $$ = new ParamsNode(new LexemNode("..."), nullptr); }
     | ID                         { $$ = new ParamsNode($1, nullptr); }
     | ID ',' params              { $$ = new ParamsNode($1, $3); }
 
@@ -165,6 +165,7 @@ expr9: NUMBER
      | '(' expr1 ')'                         { $$ = $2; }
      | ID
      | SCOPED_ID
+     | VA
      | COMMAND_REPLACE
 ;
 
