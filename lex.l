@@ -12,13 +12,15 @@ quote_loop [ -~]{-}[\\']
 quote [']({quote_loop}*|\\.)*[']
 
 name [a-zA-Z_][a-zA-Z0-9_]*
-scope [gbwtslav]:
-id {scope}?{name}
-sid_id "<SID>"{name}
-au_id {scope}?({name}[#])+{name}
-opt_id "&"{id}
-reg_id "@"{id}
-env_id "$"{id}
+curly_name [a-zA-Z_{}][a-zA-Z0-9_{}]*
+scope [a-zA-Z]:
+
+id {scope}?{curly_name}
+sid_id "<SID>"{curly_name}
+au_id {scope}?({curly_name}[#])+{curly_name}
+opt_id "&"{curly_name}
+reg_id "@"{curly_name}
+env_id "$"{curly_name}
 
 attr -[a-z]+(=[^ ]+)?
 replace "<line1>"|"<line2>"|"<range>"|"<count>"|"<bang>"|"<mods>"|"<reg>"|"<args>"|"<lt>"|"<q-args>"|"<f-args>"
@@ -95,7 +97,7 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
 %%
 {comment} {}
 
-{anchor}{id}"!"? {
+{anchor}{name}"!"? {
     const char* id = yytext;
     int len = yyleng;
     while(id < yytext + yyleng) {
@@ -157,7 +159,7 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
     return COMMAND_ATTR;
 }
 
-<CMD_NAME>{id} {
+<CMD_NAME>{name} {
     yylval = new LexemNode(yytext);
     BEGIN(CMD_TRAILING);
     return ID;

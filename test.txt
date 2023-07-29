@@ -1,2 +1,5 @@
-let a = @b
+let asd = "def"
+let defan = "3"
+let res = {asd}an
+echo res
 
