@@ -17,30 +17,32 @@ Node* root = NULL;
 %}
 
 %token STR BANG_ID AU_ID SCOPED_ID ID NUMBER
-%token EQ NOT_EQ LESS_EQ GR_EQ
+%token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token AND OR
 %token BANG_FUNCTION FUNCTION ENDFUNCTION IF ENDIF
 %token LET
 %token BANG_COMMAND COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token SET_COMMAND
 
-%left '*'
-%left '/'
-%left '%'
-%left '.'
-%left '+'
-%left '-'
+//%left '%' '/' '*' '.' ' 
 
-%left AND
-%left OR
+//%left '*'
+//%left '/'
+//%left '%'
+//%left '.'
+//%left '+'
+//%left '-'
 
-%nonassoc '!'
-%nonassoc '<'
-%nonassoc '>'
-%nonassoc EQ
-%nonassoc NOT_EQ
-%nonassoc LESS_EQ
-%nonassoc GR_EQ
+//%left AND
+//%left OR
+
+//%nonassoc '!'
+//%nonassoc '<'
+//%nonassoc '>'
+//%nonassoc EQ
+//%nonassoc NOT_EQ
+//%nonassoc LESS_EQ
+//%nonassoc GR_EQ
 
 %%
 input: %empty                             { $$ = nullptr; }
@@ -49,7 +51,7 @@ input: %empty                             { $$ = nullptr; }
      | line input                         { root = new LineNode($1, $2); $$ = root; }
 ;
 
-if_block: IF term '\n' input ENDIF '\n'     { $$ = new IfBlockNode($2, $4); }
+if_block: IF expr1 '\n' input ENDIF '\n'     { $$ = new IfBlockNode($2, $4); }
 ;
 
 function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
@@ -69,12 +71,21 @@ command: ex_command | let_command | cmd_command | SET_COMMAND
 
 ex_command: ID qargs       { $$ = new ExNode($1, $2); }
           | BANG_ID qargs  { $$ = new ExNode($1, $2); }
-
-qargs: %empty            { $$ = nullptr; }
-     | term qargs        { $$ = new QargsNode($1, $2); }
 ;
 
-let_command: LET var '=' term { $$ = new LetNode($2, $4); } 
+qargs: %empty             { $$ = nullptr; }
+     | expr1 qargs        { $$ = new QargsNode($1, $2); }
+;
+
+let_command: LET let_var '=' expr1 { $$ = new LetNode($2, $4); } 
+;
+
+let_var: var_name
+       | var_name '[' expr1 ']'              { $$ = new IndexNode($1, $3); }
+       | var_name '[' expr1 ':' expr1 ']'    { $$ = new IndexNode($1, $3); }
+;
+
+var_name: ID | SCOPED_ID
 ;
 
 cmd_command: COMMAND cmd_attr_list ID ex_command            { $$ = new CommandNode($3, $2, $4); }
@@ -85,61 +96,102 @@ cmd_attr_list: %empty                                  { $$ = nullptr; }
              | COMMAND_ATTR cmd_attr_list              { $$ = new AttrsNode($1, $2); }
 ;
 
-term: val_term | arith_op | logical_op | cmp_op
-
-arith_op: term '*' term            { $$ = new InfixOpNode($1, $3, "*"); }
-        | term '/' term            { $$ = new InfixOpNode($1, $3, "/"); }
-        | term '%' term            { $$ = new InfixOpNode($1, $3, "%"); }
-        | term '.' term            { $$ = new InfixOpNode($1, $3, "."); }
-        | term '+' term            { $$ = new InfixOpNode($1, $3, "+"); }
-        | term '-' term            { $$ = new InfixOpNode($1, $3, "-"); }
+expr1: expr2
+     | expr2 '?' expr1 ':' expr1       { $$ = new TernaryNode($1, $3, $5); }
 ;
 
-logical_op: '!' term                 { $$ = new PrefixOpNode($2, "!"); }
-          | term AND term           { $$ = new InfixOpNode($1, $3, "&&"); }
-          | term OR term           { $$ = new InfixOpNode($1, $3, "||"); }
+expr2: expr3
+     | expr3 OR expr3               { $$ = new InfixOpNode($1, $3, "||"); }
 ;
 
-cmp_op: term '<' term             { $$ = new InfixOpNode($1, $3, "<"); }
-      | term '>' term             { $$ = new InfixOpNode($1, $3, ">"); }
-      | term LESS_EQ term            { $$ = new InfixOpNode($1, $3, ">"); }
-      | term GR_EQ term            { $$ = new InfixOpNode($1, $3, ">="); }
-      | term EQ term            { $$ = new InfixOpNode($1, $3, "=="); }
-      | term NOT_EQ term            { $$ = new InfixOpNode($1, $3, "!="); }
+expr3: expr4
+     | expr4 AND expr4              { $$ = new InfixOpNode($1, $3, "&&"); }
 ;
 
-val_term: fname '(' fargs ')'      { $$ = new FunCallNode($1, $3); }
-        | '[' fargs ']'            { $$ = new ListNode($2); }
-        | val_term '[' term ']'    { $$ = new IndexNode($1, $3); }
-        | dict                     { $$ = $1; }
-        | var                      { $$ = $1; }
-        | STR                      { $$ = $1; }
-        | NUMBER                   { $$ = $1; }
-        | COMMAND_REPLACE          { $$ = $1; }
+expr4: expr5
+     | expr5 EQ expr5                 { $$ = new InfixOpNode($1, $3, "=="); }
+     | expr5 NOT_EQ expr5             { $$ = new InfixOpNode($1, $3, "!="); }
+     | expr5 '>' expr5                  { $$ = new InfixOpNode($1, $3, ">"); }
+     | expr5 GR_EQ expr5                { $$ = new InfixOpNode($1, $3, ">="); }
+     | expr5 '<' expr5                  { $$ = new InfixOpNode($1, $3, "<"); }
+     | expr5 LESS_EQ expr5              { $$ = new InfixOpNode($1, $3, ">"); }
+     | expr5 MATCH expr5                { $$ = new InfixOpNode($1, $3, "=~"); }
+     | expr5 NOT_MATCH expr5            { $$ = new InfixOpNode($1, $3, "!~"); }
+
+     | expr5 EQ '#' expr5                   { $$ = new InfixOpNode($1, $4, "==#"); }
+     | expr5 NOT_EQ '#' expr5               { $$ = new InfixOpNode($1, $4, "!=#"); }
+     | expr5 '>' '#' expr5                  { $$ = new InfixOpNode($1, $4, ">#"); }
+     | expr5 GR_EQ '#' expr5                { $$ = new InfixOpNode($1, $4, ">=#"); }
+     | expr5 '<' '#' expr5                  { $$ = new InfixOpNode($1, $4, "<#"); }
+     | expr5 LESS_EQ '#' expr5              { $$ = new InfixOpNode($1, $4, ">#"); }
+     | expr5 MATCH '#' expr5                { $$ = new InfixOpNode($1, $4, "=~#"); }
+     | expr5 NOT_MATCH '#' expr5            { $$ = new InfixOpNode($1, $4, "!~#"); }
+
+     | expr5 EQ '?' expr5                   { $$ = new InfixOpNode($1, $4, "==?"); }
+     | expr5 NOT_EQ '?' expr5               { $$ = new InfixOpNode($1, $4, "!=?"); }
+     | expr5 '>' '?' expr5                  { $$ = new InfixOpNode($1, $4, ">?"); }
+     | expr5 GR_EQ '?' expr5                { $$ = new InfixOpNode($1, $4, ">=?"); }
+     | expr5 '<' '?' expr5                  { $$ = new InfixOpNode($1, $4, "<?"); }
+     | expr5 LESS_EQ '?' expr5              { $$ = new InfixOpNode($1, $4, ">?"); }
+     | expr5 MATCH '?' expr5                { $$ = new InfixOpNode($1, $4, "=~?"); }
+     | expr5 NOT_MATCH '?' expr5            { $$ = new InfixOpNode($1, $4, "!~?"); }
 ;
 
-dict: '{' kv_pairs '}'     { $$ = new DictNode($2); }
+expr5: expr6
+     | expr6 '+' expr6            { $$ = new InfixOpNode($1, $3, "+"); }
+     | expr6 '-' expr6            { $$ = new InfixOpNode($1, $3, "-"); }
+     | expr6 '.' expr6            { $$ = new InfixOpNode($1, $3, "."); }
+     | expr6 CONCAT expr6         { $$ = new InfixOpNode($1, $3, ".."); }
+;
+
+expr6: expr7
+     | expr7 '*' expr6            { $$ = new InfixOpNode($1, $3, "*"); }
+     | expr7 '/' expr6            { $$ = new InfixOpNode($1, $3, "/"); }
+     | expr7 '%' expr6            { $$ = new InfixOpNode($1, $3, "%"); }
+;
+
+expr7: expr8
+     | '!' expr8            { $$ = new PrefixOpNode($2, "!"); }
+     | '-' expr8            { $$ = new PrefixOpNode($2, "-"); }
+     | '+' expr8            { $$ = new PrefixOpNode($2, "+"); }
+;
+
+expr8: expr9
+     | expr9 '[' expr1 ']'               { $$ = new IndexNode($1, $3); }
+     | expr9 '[' expr1 ':' expr1 ']'     { $$ = new IndexNode($1, $3); }
+     | expr9 '.' ID                      { $$ = new IndexNode($1, $3); }
+     | fname '(' fargs ')'               { $$ = new FunCallNode($1, $3); }
+;
+
+fname: ID | SCOPED_ID | AU_ID
+;
+
+expr9: NUMBER
+     | STR
+     | '[' fargs ']'                         { $$ = new ListNode($2); }
+     | '{' kv_pairs '}'                      { $$ = new DictNode($2); }
+     | '#' '{' kv_pairs '}'                  { $$ = new DictNode($3); }
+     | '(' expr1 ')'                         { $$ = $2; }
+     | ID
+     | SCOPED_ID
+     | AU_ID
+     | COMMAND_REPLACE
+;
+
+fargs: %empty                 { $$ = nullptr; }
+     | expr1                  { $$ = new FargsNode($1, nullptr); }
+     | expr1 ',' expr1        { $$ = new FargsNode($1, $3); }
+;
 
 kv_pairs: %empty           { $$ = nullptr; }
         | kv               { $$ = new AttrsNode($1, nullptr); }
         | kv ',' kv_pairs  { $$ = new AttrsNode($1, $3); }
-
-kv: key ':' term                 { $$ = new KeyValueNode($1, $3); }
-
-key: STR | NUMBER
-
-var: ID              { $$ = $1; }
-   | SCOPED_ID       { $$ = $1; }
 ;
 
-fargs: %empty                { $$ = nullptr; }
-     | term                  { $$ = new FargsNode($1, nullptr); }
-     | term ',' fargs        { $$ = new FargsNode($1, $3); }
+kv: key ':' expr1          { $$ = new KeyValueNode($1, $3); }
 ;
 
-fname: ID                   { $$ = $1; }
-     | AU_ID                { $$ = $1; }
-     | SCOPED_ID            { $$ = $1; }
+key: ID | STR | NUMBER
 ;
 %%
 

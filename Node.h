@@ -237,6 +237,28 @@ private:
     Node* body;
 };
 
+struct TernaryNode : public Node {
+    TernaryNode(Node* cond, Node* left, Node* right) : cond(cond), left(left), right(right) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "ter(";
+        res += cond->getString();
+        res += ", ";
+        res += left->getString();
+        res += ", ";
+        res += right->getString();
+        res += ")";
+        return res;
+    }
+
+private:
+    Node* cond;
+    Node* left;
+    Node* right;
+};
+
 struct FunctionBlockNode : public Node {
     FunctionBlockNode(Node* name, Node* args, Node* body) : name(name), args(args), body(body) {
         debugMessage();

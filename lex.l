@@ -28,7 +28,7 @@ extern Node* yylval;
 
 enum yytokentype {
     STR = 258, BANG_ID, AU_ID, SCOPED_ID, ID, NUMBER,
-    EQ, NOT_EQ, LESS_EQ, GR_EQ,
+    EQ, NOT_EQ, LESS_EQ, GR_EQ, MATCH, NOT_MATCH, CONCAT,
     AND, OR,
     BANG_FUNCTION, FUNCTION, ENDFUNCTION, IF, ENDIF,
     LET,
@@ -140,6 +140,18 @@ enum yytokentype {
 
 "||" {
     return OR;
+}
+
+"=!" {
+    return MATCH;
+}
+
+"!~" {
+    return NOT_MATCH;
+}
+
+".." {
+    return CONCAT;
 }
 
 {number} {
