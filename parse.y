@@ -170,6 +170,7 @@ expr9: NUMBER
      | '{' kv_pairs '}'                      { $$ = new DictNode($2); }
      | '(' expr1 ')'                         { $$ = $2; }
      | '{' fargs ARROW expr1 '}'             { $$ = new LambdaNode($2, $4); }
+     | '&' ID                                { $$ = new OptionNode($2); }
      | ID
      | AU_ID
      | VA

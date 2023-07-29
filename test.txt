@@ -1,3 +1,5 @@
-let g:wtf = "asdasd
-    \ asdasdasd
-    \ 123"
+function! s:GoToNextItem(dir)
+  if &foldmethod == "diff"
+  endif
+endfunction
+
