@@ -10,7 +10,6 @@ str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
 quote_loop [ -~]{-}[\\']
 quote [']({quote_loop}*|\\.)*[']
-blob "0z"[0-9a-fA-F.]+
 
 name [a-zA-Z_][a-zA-Z0-9_]*
 scope [gbwtslav]:
@@ -22,6 +21,8 @@ attr -[a-z]+(=[^ ]+)?
 replace "<line1>"|"<line2>"|"<range>"|"<count>"|"<bang>"|"<mods>"|"<reg>"|"<args>"|"<lt>"|"<q-args>"|"<f-args>"
 
 number [0-9]+
+float [+-]?{number}[.]{number}([eE][+-]?{number})?
+blob "0z"[0-9a-fA-F.]+
 
 qarg [^ \t\n]+[ \t\n]
 
@@ -37,6 +38,7 @@ extern Node* yylval;
     SID_ID,
     ID,
     NUMBER,
+    FLOAT,
     BLOB,
     EQ,
     NOT_EQ,
@@ -265,6 +267,11 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
 {number} {
     yylval = new LexemNode(yytext);
     return NUMBER;
+}
+
+{float} {
+    yylval = new LexemNode(yytext);
+    return FLOAT;
 }
 
 {blob} {
