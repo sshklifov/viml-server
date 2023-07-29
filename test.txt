@@ -1,5 +1,4 @@
-function! GetStatusLineFile()
-  " Use name relative to cwd
-  let filename = filename[len(cwd)+1:]
+function! BidirPathShorten(inPath, maxwidth)
+  while !empty(partIndices)
+  endwhile
 endfunction
-

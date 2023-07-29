@@ -48,6 +48,8 @@ extern Node* yylval;
     IF,
     ELSE,
     ENDIF,
+    WHILE,
+    ENDWHILE,
     LET,
     COMMAND,
     COMMAND_ATTR,
@@ -73,6 +75,14 @@ extern Node* yylval;
 
 {anchor}"endif" {
     return ENDIF;
+}
+
+{anchor}"while" {
+    return WHILE;
+}
+
+{anchor}"endwhile" {
+    return ENDWHILE;
 }
 
 {anchor}"function"[!]? {

@@ -261,6 +261,29 @@ private:
     Node* el;
 };
 
+struct WhileBlockNode : public Node {
+    WhileBlockNode(Node* cond, Node* body) : cond(cond), body(body) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "while ";
+        res += cond->getString();
+        res += "\n";
+        if (body) {
+            res += body->getString();
+        } else {
+            res += "<empty-body>\n";
+        }
+        res += "endwhile";
+        return res;
+    }
+
+private:
+    Node* cond;
+    Node* body;
+};
+
 struct TernaryNode : public Node {
     TernaryNode(Node* cond, Node* left, Node* right) : cond(cond), left(left), right(right) {
         debugMessage();

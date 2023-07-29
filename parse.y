@@ -19,7 +19,7 @@ Node* root = NULL;
 %token STR AU_ID SID_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token AND OR
-%token FUNCTION ENDFUNCTION IF ELSE ENDIF
+%token FUNCTION ENDFUNCTION IF ELSE ENDIF WHILE ENDWHILE
 %token LET
 %token COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token QARGS
@@ -30,13 +30,16 @@ Node* root = NULL;
 %%
 input: %empty                             { $$ = nullptr; }
      | if_block input                     { root = new LineNode($1, $2); $$ = root; }
+     | while_block input                  { root = new LineNode($1, $2); $$ = root; }
      | function_block input               { root = new LineNode($1, $2); $$ = root; }
      | line input                         { root = new LineNode($1, $2); $$ = root; }
 ;
 
-if_block: IF expr1 '\n' input ENDIF '\n'            { $$ = new IfBlockNode($2, $4); }
+if_block: IF expr1 '\n' input ENDIF '\n'                 { $$ = new IfBlockNode($2, $4); }
         | IF expr1 '\n' input ELSE '\n' input ENDIF '\n' { $$ = new IfBlockNode($2, $4, $7); }
 ;
+
+while_block: WHILE expr1 '\n'input ENDWHILE '\n'         { $$ = new WhileBlockNode($2, $4); }
 
 function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
 ;
