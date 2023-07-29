@@ -24,26 +24,6 @@ Node* root = NULL;
 %token BANG_COMMAND COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token SET_COMMAND
 
-//%left '%' '/' '*' '.' ' 
-
-//%left '*'
-//%left '/'
-//%left '%'
-//%left '.'
-//%left '+'
-//%left '-'
-
-//%left AND
-//%left OR
-
-//%nonassoc '!'
-//%nonassoc '<'
-//%nonassoc '>'
-//%nonassoc EQ
-//%nonassoc NOT_EQ
-//%nonassoc LESS_EQ
-//%nonassoc GR_EQ
-
 %%
 input: %empty                             { $$ = nullptr; }
      | if_block input                     { root = new LineNode($1, $2); $$ = root; }
@@ -66,15 +46,7 @@ line: '\n'                        { $$ = nullptr; }
     | command '\n'                { $$ = $1; }
 ;
 
-command: ex_command | let_command | cmd_command | SET_COMMAND
-;
-
-ex_command: ID qargs       { $$ = new ExNode($1, $2); }
-          | BANG_ID qargs  { $$ = new ExNode($1, $2); }
-;
-
-qargs: %empty             { $$ = nullptr; }
-     | expr1 qargs        { $$ = new QargsNode($1, $2); }
+command: let_command | cmd_command | SET_COMMAND | expr1_command
 ;
 
 let_command: LET let_var '=' expr1 { $$ = new LetNode($2, $4); } 
@@ -88,12 +60,16 @@ let_var: var_name
 var_name: ID | SCOPED_ID
 ;
 
-cmd_command: COMMAND cmd_attr_list ID ex_command            { $$ = new CommandNode($3, $2, $4); }
-           | BANG_COMMAND cmd_attr_list ID ex_command       { $$ = new CommandNode($3, $2, $4); }
+cmd_command: COMMAND cmd_attr_list ID command               { $$ = new CommandNode($3, $2, $4); }
+           | BANG_COMMAND cmd_attr_list ID command          { $$ = new CommandNode($3, $2, $4); }
 ;
 
 cmd_attr_list: %empty                                  { $$ = nullptr; }
              | COMMAND_ATTR cmd_attr_list              { $$ = new AttrsNode($1, $2); }
+
+// TODO workout
+expr1_command: ID expr1       { $$ = new ExNode($1, $2); }
+          | BANG_ID expr1     { $$ = new ExNode($1, $2); }
 ;
 
 expr1: expr2
@@ -159,7 +135,6 @@ expr7: expr8
 expr8: expr9
      | expr9 '[' expr1 ']'               { $$ = new IndexNode($1, $3); }
      | expr9 '[' expr1 ':' expr1 ']'     { $$ = new IndexNode($1, $3); }
-     | expr9 '.' ID                      { $$ = new IndexNode($1, $3); }
      | fname '(' fargs ')'               { $$ = new FunCallNode($1, $3); }
 ;
 
@@ -170,7 +145,6 @@ expr9: NUMBER
      | STR
      | '[' fargs ']'                         { $$ = new ListNode($2); }
      | '{' kv_pairs '}'                      { $$ = new DictNode($2); }
-     | '#' '{' kv_pairs '}'                  { $$ = new DictNode($3); }
      | '(' expr1 ')'                         { $$ = $2; }
      | ID
      | SCOPED_ID
@@ -205,8 +179,10 @@ int main() {
     const int flex_debug = 0;
     if (!flex_debug) {
         yyparse();
-        std::string s = root->getString();
-        printf("%s", s.c_str());
+        if (root) {
+            std::string s = root->getString();
+            printf("%s", s.c_str());
+        }
     } else {
         int yychar = 0;
         do {
