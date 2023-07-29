@@ -50,6 +50,8 @@ extern Node* yylval;
     ENDIF,
     WHILE,
     ENDWHILE,
+    FOR,
+    ENDFOR,
     LET,
     COMMAND,
     COMMAND_ATTR,
@@ -83,6 +85,14 @@ extern Node* yylval;
 
 {anchor}"endwhile" {
     return ENDWHILE;
+}
+
+{anchor}"for" {
+    return FOR;
+}
+
+{anchor}"endfor" {
+    return ENDFOR;
 }
 
 {anchor}"function"[!]? {

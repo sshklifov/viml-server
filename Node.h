@@ -288,6 +288,32 @@ private:
     Node* body;
 };
 
+struct ForBlockNode : public Node {
+    ForBlockNode(Node* var, Node* iterable, Node* body) : var(var), iterable(iterable), body(body) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "for ";
+        res += var->getString();
+        res += " in ";
+        res += iterable->getString();
+        res += "\n";
+        if (body) {
+            res += body->getString();
+        } else {
+            res += "<empty-body>\n";
+        }
+        res += "endfor";
+        return res;
+    }
+
+private:
+    Node* var;
+    Node* iterable;
+    Node* body;
+};
+
 struct TernaryNode : public Node {
     TernaryNode(Node* cond, Node* left, Node* right) : cond(cond), left(left), right(right) {
         debugMessage();

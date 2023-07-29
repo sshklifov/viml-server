@@ -19,7 +19,7 @@ Node* root = NULL;
 %token STR AU_ID SID_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token AND OR
-%token FUNCTION ENDFUNCTION IF ELSE ENDIF WHILE ENDWHILE
+%token FUNCTION ENDFUNCTION IF ELSE ENDIF WHILE ENDWHILE FOR ENDFOR
 %token LET
 %token COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token QARGS
@@ -31,6 +31,7 @@ Node* root = NULL;
 input: %empty                             { $$ = nullptr; }
      | if_block input                     { root = new LineNode($1, $2); $$ = root; }
      | while_block input                  { root = new LineNode($1, $2); $$ = root; }
+     | for_block input                    { root = new LineNode($1, $2); $$ = root; }
      | function_block input               { root = new LineNode($1, $2); $$ = root; }
      | line input                         { root = new LineNode($1, $2); $$ = root; }
 ;
@@ -40,6 +41,15 @@ if_block: IF expr1 '\n' input ENDIF '\n'                 { $$ = new IfBlockNode(
 ;
 
 while_block: WHILE expr1 '\n'input ENDWHILE '\n'         { $$ = new WhileBlockNode($2, $4); }
+;
+
+for_block: FOR for_var ID expr1 '\n' input ENDFOR '\n'       { $$ = new ForBlockNode($2, $4, $6); }
+;
+
+for_var: ID | '[' for_list ']'     { $$ = $2; }
+;
+
+for_list: ID | ID ',' for_list     { $$ = new ParamsNode($1, $3); }
 
 function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
 ;

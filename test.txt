@@ -1,5 +1,2 @@
-function! s:GoToNextItem(dir)
-  if &foldmethod == "diff"
-  endif
-endfunction
-
+for progress in serverProgress
+endfor
