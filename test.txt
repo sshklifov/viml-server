@@ -1,7 +1,7 @@
-if a
-echo hi
-elseif b
-echo bye
-elseif c
-mksession
-endif
+  if n == 0
+    echo "No results"
+  elseif n == 1
+    cc
+  else
+    copen
+  endif

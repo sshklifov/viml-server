@@ -42,8 +42,9 @@ if_block: IF expr1 '\n' input ENDIF '\n'                   { $$ = new IfBlockNod
         | IF expr1 '\n' input elsei_list '\n'              { $$ = new IfBlockNode($2, $4, $5); }
 ;
 
-elsei_list: ELSEIF expr1 '\n' input ENDIF             { $$ = new IfBlockNode($2, $4); }
-          | ELSEIF expr1 '\n' input elsei_list        { $$ = new IfBlockNode($2, $4, $5); }
+elsei_list: ELSEIF expr1 '\n' input ENDIF                      { $$ = new IfBlockNode($2, $4); }
+          | ELSEIF expr1 '\n' input ELSE '\n' input ENDIF      { $$ = new IfBlockNode($2, $4, $7); }
+          | ELSEIF expr1 '\n' input elsei_list                 { $$ = new IfBlockNode($2, $4, $5); }
 
 while_block: WHILE expr1 '\n'input ENDWHILE '\n'         { $$ = new WhileBlockNode($2, $4); }
 ;
