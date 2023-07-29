@@ -1,4 +1,5 @@
 %option noyywrap
+%x CMD_NAME CMD_ARGS
 
 comment ^["].*[\n]
 space [ ]
@@ -18,27 +19,49 @@ attr -[a-z]+(=[^ ]+)?
 replace "<line1>"|"<line2>"|"<range>"|"<count>"|"<bang>"|"<mods>"|"<reg>"|"<args>"|"<lt>"|"<q-args>"|"<f-args>"
 
 number [0-9]+
-forward .|"\n"
+
+qarg [^ \t\n]+[ \t\n]
 
 %{
 #include "Node.h"
 
 extern Node* yylval;
 
-enum yytokentype {
-    STR = 258, AU_ID, SCOPED_ID, ID, NUMBER,
-    EQ, NOT_EQ, LESS_EQ, GR_EQ, MATCH, NOT_MATCH, CONCAT,
-    AND, OR,
-    FUNCTION, ENDFUNCTION, IF, ENDIF,
-    LET,
-    COMMAND, COMMAND_ATTR, COMMAND_REPLACE,
-    SET_COMMAND,
-};
+  enum yytokentype
+  {
+    YYEMPTY = -2,
+    YYEOF = 0,                     /* "end of file"  */
+    YYerror = 256,                 /* error  */
+    YYUNDEF = 257,                 /* "invalid token"  */
+    STR = 258,                     /* STR  */
+    AU_ID = 259,                   /* AU_ID  */
+    SCOPED_ID = 260,               /* SCOPED_ID  */
+    ID = 261,                      /* ID  */
+    NUMBER = 262,                  /* NUMBER  */
+    EQ = 263,                      /* EQ  */
+    NOT_EQ = 264,                  /* NOT_EQ  */
+    LESS_EQ = 265,                 /* LESS_EQ  */
+    GR_EQ = 266,                   /* GR_EQ  */
+    MATCH = 267,                   /* MATCH  */
+    NOT_MATCH = 268,               /* NOT_MATCH  */
+    CONCAT = 269,                  /* CONCAT  */
+    AND = 270,                     /* AND  */
+    OR = 271,                      /* OR  */
+    FUNCTION = 272,                /* FUNCTION  */
+    ENDFUNCTION = 273,             /* ENDFUNCTION  */
+    IF = 274,                      /* IF  */
+    ENDIF = 275,                   /* ENDIF  */
+    LET = 276,                     /* LET  */
+    COMMAND = 277,                 /* COMMAND  */
+    COMMAND_ATTR = 278,            /* COMMAND_ATTR  */
+    COMMAND_REPLACE = 279,         /* COMMAND_REPLACE  */
+    SET = 280,                     /* SET  */
+    QARGS = 281                    /* QARGS  */
+  };
 %}
 
 %%
 {comment} {}
-{space} {}
 
 "if" {
     return IF;
@@ -64,9 +87,10 @@ enum yytokentype {
     return COMMAND;
 }
 
-"set "[^\n]+ {
+"set" {
     yylval = new LexemNode(yytext);
-    return SET_COMMAND;
+    BEGIN(CMD_NAME);
+    return SET;
 }
 
 {attr} {
@@ -145,7 +169,25 @@ enum yytokentype {
     return NUMBER;
 }
 
-{forward} {
+<CMD_NAME>[ \t]+ {
+    BEGIN(CMD_ARGS);
+}
+
+<CMD_ARGS>[^\n]+ {
+    yylval = new LexemNode(yytext);
+    return QARGS;
+}
+
+<*>[ \t] {
+    // IGNORE
+}
+
+<*>"\n" {
+    BEGIN(INITIAL);
+    return yytext[0];
+}
+
+. {
     return yytext[0];
 }
 %%
