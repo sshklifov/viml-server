@@ -111,11 +111,22 @@ cmp_op: term '<' term             { $$ = new InfixOpNode($1, $3, "<"); }
 val_term: fname '(' fargs ')'      { $$ = new FunCallNode($1, $3); }
         | '[' fargs ']'            { $$ = new ListNode($2); }
         | val_term '[' term ']'    { $$ = new IndexNode($1, $3); }
+        | dict                     { $$ = $1; }
         | var                      { $$ = $1; }
         | STR                      { $$ = $1; }
         | NUMBER                   { $$ = $1; }
         | COMMAND_REPLACE          { $$ = $1; }
 ;
+
+dict: '{' kv_pairs '}'     { $$ = new DictNode($2); }
+
+kv_pairs: %empty           { $$ = nullptr; }
+        | kv               { $$ = new AttrsNode($1, nullptr); }
+        | kv ',' kv_pairs  { $$ = new AttrsNode($1, $3); }
+
+kv: key ':' term                 { $$ = new KeyValueNode($1, $3); }
+
+key: STR | NUMBER
 
 var: ID              { $$ = $1; }
    | SCOPED_ID       { $$ = $1; }

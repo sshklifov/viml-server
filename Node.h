@@ -15,6 +15,32 @@ struct Node {
     }
 };
 
+struct GenericListNode : public Node {
+    GenericListNode(const char* name, Node* head, Node* tail) : name(name), head(head), tail(tail) {}
+
+    std::string getString() override {
+        std::string res;
+        res += name;
+        res += "(";
+
+        if (head) {
+            res += head->getString();
+            if (tail) {
+                res += ", ";
+                res += tail->getString();
+            }
+        }
+
+        res += ")";
+        return res;
+    }
+
+private:
+    std::string name;
+    Node* head;
+    Node* tail;
+};
+
 struct LexemNode : public Node {
     LexemNode(const std::string& name) : name(name) {
         debugMessage();
@@ -154,38 +180,6 @@ private:
     Node* args;
 };
 
-struct FargsNode : public Node {
-    FargsNode() : head(nullptr), tail(nullptr) {
-        debugMessage();
-    }
-
-    FargsNode(Node* head, Node* tail) : head(head), tail(tail) {
-        debugMessage();
-    }
-
-    std::string getString() override {
-        if (!head) {
-            return "args()";
-        }
-
-        std::string res;
-        res += "args(";
-        res += head->getString();
-
-        if (tail) {
-            res += ", ";
-            res += tail->getString();
-        }
-
-        res += ")";
-        return res;
-    }
-
-private:
-    Node* head;
-    Node* tail;
-};
-
 struct ListNode : public Node {
     ListNode(Node* args) : args(args) {
         debugMessage();
@@ -194,6 +188,24 @@ struct ListNode : public Node {
     std::string getString() override {
         std::string res = "list(";
         res += args->getString();
+        res += ")";
+        return res;
+    }
+
+private:
+    Node* args;
+};
+
+struct DictNode : public Node {
+    DictNode(Node* args) : args(args) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "dict(";
+        if (args) {
+            res += args->getString();
+        }
         res += ")";
         return res;
     }
@@ -223,36 +235,6 @@ struct IfBlockNode : public Node {
 private:
     Node* cond;
     Node* body;
-};
-
-using QargsNode = FargsNode;
-
-struct ParamsNode : public Node {
-    ParamsNode(Node* head, Node* tail) : head(head), tail(tail) {
-        debugMessage();
-    }
-
-    std::string getString() override {
-        if (!head) {
-            return "params()";
-        }
-
-        std::string res;
-        res += "params(";
-        res += head->getString();
-
-        if (tail) {
-            res += ", ";
-            res += tail->getString();
-        }
-
-        res += ")";
-        return res;
-    }
-
-private:
-    Node* head;
-    Node* tail;
 };
 
 struct FunctionBlockNode : public Node {
@@ -305,34 +287,6 @@ private:
     Node* value;
 };
 
-struct AttrsNode : public Node {
-    AttrsNode(Node* head, Node* tail) : head(head), tail(tail) {
-        debugMessage();
-    }
-
-    std::string getString() override {
-        if (!head) {
-            return "attrs()";
-        }
-
-        std::string res;
-        res += "attrs(";
-        res += head->getString();
-
-        if (tail) {
-            res += " ";
-            res += tail->getString();
-        }
-
-        res += ")";
-        return res;
-    }
-
-private:
-    Node* head;
-    Node* tail;
-};
-
 struct CommandNode : public Node {
     CommandNode(Node* name, Node* attrs, Node* body) : name(name), attrs(attrs), body(body) {
         debugMessage();
@@ -374,4 +328,46 @@ struct IndexNode : public Node {
 private:
     Node* val;
     Node* idx;
+};
+
+struct KeyValueNode : public Node {
+    KeyValueNode(Node* key, Node* val) : key(key), val(val) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res;
+        res += key->getString();
+        res += "=";
+        res += val->getString();
+        return res;
+    }
+
+private:
+    Node* key;
+    Node* val;
+};
+
+struct FargsNode : public GenericListNode {
+    FargsNode(Node* head = nullptr, Node* tail = nullptr) : GenericListNode("args", head, tail) {
+        debugMessage();
+    }
+};
+
+struct QargsNode : public GenericListNode {
+    QargsNode(Node* head = nullptr, Node* tail = nullptr) : GenericListNode("qargs", head, tail) {
+        debugMessage();
+    }
+};
+
+struct ParamsNode : public GenericListNode {
+    ParamsNode(Node* head, Node* tail) : GenericListNode("params", head, tail) {
+        debugMessage();
+    }
+};
+
+struct AttrsNode : public GenericListNode {
+    AttrsNode(Node* head, Node* tail) : GenericListNode("attrs", head, tail) {
+        debugMessage();
+    }
 };
