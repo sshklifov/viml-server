@@ -1,5 +1,5 @@
 %option noyywrap
-%x CMD_NAME CMD_ARGS
+%x CMD_TRAILING CMD_BODY CMD_NAME
 
 comment ^["].*[\n]
 anchor ^[ \t]*
@@ -84,18 +84,25 @@ extern Node* yylval;
 }
 
 {anchor}"command"[!]? {
+    BEGIN(CMD_NAME);
     return COMMAND;
 }
 
 {anchor}{id} {
     yylval = new LexemNode(yytext);
-    BEGIN(CMD_NAME);
+    BEGIN(CMD_TRAILING);
     return EX;
 }
 
-{attr} {
+<CMD_NAME>{attr} {
     yylval = new LexemNode(yytext);
     return COMMAND_ATTR;
+}
+
+<CMD_NAME>{id} {
+    yylval = new LexemNode(yytext);
+    BEGIN(CMD_TRAILING);
+    return ID;
 }
 
 {replace} {
@@ -169,11 +176,11 @@ extern Node* yylval;
     return NUMBER;
 }
 
-<CMD_NAME>[ \t]+ {
-    BEGIN(CMD_ARGS);
+<CMD_TRAILING>[ \t]+ {
+    BEGIN(CMD_BODY);
 }
 
-<CMD_ARGS>[^\n]+ {
+<CMD_BODY>[^\n]+ {
     yylval = new LexemNode(yytext);
     return QARGS;
 }

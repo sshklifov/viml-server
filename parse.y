@@ -60,7 +60,8 @@ let_var: var_name
 var_name: ID | SCOPED_ID
 ;
 
-cmd_command: COMMAND cmd_attr_list ID command               { $$ = new CommandNode($3, $2, $4); }
+cmd_command: COMMAND cmd_attr_list ID QARGS            { $$ = new CommandNode($3, $2, $4); }
+           | COMMAND cmd_attr_list ID                  { $$ = new CommandNode($3, $2, nullptr); }
 ;
 
 cmd_attr_list: %empty                                  { $$ = nullptr; }

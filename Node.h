@@ -317,13 +317,16 @@ struct CommandNode : public Node {
     std::string getString() override {
         std::string res = "command(";
         res += name->getString();
-        res += ", ";
         if (attrs) {
-            res += attrs->getString();
             res += ", ";
+            res += attrs->getString();
         }
 
-        res += body->getString();
+        if (body) {
+            res += ", ";
+            res += body->getString();
+        }
+        res += ")";
         return res;
     }
 
