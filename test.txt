@@ -1,1 +1,1 @@
-call <SID>IsBufferQf()
+let title = getqflist()['title']
