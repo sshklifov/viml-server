@@ -1,4 +1,1 @@
-function! BidirPathShorten(inPath, maxwidth)
-  while !empty(partIndices)
-  endwhile
-endfunction
+let partIndices = partIndices[:2]
