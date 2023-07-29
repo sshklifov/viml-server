@@ -1,82 +1,120 @@
 %option noyywrap
-%s CMD
-
-space [ \t]*
+%s COLON NAME ARGS
 
 range "[range]"|"{range}"
+N "[N]"|"{N}"
 count "[count]"|"{count}"
 line "[line]"|"{line}"
-bufnum "[N]"|"{N}"
 
-pre_num {range}|{bufnum}|{count}|{line}
+name [a-zA-Z_][a-zA-Z0-9_]*
+abbrev_name {name}"["{name}"]"
 
-cmd_name [a-zA-Z_][a-zA-Z0-9_]*
 bang "[!]"
 optional "["[^]]+"]"
-argument "{"[^}]+"}"
-arg_or_opt {argument}|{optional}
+required "{"[^}]+"}"
 
 %{
-#include <string>
-#include <algorithm>
+static const char* yylval;
 
-void removeRange(std::string& s) {
-    if (s.size() > 1 && s[1] == '[') {
-        size_t i = s.find(']');
-        if (i > 1 && i < std::string::npos) {
-            s = s.erase(1, i);
-        }
-    }
-}
-
-void removeString(std::string& s, const char* what) {
-    size_t i = s.find(what);
-    if (i < std::string::npos) {
-        s.erase(i, strlen(what));
-    }
-}
-
-void removeBrackets(std::string& s) {
-    size_t start = s.find('[');
-    if (start != std::string::npos) {
-        s = s.erase(start, 1);
-    }
-    size_t finish = s.find(']');
-    if (finish != std::string::npos) {
-        s = s.erase(finish, 1);
-    }
-}
+enum yytokentype
+{
+    RANGE = 258,                   /* RANGE  */
+    N = 259,                       /* N  */
+    COUNT = 260,                   /* COUNT  */
+    LINE = 261,                    /* LINE  */
+    ID = 262,                      /* ID  */
+    ABBREV_ID = 263,               /* ABBREV_ID  */
+    BANG = 264,                    /* BANG  */
+    OPTIONAL = 265,                /* OPTIONAL  */
+    REQUIRED = 266,                /* REQUIRED  */
+    COLON = 267                    /* COLON  */
+};
 %}
 
 %%
-^{space}?[:]{pre_num}?{cmd_name}{optional}?{bang}? {
-    std::string name = yytext;
-    removeString(name, "[line]");
-    removeString(name, "{line}");
-    removeString(name, "[count]");
-    removeString(name, "{count}");
-    removeString(name, "[range]");
-    removeString(name, "[N]");
-    removeString(name, "[!]");
-    removeString(name, "{range}");
-    removeString(name, "{N}");
-    removeBrackets(name);
-    printf("%s\n", name.c_str());
-
-    //BEGIN(CMD);
-    //REJECT;
+<COLON>{range} {
+    return RANGE;
 }
 
+<COLON>{N} {
+    return N;
+}
 
-.|"\n" {
-    // IGNORE
+<COLON>{count} {
+    return COUNT;
+}
+
+<COLON>{line} {
+    return LINE;
+}
+
+<COLON>{name} {
+    //yylval = yytext;
+    //printf(":%s\n", yylval.c_str());
+
+    BEGIN(NAME);
+    return ID;
+}
+
+<COLON>{abbrev_name} {
+    //yylval = yytext;
+    //printf(":%s\n", yylval.c_str());
+
+    BEGIN(NAME);
+    return ABBREV_ID;
+}
+
+<NAME>{bang} {
+    return BANG;
+}
+
+<ARGS>{optional} {
+    return OPTIONAL;
+}
+
+<ARGS>{required} {
+    return REQUIRED;
+}
+
+^[:] {
+    BEGIN(COLON);
+    return COLON;
+}
+
+<NAME>[ \t]+ {
+    BEGIN(ARGS);
+}
+
+<ARGS>[ \t]+ {
+    // Continue reading ARGS
+}
+
+<*>"\n" {
+    BEGIN(0);
+}
+
+<*>. {
+    BEGIN(0);
 }
 %%
 
-int main() {
-    yylex();
-}
-//<CMD>^[:]{pre_num}?{cmd_name}{bang}?{bang}?([ \t]+{arg_or_opt})* {
-//}
+struct BuiltinCommand {
+};
 
-// [++opt]
+int main() {
+    int yychar = 0;
+    do {
+        yychar = yylex();
+        switch (yychar) {
+        }
+        /*
+        if (yychar >= 32 && yychar < 126) {
+            printf("Pass-through: %c\n", yychar);
+        } else {
+            int tr = YYTRANSLATE(yychar);
+            printf("Lex=%s\n", yytname[tr]);
+        }
+        */
+    }
+    while (yychar != 0);
+}
