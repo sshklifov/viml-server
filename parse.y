@@ -152,7 +152,8 @@ expr7: expr8
 
 expr8: expr9
      | expr8 '[' expr1 ']'               { $$ = new IndexNode($1, $3); }
-     | expr8 '[' expr1 ':' expr1 ']'     { $$ = new IndexNode($1, $3); }
+     | expr8 '[' expr1 ':' expr1 ']'     { $$ = new IndexNode($1, $3, $5); }
+     | expr8 '[' expr1 ':' ']'           { $$ = new IndexNode($1, $3, new LexemNode("end")); }
      | fname '(' fargs ')'               { $$ = new FunCallNode($1, $3); }
 ;
 

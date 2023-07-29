@@ -1,2 +1,5 @@
-let g:airline#extensions#xkblayout#enabled = 0
+function! GetStatusLineFile()
+  " Use name relative to cwd
+  let filename = filename[len(cwd)+1:]
+endfunction
 

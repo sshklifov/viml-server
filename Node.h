@@ -361,7 +361,7 @@ private:
 };
 
 struct IndexNode : public Node {
-    IndexNode(Node* val, Node* idx) : val(val), idx(idx) {
+    IndexNode(Node* val, Node* idx, Node* to = nullptr) : val(val), idx(idx), to(to) {
         debugMessage();
     }
 
@@ -370,6 +370,10 @@ struct IndexNode : public Node {
         res += val->getString();
         res += ", ";
         res += idx->getString();
+        if (to) {
+            res += ", ";
+            res += to->getString();
+        }
         res += ")";
         return res;
     }
@@ -377,6 +381,7 @@ struct IndexNode : public Node {
 private:
     Node* val;
     Node* idx;
+    Node* to;
 };
 
 struct KeyValueNode : public Node {
