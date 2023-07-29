@@ -48,7 +48,8 @@ for_block: FOR var ID expr1 '\n' input ENDFOR '\n'          { $$ = new ForBlockN
          | FOR unpack ID expr1 '\n' input ENDFOR '\n'       { $$ = new ForBlockNode($2, $4, $6); }
 ;
 
-unpack: '[' var_list ']'      { $$ = $2; }
+unpack: '[' var_list ']'              { $$ = $2; }
+      | '[' var_list ';' var ']'      { $$ = new ParamsNode($2, $4); }
 
 var_list: var                       { $$ = new ParamsNode($1, nullptr); }
         | var ',' var_list          { $$ = new ParamsNode($1, $3); }
