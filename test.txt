@@ -1,1 +1,3 @@
-let partIndices = partIndices[:2]
+let g:wtf = "asdasd
+    \ asdasdasd
+    \ 123"
