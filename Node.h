@@ -356,3 +356,22 @@ private:
     Node* attrs;
     Node* body;
 };
+
+struct IndexNode : public Node {
+    IndexNode(Node* val, Node* idx) : val(val), idx(idx) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "index(";
+        res += val->getString();
+        res += ", ";
+        res += idx->getString();
+        res += ")";
+        return res;
+    }
+
+private:
+    Node* val;
+    Node* idx;
+};

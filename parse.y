@@ -3,6 +3,8 @@
 #define YYFPRINTF fprintf
 #define YYPRINT
 
+#define YYFREE
+
 #include <cstdio>
 #include <string>
 #include "Node.h"
@@ -108,6 +110,7 @@ cmp_op: term '<' term             { $$ = new InfixOpNode($1, $3, "<"); }
 
 val_term: fname '(' fargs ')'      { $$ = new FunCallNode($1, $3); }
         | '[' fargs ']'            { $$ = new ListNode($2); }
+        | val_term '[' term ']'    { $$ = new IndexNode($1, $3); }
         | var                      { $$ = $1; }
         | STR                      { $$ = $1; }
         | NUMBER                   { $$ = $1; }
@@ -129,13 +132,9 @@ fname: ID                   { $$ = $1; }
 ;
 %%
 
-#include "lex.c"
-
 void yyerror (const char* s) {
     printf ("%s\n", s);
 }
-
-#include <cstring>
 
 int main() {
     yydebug = 0;

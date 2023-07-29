@@ -23,6 +23,18 @@ forward .|"\n"
 
 %{
 #include "Node.h"
+
+extern Node* yylval;
+
+enum yytokentype {
+    STR = 258, BANG_ID, AU_ID, SCOPED_ID, ID, NUMBER,
+    EQ, NOT_EQ, LESS_EQ, GR_EQ,
+    AND, OR,
+    BANG_FUNCTION, FUNCTION, ENDFUNCTION, IF, ENDIF,
+    LET,
+    BANG_COMMAND, COMMAND, COMMAND_ATTR, COMMAND_REPLACE,
+    SET_COMMAND,
+};
 %}
 
 %%

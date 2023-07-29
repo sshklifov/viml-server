@@ -2,7 +2,7 @@
 counterexamples=
 
 .PHONY: default
-default: help
+default: viml-server
 
 lexer_viml.c: lex.l
 	flex -L -o lexer_viml.c lex.l
@@ -11,7 +11,7 @@ lexer_viml.o: lexer_viml.c
 	g++ -c -ggdb lexer_viml.c -o lexer_viml.o
 
 parser_viml.c: parse.y
-	bison ${counterexamples} -l -o tree.c tree.y
+	bison ${counterexamples} -l -o parser_viml.c parse.y
 
 viml-server: lexer_viml.o parser_viml.c Node.h
 	g++ -ggdb parser_viml.c lexer_viml.o -o "viml-server"
