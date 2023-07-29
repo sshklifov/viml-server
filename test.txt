@@ -1,7 +1,6 @@
   if n == 0
     echo "No results"
-  elseif n == 1
+  elseif a
     cc
   else
     copen
-  endif

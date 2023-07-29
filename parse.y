@@ -234,10 +234,10 @@ void yyerror (const char* s) {
 }
 
 static int yyreport_syntax_error(const yypcontext_t *ctx) {
-    int res = 0;
-    //YYLOCATION_PRINT(stderr, *yypcontext_location(ctx));
-    fprintf(stderr, "Somewhere in the code: syntax error. ");
+    extern int yylineno;
+    fprintf(stderr, "On line %d: syntax error. ", yylineno);
     // Report the tokens expected at this point.
+    int res = 0;
     const int TOKENMAX = 10;
     yysymbol_kind_t expected[TOKENMAX];
     int n = yypcontext_expected_tokens(ctx, expected, TOKENMAX);
