@@ -1,4 +1,4 @@
-%token STR AU_ID SID_ID ID NUMBER FLOAT BLOB
+%token STR AU_ID SID_ID ID OPT_ID REG_ID ENV_ID NUMBER FLOAT BLOB
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token ADD_EQ SUB_EQ MUL_EQ DIV_EQ MOD_EQ CON_EQ
 %token AND OR
@@ -209,8 +209,9 @@ expr9: NUMBER
      | '{' expr1_pairs '}'                      { $$ = new DictNode($2); }
      | '(' expr1 ')'                            { $$ = $2; }
      | '{' args ARROW expr1 '}'                 { $$ = new LambdaNode($2, $4); }
-     | '&' ID                                   { $$ = new OptionNode($2); }
-     | '@' ID                                   { $$ = new RegNode($2); }
+     | OPT_ID                                   { $$ = $1; }
+     | REG_ID                                   { $$ = $1; }
+     | ENV_ID                                   { $$ = $1; }
      | ID
      | AU_ID
      | VA

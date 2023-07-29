@@ -16,6 +16,9 @@ scope [gbwtslav]:
 id {scope}?{name}
 sid_id "<SID>"{name}
 au_id {scope}?({name}[#])+{name}
+opt_id "&"{id}
+reg_id "@"{id}
+env_id "$"{id}
 
 attr -[a-z]+(=[^ ]+)?
 replace "<line1>"|"<line2>"|"<range>"|"<count>"|"<bang>"|"<mods>"|"<reg>"|"<args>"|"<lt>"|"<q-args>"|"<f-args>"
@@ -37,6 +40,9 @@ extern Node* yylval;
     AU_ID,
     SID_ID,
     ID,
+    OPT_ID,
+    REG_ID,
+    ENV_ID,
     NUMBER,
     FLOAT,
     BLOB,
@@ -185,6 +191,21 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
 {au_id} {
     yylval = new LexemNode(yytext);
     return AU_ID;
+}
+
+{opt_id} {
+    yylval = new LexemNode(yytext);
+    return OPT_ID;
+}
+
+{reg_id} {
+    yylval = new LexemNode(yytext);
+    return REG_ID;
+}
+
+{env_id} {
+    yylval = new LexemNode(yytext);
+    return ENV_ID;
 }
 
 {id} {

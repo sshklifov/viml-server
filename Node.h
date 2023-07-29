@@ -458,38 +458,6 @@ private:
     Node* val;
 };
 
-struct OptionNode : public Node {
-    OptionNode(Node* name) : name(name) {
-        debugMessage();
-    }
-
-    std::string getString() override {
-        std::string res = "opt(";
-        res += name->getString();
-        res += ")";
-        return res;
-    }
-
-private:
-    Node* name;
-};
-
-struct RegNode : public Node {
-    RegNode(Node* name) : name(name) {
-        debugMessage();
-    }
-
-    std::string getString() override {
-        std::string res = "reg(";
-        res += name->getString();
-        res += ")";
-        return res;
-    }
-
-private:
-    Node* name;
-};
-
 struct FargsNode : public GenericListNode {
     FargsNode(Node* head = nullptr, Node* tail = nullptr) : GenericListNode("args", head, tail) {
         debugMessage();
