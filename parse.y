@@ -77,12 +77,10 @@ expr1: expr2
      | expr2 '?' expr1 ':' expr1       { $$ = new TernaryNode($1, $3, $5); }
 ;
 
-expr2: expr3
-     | expr3 OR expr3               { $$ = new InfixOpNode($1, $3, "||"); }
+expr2: expr3 | expr3 OR expr2               { $$ = new InfixOpNode($1, $3, "||"); }
 ;
 
-expr3: expr4
-     | expr4 AND expr4              { $$ = new InfixOpNode($1, $3, "&&"); }
+expr3: expr4 | expr4 AND expr3              { $$ = new InfixOpNode($1, $3, "&&"); }
 ;
 
 expr4: expr5
@@ -114,23 +112,39 @@ expr4: expr5
      | expr5 NOT_MATCH '?' expr5            { $$ = new InfixOpNode($1, $4, "!~?"); }
 ;
 
-expr5: expr6
-     | expr6 '+' expr6            { $$ = new InfixOpNode($1, $3, "+"); }
-     | expr6 '-' expr6            { $$ = new InfixOpNode($1, $3, "-"); }
-     | expr6 '.' expr6            { $$ = new InfixOpNode($1, $3, "."); }
-     | expr6 CONCAT expr6         { $$ = new InfixOpNode($1, $3, ".."); }
+expr5: expr6 | expr6_sum | expr6_sub | expr6_dot | expr6_con
 ;
 
-expr6: expr7
-     | expr7 '*' expr6            { $$ = new InfixOpNode($1, $3, "*"); }
-     | expr7 '/' expr6            { $$ = new InfixOpNode($1, $3, "/"); }
-     | expr7 '%' expr6            { $$ = new InfixOpNode($1, $3, "%"); }
+expr6_sum: expr6 '+' expr6        {  $$ = new InfixOpNode($1, $3, "+");  }
+         | expr6 '+' expr6_sum    {  $$ = new InfixOpNode($1, $3, "+");  }
+;
+expr6_sub: expr6 '-' expr6        {  $$ = new InfixOpNode($1, $3, "-");  }
+         | expr6 '-' expr6_sub    {  $$ = new InfixOpNode($1, $3, "-");  }
+;
+expr6_dot: expr6 '.' expr6        {  $$ = new InfixOpNode($1, $3, ".");  }
+         | expr6 '.' expr6_dot    {  $$ = new InfixOpNode($1, $3, ".");  }
+;
+expr6_con: expr6 CONCAT expr6     {  $$ = new InfixOpNode($1, $3, "..");  }
+         | expr6 CONCAT expr6_con {  $$ = new InfixOpNode($1, $3, "..");  }
+;
+
+expr6: expr7 | expr7_mul | expr7_div | expr7_mod
+;
+
+expr7_mul: expr7 '*' expr7        { $$ = new InfixOpNode($1, $3, "*"); }
+         | expr7 '*' expr7_mul    { $$ = new InfixOpNode($1, $3, "*"); }
+;
+expr7_div: expr7 '/' expr7        { $$ = new InfixOpNode($1, $3, "/"); }
+         | expr7 '/' expr7_mul    { $$ = new InfixOpNode($1, $3, "/"); }
+;
+expr7_mod: expr7 '%' expr7        { $$ = new InfixOpNode($1, $3, "%"); }
+         | expr7 '%' expr7_mod    { $$ = new InfixOpNode($1, $3, "%"); }
 ;
 
 expr7: expr8
-     | '!' expr8            { $$ = new PrefixOpNode($2, "!"); }
-     | '-' expr8            { $$ = new PrefixOpNode($2, "-"); }
-     | '+' expr8            { $$ = new PrefixOpNode($2, "+"); }
+     | '!' expr7            { $$ = new PrefixOpNode($2, "!"); }
+     | '-' expr7            { $$ = new PrefixOpNode($2, "-"); }
+     | '+' expr7            { $$ = new PrefixOpNode($2, "+"); }
 ;
 
 expr8: expr9
@@ -149,7 +163,6 @@ expr9: NUMBER
      | '(' expr1 ')'                         { $$ = $2; }
      | ID
      | SCOPED_ID
-     | AU_ID
      | COMMAND_REPLACE
 ;
 
