@@ -19,7 +19,7 @@ Node* root = NULL;
 %token STR AU_ID SCOPED_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token AND OR
-%token FUNCTION ENDFUNCTION IF ENDIF
+%token FUNCTION ENDFUNCTION IF ELSE ENDIF
 %token LET
 %token COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token QARGS
@@ -32,7 +32,8 @@ input: %empty                             { $$ = nullptr; }
      | line input                         { root = new LineNode($1, $2); $$ = root; }
 ;
 
-if_block: IF expr1 '\n' input ENDIF '\n'     { $$ = new IfBlockNode($2, $4); }
+if_block: IF expr1 '\n' input ENDIF '\n'            { $$ = new IfBlockNode($2, $4); }
+        | IF expr1 '\n' input ELSE '\n' input ENDIF '\n' { $$ = new IfBlockNode($2, $4, $7); }
 ;
 
 function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }

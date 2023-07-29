@@ -50,13 +50,14 @@ extern Node* yylval;
     FUNCTION = 272,                /* FUNCTION  */
     ENDFUNCTION = 273,             /* ENDFUNCTION  */
     IF = 274,                      /* IF  */
-    ENDIF = 275,                   /* ENDIF  */
-    LET = 276,                     /* LET  */
-    COMMAND = 277,                 /* COMMAND  */
-    COMMAND_ATTR = 278,            /* COMMAND_ATTR  */
-    COMMAND_REPLACE = 279,         /* COMMAND_REPLACE  */
-    QARGS = 280,                   /* QARGS  */
-    EX = 281                       /* EX */
+    ELSE = 275,                    /* ELSE  */
+    ENDIF = 276,                   /* ENDIF  */
+    LET = 277,                     /* LET  */
+    COMMAND = 278,                 /* COMMAND  */
+    COMMAND_ATTR = 279,            /* COMMAND_ATTR  */
+    COMMAND_REPLACE = 280,         /* COMMAND_REPLACE  */
+    QARGS = 281,                   /* QARGS  */
+    EX = 282                       /* EX */
   };
 %}
 
@@ -65,6 +66,10 @@ extern Node* yylval;
 
 {anchor}"if" {
     return IF;
+}
+
+{anchor}"else" {
+    return ELSE;
 }
 
 {anchor}"endif" {
@@ -89,7 +94,14 @@ extern Node* yylval;
 }
 
 {anchor}{id} {
-    yylval = new LexemNode(yytext);
+    const char* text = yytext;
+    while(text < yytext + yyleng) {
+        if (*text != ' ' && *text != '\t') {
+            break;
+        }
+        ++text;
+    }
+    yylval = new LexemNode(text);
     BEGIN(CMD_TRAILING);
     return EX;
 }

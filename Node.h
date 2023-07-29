@@ -215,7 +215,7 @@ private:
 };
 
 struct IfBlockNode : public Node {
-    IfBlockNode(Node* cond, Node* body) : cond(cond), body(body) {
+    IfBlockNode(Node* cond, Node* body, Node* el = nullptr) : cond(cond), body(body), el(el) {
         debugMessage();
     }
 
@@ -228,6 +228,10 @@ struct IfBlockNode : public Node {
         } else {
             res += "<empty-body>\n";
         }
+        if (el) {
+            res += "else\n";
+            res += el->getString();
+        }
         res += "endif";
         return res;
     }
@@ -235,6 +239,7 @@ struct IfBlockNode : public Node {
 private:
     Node* cond;
     Node* body;
+    Node* el;
 };
 
 struct TernaryNode : public Node {
