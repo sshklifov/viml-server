@@ -57,7 +57,8 @@ extern Node* yylval;
     COMMAND_ATTR = 279,            /* COMMAND_ATTR  */
     COMMAND_REPLACE = 280,         /* COMMAND_REPLACE  */
     QARGS = 281,                   /* QARGS  */
-    EX = 282                       /* EX */
+    EX = 282,                      /* EX */
+    VA = 283                       /* VA */
   };
 %}
 
@@ -181,6 +182,10 @@ extern Node* yylval;
 
 ".." {
     return CONCAT;
+}
+
+"..." {
+    return VA;
 }
 
 {number} {

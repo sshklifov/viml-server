@@ -24,6 +24,7 @@ Node* root = NULL;
 %token COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token QARGS
 %token EX
+%token VA
 
 %%
 input: %empty                             { $$ = nullptr; }
@@ -40,6 +41,7 @@ function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ =
 ;
 
 params: %empty                   { $$ = nullptr; }
+    | VA                         { $$ = new ParamsNode(new LexemNode("..."), nullptr); }
     | ID                         { $$ = new ParamsNode($1, nullptr); }
     | ID ',' params              { $$ = new ParamsNode($1, $3); }
 
