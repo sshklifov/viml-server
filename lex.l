@@ -1,4 +1,5 @@
 %option noyywrap
+%option yylineno
 %x CMD_TRAILING CMD_BODY CMD_NAME
 
 anchor ^[ \t]*

@@ -1,21 +1,3 @@
-%{
-#define YYDEBUG 1
-#define YYFPRINTF fprintf
-#define YYPRINT
-
-#define YYSTYPE_IS_TRIVIAL 1
-
-#include <cstdio>
-#include <string>
-#include "Node.h"
-
-#define YYSTYPE Node*
-void yyerror(const char*);
-int yylex();
-
-Node* root = NULL;
-%}
-
 %token STR AU_ID SID_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token ADD_EQ SUB_EQ MUL_EQ DIV_EQ MOD_EQ CON_EQ
@@ -27,6 +9,32 @@ Node* root = NULL;
 %token EX
 %token VA_DOTS VA
 %token ARROW
+
+%code requires {
+    struct Node;
+}
+
+%define parse.error custom
+%define api.value.type {Node*}
+//%define api.location.type {Location}
+
+%{
+#include <cstdio>
+#include <string>
+#include "Node.h"
+
+#define YYDEBUG 1
+#define YYFPRINTF fprintf
+#define YYPRINT
+
+//#define YYSTYPE_IS_TRIVIAL 1
+
+void yyerror(const char*);
+int yylex();
+
+Node* root = NULL;
+
+%}
 
 %%
 input: %empty                             { $$ = nullptr; }
@@ -221,8 +229,35 @@ key: ID | STR | NUMBER
 %%
 
 void yyerror (const char* s) {
-    printf ("%s\n", s);
+    fprintf(stderr, "Fatal error: %s\n", s);
     exit(5);
+}
+
+static int yyreport_syntax_error(const yypcontext_t *ctx) {
+    int res = 0;
+    //YYLOCATION_PRINT(stderr, *yypcontext_location(ctx));
+    fprintf(stderr, "Somewhere in the code: syntax error. ");
+    // Report the tokens expected at this point.
+    const int TOKENMAX = 10;
+    yysymbol_kind_t expected[TOKENMAX];
+    int n = yypcontext_expected_tokens(ctx, expected, TOKENMAX);
+    if (n < 0) {
+        // Forward errors to yyparse.
+        res = n;
+    } else {
+        for (int i = 0; i < n; ++i) {
+            const char* heading = (i == 0 ? "Expected" : "\nOr");
+            fprintf(stderr, "%s %s", heading, yysymbol_name(expected[i]));
+        }
+    }
+
+    // Report the unexpected token.
+    yysymbol_kind_t lookahead = yypcontext_token(ctx);
+    if (lookahead != YYSYMBOL_YYEMPTY) {
+        fprintf(stderr, "\nBefore %s", yysymbol_name(lookahead));
+    }
+    fprintf(stderr, "\n");
+    return res;
 }
 
 int main() {
@@ -242,8 +277,8 @@ int main() {
             if (yychar >= 32 && yychar < 126) {
                 printf("Pass-through: %c\n", yychar);
             } else {
-                int tr = YYTRANSLATE(yychar);
-                printf("Lex=%s\n", yytname[tr]);
+                yysymbol_kind_t tr = YYTRANSLATE(yychar);
+                printf("Lex=%s\n", yysymbol_name(tr));
             }
         }
         while (yychar != 0);
