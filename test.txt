@@ -1,1 +1,1 @@
-let a = sp[1] =~ '^[0-9]\+$'
+call <SID>IsBufferQf()

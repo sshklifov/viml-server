@@ -13,6 +13,7 @@ name [a-zA-Z_][a-zA-Z0-9_]*
 scope [gbwtslav]:
 scoped_id {scope}{name}
 au_id {name}[#]{name}
+sid_id "<SID>"{name}
 id {name}
 
 attr -[a-z]+(=[^ ]+)?
@@ -29,38 +30,35 @@ extern Node* yylval;
 
   enum yytokentype
   {
-    YYEMPTY = -2,
-    YYEOF = 0,                     /* "end of file"  */
-    YYerror = 256,                 /* error  */
-    YYUNDEF = 257,                 /* "invalid token"  */
-    STR = 258,                     /* STR  */
-    AU_ID = 259,                   /* AU_ID  */
-    SCOPED_ID = 260,               /* SCOPED_ID  */
-    ID = 261,                      /* ID  */
-    NUMBER = 262,                  /* NUMBER  */
-    EQ = 263,                      /* EQ  */
-    NOT_EQ = 264,                  /* NOT_EQ  */
-    LESS_EQ = 265,                 /* LESS_EQ  */
-    GR_EQ = 266,                   /* GR_EQ  */
-    MATCH = 267,                   /* MATCH  */
-    NOT_MATCH = 268,               /* NOT_MATCH  */
-    CONCAT = 269,                  /* CONCAT  */
-    AND = 270,                     /* AND  */
-    OR = 271,                      /* OR  */
-    FUNCTION = 272,                /* FUNCTION  */
-    ENDFUNCTION = 273,             /* ENDFUNCTION  */
-    IF = 274,                      /* IF  */
-    ELSE = 275,                    /* ELSE  */
-    ENDIF = 276,                   /* ENDIF  */
-    LET = 277,                     /* LET  */
-    COMMAND = 278,                 /* COMMAND  */
-    COMMAND_ATTR = 279,            /* COMMAND_ATTR  */
-    COMMAND_REPLACE = 280,         /* COMMAND_REPLACE  */
-    QARGS = 281,                   /* QARGS  */
-    EX = 282,                      /* EX */
-    VA_DOTS = 283,                 /* VA_DOTS */
-    VA = 284,                      /* VA */
-    ARROW = 285                    /* ARROW */
+    STR = 258,
+    AU_ID,
+    SID_ID,
+    SCOPED_ID,
+    ID,
+    NUMBER,
+    EQ,
+    NOT_EQ,
+    LESS_EQ,
+    GR_EQ,
+    MATCH,
+    NOT_MATCH,
+    CONCAT,
+    AND,
+    OR,
+    FUNCTION,
+    ENDFUNCTION,
+    IF,
+    ELSE,
+    ENDIF,
+    LET,
+    COMMAND,
+    COMMAND_ATTR,
+    COMMAND_REPLACE,
+    QARGS,
+    EX,
+    VA_DOTS,
+    VA,
+    ARROW
   };
 %}
 
@@ -138,6 +136,11 @@ extern Node* yylval;
 {au_id} {
     yylval = new LexemNode(yytext);
     return AU_ID;
+}
+
+{sid_id} {
+    yylval = new LexemNode(yytext);
+    return SID_ID;
 }
 
 "a:"{number}? {

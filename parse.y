@@ -16,7 +16,7 @@ int yylex();
 Node* root = NULL;
 %}
 
-%token STR AU_ID SCOPED_ID ID NUMBER
+%token STR AU_ID SID_ID SCOPED_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token AND OR
 %token FUNCTION ENDFUNCTION IF ELSE ENDIF
@@ -156,7 +156,7 @@ expr8: expr9
      | fname '(' fargs ')'               { $$ = new FunCallNode($1, $3); }
 ;
 
-fname: ID | SCOPED_ID | AU_ID
+fname: ID | SCOPED_ID | AU_ID | SID_ID
 ;
 
 expr9: NUMBER
