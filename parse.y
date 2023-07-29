@@ -171,7 +171,7 @@ expr9: NUMBER
 
 fargs: %empty                 { $$ = nullptr; }
      | expr1                  { $$ = new FargsNode($1, nullptr); }
-     | expr1 ',' expr1        { $$ = new FargsNode($1, $3); }
+     | expr1 ',' fargs        { $$ = new FargsNode($1, $3); }
 ;
 
 kv_pairs: %empty           { $$ = nullptr; }

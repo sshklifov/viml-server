@@ -1,2 +1,2 @@
-let what = get(a:, 1)
+let what = get(1, 2, 3)
 
