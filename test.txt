@@ -1,2 +1,5 @@
-let what = get(1, 2, 3)
+function! s:Grep(regex, ...)
+  " Apply 'smartcase' to the regex
+  let cmd = cmd + ['-I', '-H', '-n', a:regex]
+endfunction
 

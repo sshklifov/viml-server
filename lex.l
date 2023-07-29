@@ -1,8 +1,8 @@
 %option noyywrap
 %x CMD_TRAILING CMD_BODY CMD_NAME
 
-comment ^["].*[\n]
 anchor ^[ \t]*
+comment ^[ \t]*["].*[\n]
 
 str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
