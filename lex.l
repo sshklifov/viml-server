@@ -11,7 +11,6 @@ quote [']({quote_loop}*|\\.)*[']
 name [a-zA-Z_][a-zA-Z0-9_]*
 scope [gbwtslav]:
 scoped_id {scope}{name}
-bang_id {name}[!]
 au_id {name}[#]{name}
 id {name}
 
@@ -27,12 +26,12 @@ forward .|"\n"
 extern Node* yylval;
 
 enum yytokentype {
-    STR = 258, BANG_ID, AU_ID, SCOPED_ID, ID, NUMBER,
+    STR = 258, AU_ID, SCOPED_ID, ID, NUMBER,
     EQ, NOT_EQ, LESS_EQ, GR_EQ, MATCH, NOT_MATCH, CONCAT,
     AND, OR,
-    BANG_FUNCTION, FUNCTION, ENDFUNCTION, IF, ENDIF,
+    FUNCTION, ENDFUNCTION, IF, ENDIF,
     LET,
-    BANG_COMMAND, COMMAND, COMMAND_ATTR, COMMAND_REPLACE,
+    COMMAND, COMMAND_ATTR, COMMAND_REPLACE,
     SET_COMMAND,
 };
 %}
@@ -49,12 +48,8 @@ enum yytokentype {
     return ENDIF;
 }
 
-"function" {
+"function"[!]? {
     return FUNCTION;
-}
-
-"function!" {
-    return BANG_FUNCTION;
 }
 
 "endfunction" {
@@ -65,12 +60,8 @@ enum yytokentype {
     return LET;
 }
 
-"command" {
+"command"[!]? {
     return COMMAND;
-}
-
-"command!" {
-    return BANG_COMMAND;
 }
 
 "set "[^\n]+ {
@@ -96,11 +87,6 @@ enum yytokentype {
 {quote} {
     yylval = new LexemNode(yytext);
     return STR;
-}
-
-{bang_id} {
-    yylval = new LexemNode(yytext);
-    return BANG_ID;
 }
 
 {au_id} {

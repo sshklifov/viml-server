@@ -16,12 +16,12 @@ int yylex();
 Node* root = NULL;
 %}
 
-%token STR BANG_ID AU_ID SCOPED_ID ID NUMBER
+%token STR AU_ID SCOPED_ID ID NUMBER
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token AND OR
-%token BANG_FUNCTION FUNCTION ENDFUNCTION IF ENDIF
+%token FUNCTION ENDFUNCTION IF ENDIF
 %token LET
-%token BANG_COMMAND COMMAND COMMAND_ATTR COMMAND_REPLACE
+%token COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token SET_COMMAND
 
 %%
@@ -35,7 +35,6 @@ if_block: IF expr1 '\n' input ENDIF '\n'     { $$ = new IfBlockNode($2, $4); }
 ;
 
 function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
-function_block: BANG_FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
 ;
 
 params: %empty                   { $$ = nullptr; }
@@ -61,7 +60,6 @@ var_name: ID | SCOPED_ID
 ;
 
 cmd_command: COMMAND cmd_attr_list ID command               { $$ = new CommandNode($3, $2, $4); }
-           | BANG_COMMAND cmd_attr_list ID command          { $$ = new CommandNode($3, $2, $4); }
 ;
 
 cmd_attr_list: %empty                                  { $$ = nullptr; }
@@ -69,7 +67,6 @@ cmd_attr_list: %empty                                  { $$ = nullptr; }
 
 // TODO workout
 expr1_command: ID expr1       { $$ = new ExNode($1, $2); }
-          | BANG_ID expr1     { $$ = new ExNode($1, $2); }
 ;
 
 expr1: expr2
