@@ -1,120 +1,96 @@
 %option noyywrap
-%s COLON NAME ARGS
 
-range "[range]"|"{range}"
-N "[N]"|"{N}"
-count "[count]"|"{count}"
-line "[line]"|"{line}"
+blank [ \t]*
+comment ^{blank}"--"[^\n]*[\n]
+
+str_loop [ -~]{-}[\\"]
+str ["]({str_loop}*|\\.)*["]
+quote_loop [ -~]{-}[\\']
+quote [']({quote_loop}*|\\.)*[']
 
 name [a-zA-Z_][a-zA-Z0-9_]*
-abbrev_name {name}"["{name}"]"
-
-bang "[!]"
-optional "["[^]]+"]"
-required "{"[^}]+"}"
+number [0-9]+
 
 %{
-static const char* yylval;
-
 enum yytokentype
 {
-    RANGE = 258,                   /* RANGE  */
-    N = 259,                       /* N  */
-    COUNT = 260,                   /* COUNT  */
-    LINE = 261,                    /* LINE  */
-    ID = 262,                      /* ID  */
-    ABBREV_ID = 263,               /* ABBREV_ID  */
-    BANG = 264,                    /* BANG  */
-    OPTIONAL = 265,                /* OPTIONAL  */
-    REQUIRED = 266,                /* REQUIRED  */
-    COLON = 267                    /* COLON  */
+    COMMAND = 258,
+    ENUM,
+    FLAGS_FUN,
+    ADDR_TYPE,
+    FUNC,
+    PREVIEW_FUNC,
+    BEGIN_BLOCK,
+    BIT_OR,
+    ID,
+    STR
 };
+
+#include <string>
+std::string match_capture;
 %}
 
 %%
-<COLON>{range} {
-    return RANGE;
+{comment} {
+    // Ignore
 }
 
-<COLON>{N} {
-    return N;
+"command" {
+    return COMMAND;
 }
 
-<COLON>{count} {
-    return COUNT;
+"enum" {
+    return ENUM;
 }
 
-<COLON>{line} {
-    return LINE;
+"flags" {
+    return FLAGS_FUN;
 }
 
-<COLON>{name} {
-    //yylval = yytext;
-    //printf(":%s\n", yylval.c_str());
+"addr_type" {
+    return ADDR_TYPE;
+}
 
-    BEGIN(NAME);
+"func" {
+    return FUNC;
+}
+
+"preview_func" {
+    return PREVIEW_FUNC;
+}
+
+"module.cmds" {
+    return BEGIN_BLOCK;
+}
+
+"bit.bor" {
+    return BIT_OR;
+}
+
+{name} {
+    match_capture = yytext;
     return ID;
 }
 
-<COLON>{abbrev_name} {
-    //yylval = yytext;
-    //printf(":%s\n", yylval.c_str());
-
-    BEGIN(NAME);
-    return ABBREV_ID;
+{str} {
+    match_capture.assign(yytext + 1, yyleng - 2);
+    return STR;
 }
 
-<NAME>{bang} {
-    return BANG;
+{quote} {
+    match_capture.assign(yytext + 1, yyleng - 2);
+    return STR;
 }
 
-<ARGS>{optional} {
-    return OPTIONAL;
+"\n" {
+    // IGNORE
 }
 
-<ARGS>{required} {
-    return REQUIRED;
+[ \t] {
+    // IGNORE
 }
 
-^[:] {
-    BEGIN(COLON);
-    return COLON;
-}
-
-<NAME>[ \t]+ {
-    BEGIN(ARGS);
-}
-
-<ARGS>[ \t]+ {
-    // Continue reading ARGS
-}
-
-<*>"\n" {
-    BEGIN(0);
-}
-
-<*>. {
-    BEGIN(0);
+. {
+    return yytext[0];
 }
 %%
-
-struct BuiltinCommand {
-};
-
-int main() {
-    int yychar = 0;
-    do {
-        yychar = yylex();
-        switch (yychar) {
-        }
-        /*
-        if (yychar >= 32 && yychar < 126) {
-            printf("Pass-through: %c\n", yychar);
-        } else {
-            int tr = YYTRANSLATE(yychar);
-            printf("Lex=%s\n", yytname[tr]);
-        }
-        */
-    }
-    while (yychar != 0);
-}
