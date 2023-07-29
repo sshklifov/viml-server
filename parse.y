@@ -22,8 +22,8 @@ Node* root = NULL;
 %token FUNCTION ENDFUNCTION IF ENDIF
 %token LET
 %token COMMAND COMMAND_ATTR COMMAND_REPLACE
-%token SET
 %token QARGS
+%token EX
 
 %%
 input: %empty                             { $$ = nullptr; }
@@ -46,7 +46,7 @@ line: '\n'                        { $$ = nullptr; }
     | command '\n'                { $$ = $1; }
 ;
 
-command: let_command | cmd_command | ex_command | expr1_command
+command: let_command | cmd_command | ex_command
 ;
 
 let_command: LET let_var '=' expr1 { $$ = new LetNode($2, $4); } 
@@ -67,12 +67,8 @@ cmd_attr_list: %empty                                  { $$ = nullptr; }
              | COMMAND_ATTR cmd_attr_list              { $$ = new AttrsNode($1, $2); }
 ;
 
-ex_command: SET QARGS          { $$ = new ExNode($1, $2); }
-          | SET                { $$ = new ExNode($1, nullptr); }
-;
-
-expr1_command: ID expr1       { $$ = new ExNode($1, $2); }
-// TODO workout
+ex_command: EX QARGS          { $$ = new ExNode($1, $2); }
+          | EX                { $$ = new ExNode($1, nullptr); }
 ;
 
 expr1: expr2

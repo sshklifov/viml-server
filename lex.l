@@ -2,7 +2,7 @@
 %x CMD_NAME CMD_ARGS
 
 comment ^["].*[\n]
-space [ ]
+anchor ^[ \t]*
 
 str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
@@ -55,42 +55,42 @@ extern Node* yylval;
     COMMAND = 277,                 /* COMMAND  */
     COMMAND_ATTR = 278,            /* COMMAND_ATTR  */
     COMMAND_REPLACE = 279,         /* COMMAND_REPLACE  */
-    SET = 280,                     /* SET  */
-    QARGS = 281                    /* QARGS  */
+    QARGS = 280,                   /* QARGS  */
+    EX = 281                       /* EX */
   };
 %}
 
 %%
 {comment} {}
 
-"if" {
+{anchor}"if" {
     return IF;
 }
 
-"endif" {
+{anchor}"endif" {
     return ENDIF;
 }
 
-"function"[!]? {
+{anchor}"function"[!]? {
     return FUNCTION;
 }
 
-"endfunction" {
+{anchor}"endfunction" {
     return ENDFUNCTION;
 }
 
-"let" {
+{anchor}"let" {
     return LET;
 }
 
-"command"[!]? {
+{anchor}"command"[!]? {
     return COMMAND;
 }
 
-"set" {
+{anchor}{id} {
     yylval = new LexemNode(yytext);
     BEGIN(CMD_NAME);
-    return SET;
+    return EX;
 }
 
 {attr} {
