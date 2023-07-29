@@ -1,5 +1,5 @@
-# counterexamples=-Wcounterexamples"
-counterexamples=
+counterexamples=-Wcounterexamples
+# counterexamples=
 
 .PHONY: default
 default: viml-server
