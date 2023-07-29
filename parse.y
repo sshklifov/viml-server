@@ -200,7 +200,7 @@ void yyerror (const char* s) {
 int main() {
     yydebug = 0;
     
-    const int flex_debug = 1;
+    const int flex_debug = 0;
     if (!flex_debug) {
         yyparse();
         if (root) {
