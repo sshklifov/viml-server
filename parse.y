@@ -44,21 +44,26 @@ if_block: IF expr1 '\n' input ENDIF '\n'                 { $$ = new IfBlockNode(
 while_block: WHILE expr1 '\n'input ENDWHILE '\n'         { $$ = new WhileBlockNode($2, $4); }
 ;
 
-for_block: FOR for_var ID expr1 '\n' input ENDFOR '\n'       { $$ = new ForBlockNode($2, $4, $6); }
+for_block: FOR var ID expr1 '\n' input ENDFOR '\n'          { $$ = new ForBlockNode($2, $4, $6); }
+         | FOR unpack ID expr1 '\n' input ENDFOR '\n'       { $$ = new ForBlockNode($2, $4, $6); }
 ;
 
-for_var: ID | '[' for_list ']'     { $$ = $2; }
+unpack: '[' var_list ']'      { $$ = $2; }
+
+var_list: var                       { $$ = new ParamsNode($1, nullptr); }
+        | var ',' var_list          { $$ = new ParamsNode($1, $3); }
 ;
 
-for_list: ID | ID ',' for_list     { $$ = new ParamsNode($1, $3); }
+var: ID | AU_ID | VA
+;
 
 function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
 ;
 
 params: %empty                   { $$ = nullptr; }
     | VA_DOTS                    { $$ = new ParamsNode(new LexemNode("..."), nullptr); }
-    | ID                         { $$ = new ParamsNode($1, nullptr); }
-    | ID ',' params              { $$ = new ParamsNode($1, $3); }
+    | var                         { $$ = new ParamsNode($1, nullptr); }
+    | var ',' params              { $$ = new ParamsNode($1, $3); }
 
 line: '\n'                        { $$ = nullptr; }
     | command '\n'                { $$ = $1; }
@@ -76,12 +81,10 @@ let_command: LET let_var '=' expr1 { $$ = new LetNode($2, $4, "="); }
            | LET let_var CON_EQ expr1 { $$ = new LetNode($2, $4, ".="); }
 ;
 
-let_var: var_name
-       | var_name '[' expr1 ']'              { $$ = new IndexNode($1, $3); }
-       | var_name '[' expr1 ':' expr1 ']'    { $$ = new IndexNode($1, $3); }
-;
-
-var_name: ID | AU_ID
+let_var: var
+       | var '[' expr1 ']'              { $$ = new IndexNode($1, $3); }
+       | var '[' expr1 ':' expr1 ']'    { $$ = new IndexNode($1, $3); }
+       | unpack                         { $$ = $1; }
 ;
 
 cmd_command: COMMAND cmd_attr_list ID QARGS            { $$ = new CommandNode($3, $2, $4); }
