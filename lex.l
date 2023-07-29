@@ -53,6 +53,7 @@ extern Node* yylval;
     ENDFUNCTION,
     IF,
     ELSE,
+    ELSEIF,
     ENDIF,
     WHILE,
     ENDWHILE,
@@ -102,6 +103,9 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
     if (isVimCmd(id, len, "el", "else")) {
         return ELSE;
     }
+    if (isVimCmd(id, len, "elsei", "elseif")) {
+        return ELSEIF;
+    }
     if (isVimCmd(id, len, "en", "endif")) {
         return ENDIF;
     }
@@ -109,7 +113,7 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
         return WHILE;
     }
     if (isVimCmd(id, len, "endw", "endwhile")) {
-        return WHILE;
+        return ENDWHILE;
     }
     if (isVimCmd(id, len, "for", "for")) {
         return FOR;

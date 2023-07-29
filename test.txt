@@ -1,2 +1,7 @@
-function! s:SynStack()
-endfunc
+if a
+echo hi
+elseif b
+echo bye
+elseif c
+mksession
+endif

@@ -20,7 +20,7 @@ Node* root = NULL;
 %token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token ADD_EQ SUB_EQ MUL_EQ DIV_EQ MOD_EQ CON_EQ
 %token AND OR
-%token FUNCTION ENDFUNCTION IF ELSE ENDIF WHILE ENDWHILE FOR ENDFOR
+%token FUNCTION ENDFUNCTION IF ELSE ELSEIF ENDIF WHILE ENDWHILE FOR ENDFOR
 %token LET
 %token COMMAND COMMAND_ATTR COMMAND_REPLACE
 %token QARGS
@@ -37,9 +37,13 @@ input: %empty                             { $$ = nullptr; }
      | line input                         { root = new LineNode($1, $2); $$ = root; }
 ;
 
-if_block: IF expr1 '\n' input ENDIF '\n'                 { $$ = new IfBlockNode($2, $4); }
-        | IF expr1 '\n' input ELSE '\n' input ENDIF '\n' { $$ = new IfBlockNode($2, $4, $7); }
+if_block: IF expr1 '\n' input ENDIF '\n'                   { $$ = new IfBlockNode($2, $4); }
+        | IF expr1 '\n' input ELSE '\n' input ENDIF '\n'   { $$ = new IfBlockNode($2, $4, $7); }
+        | IF expr1 '\n' input elsei_list '\n'              { $$ = new IfBlockNode($2, $4, $5); }
 ;
+
+elsei_list: ELSEIF expr1 '\n' input ENDIF             { $$ = new IfBlockNode($2, $4); }
+          | ELSEIF expr1 '\n' input elsei_list        { $$ = new IfBlockNode($2, $4, $5); }
 
 while_block: WHILE expr1 '\n'input ENDWHILE '\n'         { $$ = new WhileBlockNode($2, $4); }
 ;
