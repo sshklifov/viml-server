@@ -71,13 +71,13 @@ var_list: var                       { $$ = new ParamsNode($1, nullptr); }
 var: ID | AU_ID | VA
 ;
 
-function_block: FUNCTION fname '(' params ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
+function_block: FUNCTION fname '(' args ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode($2, $4, $7); }
 ;
 
-params: %empty                   { $$ = nullptr; }
-    | VA_DOTS                    { $$ = new ParamsNode(new LexemNode("..."), nullptr); }
-    | var                         { $$ = new ParamsNode($1, nullptr); }
-    | var ',' params              { $$ = new ParamsNode($1, $3); }
+args: %empty                  { $$ = nullptr; }
+    | VA_DOTS                 { $$ = new ParamsNode(new LexemNode("..."), nullptr); }
+    | var                     { $$ = new ParamsNode($1, nullptr); }
+    | var ',' args            { $$ = new ParamsNode($1, $3); }
 
 line: '\n'                        { $$ = nullptr; }
     | command '\n'                { $$ = $1; }
@@ -192,7 +192,7 @@ expr8: expr9
      | expr8 '[' expr1 ':' expr1 ']'     { $$ = new IndexNode($1, $3, $5); }
      | expr8 '[' expr1 ':' ']'           { $$ = new IndexNode($1, $3, new LexemNode("end")); }
      | expr8 '[' ':' expr1 ']'           { $$ = new IndexNode($1, new LexemNode("begin"), $4); }
-     | fname '(' fargs ')'               { $$ = new FunCallNode($1, $3); }
+     | fname '(' expr1_list ')'          { $$ = new FunCallNode($1, $3); }
 ;
 
 fname: ID | AU_ID | SID_ID
@@ -200,10 +200,10 @@ fname: ID | AU_ID | SID_ID
 
 expr9: NUMBER
      | STR
-     | '[' fargs ']'                         { $$ = new ListNode($2); }
-     | '{' kv_pairs '}'                      { $$ = new DictNode($2); }
+     | '[' expr1_list ']'                         { $$ = new ListNode($2); }
+     | '{' expr1_pairs '}'                      { $$ = new DictNode($2); }
      | '(' expr1 ')'                         { $$ = $2; }
-     | '{' fargs ARROW expr1 '}'             { $$ = new LambdaNode($2, $4); }
+     | '{' args ARROW expr1 '}'             { $$ = new LambdaNode($2, $4); }
      | '&' ID                                { $$ = new OptionNode($2); }
      | ID
      | AU_ID
@@ -211,20 +211,14 @@ expr9: NUMBER
      | COMMAND_REPLACE
 ;
 
-fargs: %empty                 { $$ = nullptr; }
-     | expr1                  { $$ = new FargsNode($1, nullptr); }
-     | expr1 ',' fargs        { $$ = new FargsNode($1, $3); }
+expr1_list: %empty                 { $$ = nullptr; }
+          | expr1                  { $$ = new FargsNode($1, nullptr); }
+          | expr1 ',' expr1_list   { $$ = new FargsNode($1, $3); }
 ;
 
-kv_pairs: %empty           { $$ = nullptr; }
-        | kv               { $$ = new AttrsNode($1, nullptr); }
-        | kv ',' kv_pairs  { $$ = new AttrsNode($1, $3); }
-;
-
-kv: key ':' expr1          { $$ = new KeyValueNode($1, $3); }
-;
-
-key: ID | STR | NUMBER
+expr1_pairs: %empty                           { $$ = nullptr; }
+           | expr1 ':' expr1                  { $$ = new AttrsNode(new KeyValueNode($1, $3), nullptr); }
+           | expr1 ':' expr1 ',' expr1_pairs  { $$ = new AttrsNode(new KeyValueNode($1, $3), $5); }
 ;
 %%
 
