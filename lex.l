@@ -59,7 +59,8 @@ extern Node* yylval;
     QARGS = 281,                   /* QARGS  */
     EX = 282,                      /* EX */
     VA_DOTS = 283,                 /* VA_DOTS */
-    VA = 284                       /* VA */
+    VA = 284,                      /* VA */
+    ARROW = 285                    /* ARROW */
   };
 %}
 
@@ -192,6 +193,10 @@ extern Node* yylval;
 
 "..." {
     return VA_DOTS;
+}
+
+"->" {
+    return ARROW;
 }
 
 {number} {

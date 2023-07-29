@@ -25,6 +25,7 @@ Node* root = NULL;
 %token QARGS
 %token EX
 %token VA_DOTS VA
+%token ARROW
 
 %%
 input: %empty                             { $$ = nullptr; }
@@ -163,6 +164,7 @@ expr9: NUMBER
      | '[' fargs ']'                         { $$ = new ListNode($2); }
      | '{' kv_pairs '}'                      { $$ = new DictNode($2); }
      | '(' expr1 ')'                         { $$ = $2; }
+     | '{' fargs ARROW expr1 '}'             { $$ = new LambdaNode($2, $4); }
      | ID
      | SCOPED_ID
      | VA

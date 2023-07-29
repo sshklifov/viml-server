@@ -1,5 +1,1 @@
-function! s:Grep(regex, ...)
-  " Apply 'smartcase' to the regex
-  let cmd = cmd + ['-I', '-H', '-n', a:regex]
-endfunction
-
+let matches = filter(a:data, {i, d -> !empty(d)})

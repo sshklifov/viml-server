@@ -109,6 +109,25 @@ private:
     Node* args;
 };
 
+struct LambdaNode : public Node {
+    LambdaNode(Node* args, Node* body) : args(args), body(body) {
+        debugMessage();
+    }
+
+    std::string getString() override {
+        std::string res = "lambda(";
+        res += args->getString();
+        res += ", ";
+        res += body->getString();
+        res += ")";
+        return res;
+    }
+
+private:
+    Node* args;
+    Node* body;
+};
+
 struct InfixOpNode : public Node {
     InfixOpNode(Node* lhs, Node* rhs, const char* op) : lhs(lhs), rhs(rhs), op(op) {
         debugMessage();
