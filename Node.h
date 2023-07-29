@@ -206,7 +206,11 @@ struct ListNode : public Node {
 
     std::string getString() override {
         std::string res = "list(";
-        res += args->getString();
+        if (args) {
+            res += args->getString();
+        } else {
+            res += "<empty>";
+        }
         res += ")";
         return res;
     }
