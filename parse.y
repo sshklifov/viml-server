@@ -72,9 +72,10 @@ var: ID | AU_ID | OPT_ID | ENV_ID | REG_ID | VA
 ;
 
 function_block: FUNCTION fname '(' args ')' '\n' input ENDFUNCTION '\n'        { $$ = new FunctionBlockNode($2, $4, $7); }
-              | FUNCTION ID '.' ID '(' args ')' '\n' input ENDFUNCTION '\n'    { $$ = new FunctionBlockNode(new InfixOpNode($2, $4, "."), $6, $9); }
-              | FUNCTION AU_ID '.' ID '(' args ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode(new InfixOpNode($2, $4, "."), $6, $9); }
+              | FUNCTION fname '.' ID '(' args ')' '\n' input ENDFUNCTION '\n' { $$ = new FunctionBlockNode(new InfixOpNode($2, $4, "."), $6, $9); }
+;
 
+fname: ID | AU_ID | SID_ID
 ;
 
 args: %empty                  { $$ = nullptr; }
@@ -197,9 +198,6 @@ expr8: expr9
      | expr8 IDX_SQB expr1 ':' ']'           { $$ = new IndexNode($1, $3, new LexemNode("end")); }
      | expr8 IDX_SQB ':' expr1 ']'           { $$ = new IndexNode($1, new LexemNode("begin"), $4); }
      | fname '(' expr1_list ')'              { $$ = new FunCallNode($1, $3); }
-;
-
-fname: ID | AU_ID | SID_ID
 ;
 
 expr9: NUMBER
