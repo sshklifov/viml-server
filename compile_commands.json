@@ -1,0 +1,20 @@
+[
+{
+  "directory": "/home/stef/viml-server/Debug",
+  "command": "/usr/bin/c++  -I/home/stef/viml-server -I/home/stef/viml-server/Debug/gen -g   -std=c++20 -o CMakeFiles/tree.dir/tree.cpp.o -c /home/stef/viml-server/tree.cpp",
+  "file": "/home/stef/viml-server/tree.cpp",
+  "output": "CMakeFiles/tree.dir/tree.cpp.o"
+},
+{
+  "directory": "/home/stef/viml-server/Debug",
+  "command": "/usr/bin/c++  -I/home/stef/viml-server -I/home/stef/viml-server/Debug/gen -g   -std=c++20 -o CMakeFiles/tree.dir/gen/tree_parser.cpp.o -c /home/stef/viml-server/Debug/gen/tree_parser.cpp",
+  "file": "/home/stef/viml-server/Debug/gen/tree_parser.cpp",
+  "output": "CMakeFiles/tree.dir/gen/tree_parser.cpp.o"
+},
+{
+  "directory": "/home/stef/viml-server/Debug",
+  "command": "/usr/bin/c++  -I/home/stef/viml-server -I/home/stef/viml-server/Debug/gen -g   -std=c++20 -o CMakeFiles/tree.dir/gen/tree_lexer.cpp.o -c /home/stef/viml-server/Debug/gen/tree_lexer.cpp",
+  "file": "/home/stef/viml-server/Debug/gen/tree_lexer.cpp",
+  "output": "CMakeFiles/tree.dir/gen/tree_lexer.cpp.o"
+}
+]
