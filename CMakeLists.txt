@@ -29,4 +29,4 @@ endfunction()
 
 add_subdirectory(cont)
 add_subdirectory(block)
-add_subdirectory(ex_cmds)
+add_subdirectory(excmds)
