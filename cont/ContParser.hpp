@@ -11,7 +11,7 @@ private:
         bool tryLoad(const char* filename);
         bool isLoaded() const;
 
-        int yylex();
+        int lex();
 
     private:
         void* yybuffer;

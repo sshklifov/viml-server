@@ -1,4 +1,5 @@
 %option noyywrap
+%option prefix="cont"
 
 %{
 #define YY_DECL int yylex()

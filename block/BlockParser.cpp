@@ -1,4 +1,6 @@
-#include PARSER_HEADER
+#include <ContParser.hpp>
+
+#include GENERATED_PARSER_HEADER
 GroupBlock* root;
 
 extern int yylex_wrap();
@@ -23,7 +25,7 @@ int yyparse() {
 
 int yylex(yy::parser::value_type* p) {
     using kind_type = yy::parser::token::token_kind_type;
-    int kt = yylex_wrap();
+    int kt = ContParser::Get().lex();
 
     switch (kt) {
     case kind_type::EX:
@@ -57,5 +59,10 @@ void yylex_debug() {
 }
 
 int main () {
+    const char* file = "test.txt";
+    if (!ContParser::Get().tryLoad(file)) {
+        fprintf(stderr, "Failed to load with file %s\n", file);
+        return 1;
+    }
     yyparse();
 }

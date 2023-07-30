@@ -21,8 +21,8 @@ function(build_parser exe flex_file bison_file)
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
         COMMAND flex -L -o ${flex_cpp} ${flex_file})
 
-    add_compile_definitions(PARSER_HEADER=<${bison_hpp}>)
-    add_definitions(-std=c++20)
+    add_compile_definitions(GENERATED_PARSER_HEADER=<${bison_hpp}>)
+    add_compile_options(-std=c++20)
     include_directories(${source_path} ${generated_path})
     add_executable(${exe} ${bison_cpp} ${flex_cpp} ${ARGN})
 endfunction()

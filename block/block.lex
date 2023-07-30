@@ -22,7 +22,7 @@ finally "fina"("l"|"ll"|"lly")?
 endcmd [ \t\n]
 
 %{
-#include PARSER_HEADER
+#include GENERATED_PARSER_HEADER
 #define YY_DECL int yylex_wrap()
 %}
 

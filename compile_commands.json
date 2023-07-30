@@ -1,31 +1,43 @@
 [
 {
+  "directory": "/home/stef/viml-server/Debug/cont",
+  "command": "/usr/bin/c++   -g   -fvisibility=hidden -o CMakeFiles/continuation.dir/contLexer.cpp.o -c /home/stef/viml-server/Debug/cont/contLexer.cpp",
+  "file": "/home/stef/viml-server/Debug/cont/contLexer.cpp",
+  "output": "cont/CMakeFiles/continuation.dir/contLexer.cpp.o"
+},
+{
+  "directory": "/home/stef/viml-server/Debug/cont",
+  "command": "/usr/bin/c++   -g   -fvisibility=hidden -o CMakeFiles/continuation.dir/ContParser.cpp.o -c /home/stef/viml-server/cont/ContParser.cpp",
+  "file": "/home/stef/viml-server/cont/ContParser.cpp",
+  "output": "cont/CMakeFiles/continuation.dir/ContParser.cpp.o"
+},
+{
   "directory": "/home/stef/viml-server/Debug/block",
-  "command": "/usr/bin/c++ -DPARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block -g   -std=c++20 -o CMakeFiles/block.dir/blockParser.cpp.o -c /home/stef/viml-server/Debug/block/blockParser.cpp",
+  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block/../cont -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block -g -std=c++20 -o CMakeFiles/block.dir/blockParser.cpp.o -c /home/stef/viml-server/Debug/block/blockParser.cpp",
   "file": "/home/stef/viml-server/Debug/block/blockParser.cpp",
   "output": "block/CMakeFiles/block.dir/blockParser.cpp.o"
 },
 {
   "directory": "/home/stef/viml-server/Debug/block",
-  "command": "/usr/bin/c++ -DPARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block -g   -std=c++20 -o CMakeFiles/block.dir/blockLexer.cpp.o -c /home/stef/viml-server/Debug/block/blockLexer.cpp",
+  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block/../cont -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block -g -std=c++20 -o CMakeFiles/block.dir/blockLexer.cpp.o -c /home/stef/viml-server/Debug/block/blockLexer.cpp",
   "file": "/home/stef/viml-server/Debug/block/blockLexer.cpp",
   "output": "block/CMakeFiles/block.dir/blockLexer.cpp.o"
 },
 {
   "directory": "/home/stef/viml-server/Debug/block",
-  "command": "/usr/bin/c++ -DPARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block -g   -std=c++20 -o CMakeFiles/block.dir/Main.cpp.o -c /home/stef/viml-server/block/Main.cpp",
-  "file": "/home/stef/viml-server/block/Main.cpp",
-  "output": "block/CMakeFiles/block.dir/Main.cpp.o"
+  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block/../cont -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block -g -std=c++20 -o CMakeFiles/block.dir/BlockParser.cpp.o -c /home/stef/viml-server/block/BlockParser.cpp",
+  "file": "/home/stef/viml-server/block/BlockParser.cpp",
+  "output": "block/CMakeFiles/block.dir/BlockParser.cpp.o"
 },
 {
   "directory": "/home/stef/viml-server/Debug/ex_cmds",
-  "command": "/usr/bin/c++ -DPARSER_HEADER=\"<ex_cmdsParser.hpp>\" -I/home/stef/viml-server/ex_cmds -I/home/stef/viml-server/Debug/ex_cmds -g   -std=c++20 -o CMakeFiles/ex_cmds.dir/ex_cmdsParser.cpp.o -c /home/stef/viml-server/Debug/ex_cmds/ex_cmdsParser.cpp",
+  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<ex_cmdsParser.hpp>\" -I/home/stef/viml-server/ex_cmds -I/home/stef/viml-server/Debug/ex_cmds -g -std=c++20 -o CMakeFiles/ex_cmds.dir/ex_cmdsParser.cpp.o -c /home/stef/viml-server/Debug/ex_cmds/ex_cmdsParser.cpp",
   "file": "/home/stef/viml-server/Debug/ex_cmds/ex_cmdsParser.cpp",
   "output": "ex_cmds/CMakeFiles/ex_cmds.dir/ex_cmdsParser.cpp.o"
 },
 {
   "directory": "/home/stef/viml-server/Debug/ex_cmds",
-  "command": "/usr/bin/c++ -DPARSER_HEADER=\"<ex_cmdsParser.hpp>\" -I/home/stef/viml-server/ex_cmds -I/home/stef/viml-server/Debug/ex_cmds -g   -std=c++20 -o CMakeFiles/ex_cmds.dir/ex_cmdsLexer.cpp.o -c /home/stef/viml-server/Debug/ex_cmds/ex_cmdsLexer.cpp",
+  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<ex_cmdsParser.hpp>\" -I/home/stef/viml-server/ex_cmds -I/home/stef/viml-server/Debug/ex_cmds -g -std=c++20 -o CMakeFiles/ex_cmds.dir/ex_cmdsLexer.cpp.o -c /home/stef/viml-server/Debug/ex_cmds/ex_cmdsLexer.cpp",
   "file": "/home/stef/viml-server/Debug/ex_cmds/ex_cmdsLexer.cpp",
   "output": "ex_cmds/CMakeFiles/ex_cmds.dir/ex_cmdsLexer.cpp.o"
 }

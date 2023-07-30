@@ -11,11 +11,10 @@
 
 #include "ContParser.hpp"
 
-struct yy_buffer_state;
-extern struct yy_buffer_state* yy_scan_bytes(const char* yybytes, int yybytes_len);
-extern void yy_delete_buffer (yy_buffer_state* b);
+extern struct yy_buffer_state* cont_scan_bytes(const char* yybytes, int yybytes_len);
+extern void cont_delete_buffer (yy_buffer_state* b);
 
-extern int yylex (void);
+extern int contlex (void);
 
 ContParser::Impl::Impl() {
     yybuffer = nullptr;
@@ -26,7 +25,7 @@ ContParser::Impl::Impl() {
 
 ContParser::Impl::~Impl() {
     if (isLoaded()) {
-        yy_delete_buffer(reinterpret_cast<yy_buffer_state*>(yybuffer));
+        cont_delete_buffer(reinterpret_cast<yy_buffer_state*>(yybuffer));
         munmap(mptr, len);
         close(fd);
     }
@@ -53,7 +52,7 @@ bool ContParser::Impl::tryLoad(const char* filename) {
     }
 
     const char* buffer = reinterpret_cast<const char*>(mptr);
-    yy_buffer_state* yybuffer = yy_scan_bytes(buffer, len);
+    yy_buffer_state* yybuffer = cont_scan_bytes(buffer, len);
     if (!yybuffer) {
         munmap(mptr, len);
         close(fd);
@@ -73,6 +72,6 @@ bool ContParser::Impl::isLoaded() const {
     return yybuffer != nullptr;
 }
 
-int ContParser::Impl::yylex() {
-    return ::yylex();
+int ContParser::Impl::lex() {
+    return contlex();
 }
