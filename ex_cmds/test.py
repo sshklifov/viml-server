@@ -45,8 +45,8 @@ def get_all_help_files():
     return help_files
 
 def get_all_cmd_from_help():
-    cmds_found = get_cmds_output(f"./help < ex_cmds.lua").strip().split("\n")
-    # raise Exception(cmds_found)
+    # TODO
+    cmds_found = get_cmds_output(f"../Debug/ex_cmds/ex_cmds < ex_cmds.lua").strip().split("\n")
     return cmds_found
 
 good_cmd = get_all_cmd_from_help()
