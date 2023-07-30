@@ -3,13 +3,11 @@
 #include GENERATED_PARSER_HEADER
 GroupBlock* root;
 
-extern struct yy_buffer_state* yy_scan_bytes(const char* yybytes, int yybytes_len);
-extern void yy_delete_buffer (yy_buffer_state* b);
-// TODO prefix!!!
-
-extern int yylex_wrap();
-extern const char* yytext;
-extern int yyleng;
+extern struct yy_buffer_state* block_scan_bytes(const char* yybytes, int yybytes_len);
+extern void block_delete_buffer (yy_buffer_state* b);
+extern int blocklex();
+extern char* blockget_text();
+extern int blockget_leng();
 
 void yy::parser::error(const std::string& msg) {
     fprintf(stderr, "Erorr: %s\n", msg.c_str());
@@ -30,21 +28,21 @@ int yyparse() {
 int yylex(yy::parser::value_type* p) {
     using kind_type = yy::parser::token::token_kind_type;
 
-    int kt = yylex_wrap();
-    switch (kt) {
+    int t = blocklex();
+    switch (t) {
     case kind_type::EX:
     case kind_type::QARGS:
-        p->build<std::string>(yytext);
-        return kt;
+        p->build<std::string>(blockget_text());
+        return t;
 
     case kind_type::YYEOF:
     case kind_type::YYerror:
     case kind_type::YYUNDEF:
-        return kt;
+        return t;
 
     default:
-        p->build<int>(kt);
-        return kt;
+        p->build<int>(t);
+        return t;
     }
 }
 
@@ -53,8 +51,8 @@ void yylex_debug() {
     int kt;
 
     do {
-        kt = yylex_wrap();
-        printf("(%d): %s", kt, yytext);
+        kt = blocklex();
+        printf("(%d): %s", kt, blockget_text());
         if (kt != '\n') {
             printf("\n");
         }
@@ -72,9 +70,9 @@ int main () {
     std::unique_ptr<char[]> input = ContParser::Get().lex(len);
     ContParser::Get().unload();
 
-    yy_buffer_state* yybuffer = yy_scan_bytes(input.get(), len);
+    yy_buffer_state* yybuffer = block_scan_bytes(input.get(), len);
     yyparse();
 
-    yy_delete_buffer(yybuffer);
+    block_delete_buffer(yybuffer);
     input.release();
 }

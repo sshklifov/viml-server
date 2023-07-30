@@ -1,4 +1,5 @@
 %option noyywrap
+%option prefix="block"
 %x EX_LEADING EX_QARGS
 
 space [ \t]
@@ -23,7 +24,6 @@ endcmd [ \t\n]
 
 %{
 #include GENERATED_PARSER_HEADER
-#define YY_DECL int yylex_wrap()
 %}
 
 %%
