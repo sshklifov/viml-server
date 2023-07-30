@@ -1,10 +1,10 @@
 %token STR AU_ID SID_ID ID OPT_ID REG_ID ENV_ID NUMBER FLOAT BLOB
-%token EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
+%token SPC_SQB IDX_SQB EQ NOT_EQ LESS_EQ GR_EQ MATCH NOT_MATCH CONCAT
 %token ADD_EQ SUB_EQ MUL_EQ DIV_EQ MOD_EQ CON_EQ
 %token AND OR
 %token FUNCTION ENDFUNCTION IF ELSE ELSEIF ENDIF WHILE ENDWHILE FOR ENDFOR
 %token LET
-%token COMMAND COMMAND_ATTR COMMAND_REPLACE
+%token COMMAND COMMAND_ATTR
 %token QARGS
 %token EX
 %token VA_DOTS VA
@@ -61,14 +61,14 @@ for_block: FOR var ID expr1 '\n' input ENDFOR '\n'          { $$ = new ForBlockN
          | FOR unpack ID expr1 '\n' input ENDFOR '\n'       { $$ = new ForBlockNode($2, $4, $6); }
 ;
 
-unpack: '[' var_list ']'              { $$ = $2; }
-      | '[' var_list ';' var ']'      { $$ = new ParamsNode($2, $4); }
+unpack: SPC_SQB var_list ']'              { $$ = $2; }
+      | SPC_SQB var_list ';' var ']'      { $$ = new ParamsNode($2, $4); }
 
 var_list: var                       { $$ = new ParamsNode($1, nullptr); }
         | var ',' var_list          { $$ = new ParamsNode($1, $3); }
 ;
 
-var: ID | AU_ID | VA
+var: ID | AU_ID | OPT_ID | ENV_ID | REG_ID | VA
 ;
 
 function_block: FUNCTION fname '(' args ')' '\n' input ENDFUNCTION '\n'        { $$ = new FunctionBlockNode($2, $4, $7); }
@@ -89,24 +89,20 @@ line: '\n'                        { $$ = nullptr; }
 command: let_command | cmd_command | ex_command
 ;
 
-let_command: LET let_var '=' expr1    { $$ = new LetNode($2, $4, "="); }
-           | LET let_var ADD_EQ expr1 { $$ = new LetNode($2, $4, "+="); }
-           | LET let_var SUB_EQ expr1 { $$ = new LetNode($2, $4, "-="); }
-           | LET let_var MUL_EQ expr1 { $$ = new LetNode($2, $4, "*="); }
-           | LET let_var DIV_EQ expr1 { $$ = new LetNode($2, $4, "/="); }
-           | LET let_var MOD_EQ expr1 { $$ = new LetNode($2, $4, "%="); }
-           | LET let_var CON_EQ expr1 { $$ = new LetNode($2, $4, ".="); }
-           | LET let_var CONCAT       { $$ = new LetNode($2, nullptr, ".."); }
-           | LET                      { $$ = new LetNode(nullptr, nullptr, nullptr); }
+let_command: LET let_var let_op expr1 { $$ = new LetNode($2, $4, "op"); }
+           | LET let_var_list         { $$ = new LetNode($2, nullptr, nullptr); }
 ;
 
 let_var: var
-       | var '[' expr1 ']'              { $$ = new IndexNode($1, $3); }
-       | var '[' expr1 ':' expr1 ']'    { $$ = new IndexNode($1, $3); }
-       | OPT_ID                         { $$ = $1; }
-       | ENV_ID                         { $$ = $1; }
-       | REG_ID                         { $$ = $1; }
-       | unpack                         { $$ = $1; }
+       | unpack
+       | var IDX_SQB expr1 ']'              { $$ = new IndexNode($1, $3); }
+       | var IDX_SQB expr1 ':' expr1 ']'    { $$ = new IndexNode($1, $3); }
+;
+
+let_var_list: let_var | let_var let_var_list    { $$ = new FargsNode($1, $2); }
+;
+
+let_op: '=' | ADD_EQ | SUB_EQ | MUL_EQ | DIV_EQ | MOD_EQ | CON_EQ
 ;
 
 cmd_command: COMMAND cmd_attr_list ID QARGS            { $$ = new CommandNode($3, $2, $4); }
@@ -196,11 +192,11 @@ expr7: expr8
 ;
 
 expr8: expr9
-     | expr8 '[' expr1 ']'               { $$ = new IndexNode($1, $3); }
-     | expr8 '[' expr1 ':' expr1 ']'     { $$ = new IndexNode($1, $3, $5); }
-     | expr8 '[' expr1 ':' ']'           { $$ = new IndexNode($1, $3, new LexemNode("end")); }
-     | expr8 '[' ':' expr1 ']'           { $$ = new IndexNode($1, new LexemNode("begin"), $4); }
-     | fname '(' expr1_list ')'          { $$ = new FunCallNode($1, $3); }
+     | expr8 IDX_SQB expr1 ']'               { $$ = new IndexNode($1, $3); }
+     | expr8 IDX_SQB expr1 ':' expr1 ']'     { $$ = new IndexNode($1, $3, $5); }
+     | expr8 IDX_SQB expr1 ':' ']'           { $$ = new IndexNode($1, $3, new LexemNode("end")); }
+     | expr8 IDX_SQB ':' expr1 ']'           { $$ = new IndexNode($1, new LexemNode("begin"), $4); }
+     | fname '(' expr1_list ')'              { $$ = new FunCallNode($1, $3); }
 ;
 
 fname: ID | AU_ID | SID_ID
@@ -210,7 +206,7 @@ expr9: NUMBER
      | FLOAT
      | BLOB
      | STR
-     | '[' expr1_list ']'                       { $$ = new ListNode($2); }
+     | SPC_SQB expr1_list ']'                   { $$ = new ListNode($2); }
      | '{' expr1_pairs '}'                      { $$ = new DictNode($2); }
      | '(' expr1 ')'                            { $$ = $2; }
      | '{' args ARROW expr1 '}'                 { $$ = new LambdaNode($2, $4); }
@@ -220,7 +216,6 @@ expr9: NUMBER
      | ID
      | AU_ID
      | VA
-     | COMMAND_REPLACE
 ;
 
 expr1_list: %empty                 { $$ = nullptr; }

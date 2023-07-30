@@ -1,10 +1,11 @@
 %option noyywrap
 %option yylineno
 %option stack
-%x CMD_TRAILING CMD_BODY CMD_NAME
+%x EX_LEADING EX_BODY COM
 
-anchor ^[ \t]*
-comment ^[ \t]*["].*[\n]
+space [ \t]
+any_space {space}*
+comment ^{any_space}["].*[\n]
 
 str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
@@ -21,14 +22,13 @@ au_id {scope}?({curly_name}[#])+{curly_name}
 opt_id "&"{scope}?{curly_name}
 reg_id "@"{curly_name}
 env_id "$"{curly_name}
-
-attr -[a-z]+(=[^ ]+)?
-replace "<line1>"|"<line2>"|"<range>"|"<count>"|"<bang>"|"<mods>"|"<reg>"|"<args>"|"<lt>"|"<q-args>"|"<f-args>"
+va_id "a:"{number}?
 
 number [0-9]+
 float [+-]?{number}[.]{number}([eE][+-]?{number})?
 blob "0z"[0-9a-fA-F.]+
 
+attr -[a-z]+(=[^ ]+)?
 qarg [^ \t\n]+[ \t\n]
 
 %{
@@ -48,6 +48,8 @@ extern Node* yylval;
     NUMBER,
     FLOAT,
     BLOB,
+    SPC_SQB,
+    IDX_SQB,
     EQ,
     NOT_EQ,
     LESS_EQ,
@@ -76,7 +78,6 @@ extern Node* yylval;
     LET,
     COMMAND,
     COMMAND_ATTR,
-    COMMAND_REPLACE,
     QARGS,
     EX,
     VA_DOTS,
@@ -97,9 +98,11 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
 %%
 {comment} {}
 
-{anchor}{name}"!"? {
+^{any_space}":"?{name}"!"?/{space} {
+    // Return any_space to the lexer, IDX_SQB will consume it
     const char* id = yytext;
     int len = yyleng;
+    // Remove leading spaces
     while(id < yytext + yyleng) {
         if (*id != ' ' && *id != '\t') {
             break;
@@ -107,7 +110,13 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
         ++id;
         --len;
     }
-    if (id[len - 1] == '!') {
+    // Optional ':' before command name
+    if (*id == ':') {
+        ++id;
+        --len;
+    }
+    // Remove trailing spaces. Optional '!' after command name
+    while (id[len - 1] == ' ' || id[len - 1] == '\t' || id[len - 1] == '!') {
         --len;
     }
     
@@ -145,29 +154,33 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
         return LET;
     }
     if (isVimCmd(id, len, "com", "command")) {
-        BEGIN(CMD_NAME);
+        BEGIN(COM);
         return COMMAND;
     }
 
     yylval = new LexemNode(id);
-    BEGIN(CMD_TRAILING);
+    BEGIN(EX_LEADING);
     return EX;
 }
 
-<CMD_NAME>{attr} {
+<COM>{attr}\{space} {
     yylval = new LexemNode(yytext);
     return COMMAND_ATTR;
 }
 
-<CMD_NAME>{name} {
+<COM>{name} {
     yylval = new LexemNode(yytext);
-    BEGIN(CMD_TRAILING);
+    BEGIN(EX_LEADING);
     return ID;
 }
 
-{replace} {
+<EX_LEADING>[ \t]+ {
+    BEGIN(EX_BODY);
+}
+
+<EX_BODY>[^\n]+ {
     yylval = new LexemNode(yytext);
-    return COMMAND_REPLACE;
+    return QARGS;
 }
 
 {str} {
@@ -180,14 +193,14 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
     return STR;
 }
 
+{va_id} {
+    yylval = new LexemNode(yytext);
+    return VA;
+}
+
 {sid_id} {
     yylval = new LexemNode(yytext);
     return SID_ID;
-}
-
-"a:"{number}? {
-    yylval = new LexemNode(yytext);
-    return VA;
 }
 
 {au_id} {
@@ -287,6 +300,14 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
     return ARROW;
 }
 
+{space}"[" {
+    return SPC_SQB;
+}
+
+"[" {
+    return IDX_SQB;
+}
+
 {number} {
     yylval = new LexemNode(yytext);
     return NUMBER;
@@ -302,16 +323,7 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
     return BLOB;
 }
 
-<CMD_TRAILING>[ \t]+ {
-    BEGIN(CMD_BODY);
-}
-
-<CMD_BODY>[^\n]+ {
-    yylval = new LexemNode(yytext);
-    return QARGS;
-}
-
-<*>[ \t] {
+<*>{space} {
     // IGNORE
 }
 

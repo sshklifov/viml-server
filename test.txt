@@ -1,1 +1,2 @@
-let &l:asd = "WTF"
+for [a, b] in c
+endfor
