@@ -1,19 +1,26 @@
 %option noyywrap
 %option prefix="cont"
 
+space [ \t]
+any_space {space}*
+comment ^{any_space}["].*[\n]
+
 %{
 %}
 
 %%
-[\n][ \t]+"\\" {
-    // IGNORE
+[\n][ \t]*"\"\\ "[^\n]* {
+    // line-continuation-comment
+}
+[\n][ \t]*"\\" {
+    // line-continuation
 }
 
 . {
-    printf(yytext);
+    return yytext[0];
 }
 
 "\n" {
-    printf(yytext);
+    return yytext[0];
 }
 %%
