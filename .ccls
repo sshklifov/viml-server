@@ -3,3 +3,4 @@ clang
 %h c++-header
 %c -x
 %c c++
+-std=c++20
