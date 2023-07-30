@@ -1,20 +1,20 @@
 [
 {
-  "directory": "/home/stef/viml-server/Debug",
-  "command": "/usr/bin/c++  -I/home/stef/viml-server -I/home/stef/viml-server/Debug/gen -g   -std=c++20 -o CMakeFiles/tree.dir/tree.cpp.o -c /home/stef/viml-server/tree.cpp",
-  "file": "/home/stef/viml-server/tree.cpp",
-  "output": "CMakeFiles/tree.dir/tree.cpp.o"
+  "directory": "/home/stef/viml-server/Debug/block",
+  "command": "/usr/bin/c++ -DPARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block/viml_server -g   -std=c++20 -o CMakeFiles/block.dir/viml_server/blockParser.cpp.o -c /home/stef/viml-server/Debug/block/viml_server/blockParser.cpp",
+  "file": "/home/stef/viml-server/Debug/block/viml_server/blockParser.cpp",
+  "output": "block/CMakeFiles/block.dir/viml_server/blockParser.cpp.o"
 },
 {
-  "directory": "/home/stef/viml-server/Debug",
-  "command": "/usr/bin/c++  -I/home/stef/viml-server -I/home/stef/viml-server/Debug/gen -g   -std=c++20 -o CMakeFiles/tree.dir/gen/tree_parser.cpp.o -c /home/stef/viml-server/Debug/gen/tree_parser.cpp",
-  "file": "/home/stef/viml-server/Debug/gen/tree_parser.cpp",
-  "output": "CMakeFiles/tree.dir/gen/tree_parser.cpp.o"
+  "directory": "/home/stef/viml-server/Debug/block",
+  "command": "/usr/bin/c++ -DPARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block/viml_server -g   -std=c++20 -o CMakeFiles/block.dir/viml_server/blockLexer.cpp.o -c /home/stef/viml-server/Debug/block/viml_server/blockLexer.cpp",
+  "file": "/home/stef/viml-server/Debug/block/viml_server/blockLexer.cpp",
+  "output": "block/CMakeFiles/block.dir/viml_server/blockLexer.cpp.o"
 },
 {
-  "directory": "/home/stef/viml-server/Debug",
-  "command": "/usr/bin/c++  -I/home/stef/viml-server -I/home/stef/viml-server/Debug/gen -g   -std=c++20 -o CMakeFiles/tree.dir/gen/tree_lexer.cpp.o -c /home/stef/viml-server/Debug/gen/tree_lexer.cpp",
-  "file": "/home/stef/viml-server/Debug/gen/tree_lexer.cpp",
-  "output": "CMakeFiles/tree.dir/gen/tree_lexer.cpp.o"
+  "directory": "/home/stef/viml-server/Debug/block",
+  "command": "/usr/bin/c++ -DPARSER_HEADER=\"<blockParser.hpp>\" -I/home/stef/viml-server/block -I/home/stef/viml-server/Debug/block/viml_server -g   -std=c++20 -o CMakeFiles/block.dir/Main.cpp.o -c /home/stef/viml-server/block/Main.cpp",
+  "file": "/home/stef/viml-server/block/Main.cpp",
+  "output": "block/CMakeFiles/block.dir/Main.cpp.o"
 }
 ]

@@ -1,7 +1,4 @@
-/* extern int yylex(); */
-/* extern int yyparse(); */
-
-#include "tree_parser.hpp"
+#include PARSER_HEADER
 GroupBlock* root;
 
 extern int yylex_wrap();
@@ -60,6 +57,5 @@ void yylex_debug() {
 }
 
 int main () {
-    /* yylex_debug(); */
     yyparse();
 }

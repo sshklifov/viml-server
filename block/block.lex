@@ -22,7 +22,7 @@ finally "fina"("l"|"ll"|"lly")?
 endcmd [ \t\n]
 
 %{
-#include "tree_parser.hpp"
+#include PARSER_HEADER
 #define YY_DECL int yylex_wrap()
 %}
 

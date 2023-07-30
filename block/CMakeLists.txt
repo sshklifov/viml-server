@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.27)
+project(Block LANGUAGES CXX)
+
+function(build_parser flex_file bison_file sources)
+    set(source_path ${CMAKE_CURRENT_LIST_DIR})
+    set(generated_path ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_PROJECT_NAME})
+    file(MAKE_DIRECTORY ${generated_path})
+
+    get_filename_component(bison_name ${bison_file} NAME_WE)
+    set(bison_cpp ${generated_path}/${bison_name}Parser.cpp)
+    set(bison_hpp ${bison_name}Parser.hpp)
+    add_custom_command(OUTPUT "${bison_cpp}"
+        MAIN_DEPENDENCY ${bison_file}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        COMMAND bison -Werror -Wcounterexamples -l -o ${bison_cpp} ${bison_file})
+
+    get_filename_component(flex_name ${flex_file} NAME_WE)
+    set(flex_cpp ${generated_path}/${flex_name}Lexer.cpp)
+    add_custom_command(OUTPUT ${flex_cpp}
+        MAIN_DEPENDENCY ${flex_file}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        COMMAND flex -L -o ${flex_cpp} ${flex_file})
+
+    add_compile_definitions(PARSER_HEADER=<${bison_hpp}>)
+    add_definitions(-std=c++20)
+    include_directories(${source_path} ${generated_path})
+    add_executable(block ${bison_cpp} ${flex_cpp} ${sources})
+endfunction()
+
+build_parser(block.lex block.yy Main.cpp)
