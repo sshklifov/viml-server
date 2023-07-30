@@ -24,11 +24,7 @@ ContParser::Impl::Impl() {
 }
 
 ContParser::Impl::~Impl() {
-    if (isLoaded()) {
-        cont_delete_buffer(reinterpret_cast<yy_buffer_state*>(yybuffer));
-        munmap(mptr, len);
-        close(fd);
-    }
+    unload();
 }
 
 bool ContParser::Impl::tryLoad(const char* filename) {
@@ -68,10 +64,41 @@ bool ContParser::Impl::tryLoad(const char* filename) {
     return true;
 }
 
+bool ContParser::Impl::unload() {
+    if (isLoaded()) {
+        cont_delete_buffer(reinterpret_cast<yy_buffer_state*>(yybuffer));
+        yybuffer = nullptr;
+
+        munmap(mptr, len);
+        mptr = nullptr;
+
+        close(fd);
+        fd = -1;
+
+        return true;
+    }
+    return false;
+}
+
 bool ContParser::Impl::isLoaded() const {
     return yybuffer != nullptr;
 }
 
-int ContParser::Impl::lex() {
-    return contlex();
+std::unique_ptr<char[]> ContParser::Impl::lex(int& resLen) {
+    if (!isLoaded()) {
+        return nullptr;
+    }
+
+    std::unique_ptr<char[]> res(new char[len]);
+    for (int i = 0; i < len; ++i) {
+        res[i] = contlex();
+        if (res[i] == 0) {
+            resLen = i;
+            return res;
+        }
+    }
+    resLen = len;
+
+    unload();
+    return res;
 }

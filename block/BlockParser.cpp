@@ -3,6 +3,10 @@
 #include GENERATED_PARSER_HEADER
 GroupBlock* root;
 
+extern struct yy_buffer_state* yy_scan_bytes(const char* yybytes, int yybytes_len);
+extern void yy_delete_buffer (yy_buffer_state* b);
+// TODO prefix!!!
+
 extern int yylex_wrap();
 extern const char* yytext;
 extern int yyleng;
@@ -25,8 +29,8 @@ int yyparse() {
 
 int yylex(yy::parser::value_type* p) {
     using kind_type = yy::parser::token::token_kind_type;
-    int kt = ContParser::Get().lex();
 
+    int kt = yylex_wrap();
     switch (kt) {
     case kind_type::EX:
     case kind_type::QARGS:
@@ -64,5 +68,13 @@ int main () {
         fprintf(stderr, "Failed to load with file %s\n", file);
         return 1;
     }
+    int len = 0;
+    std::unique_ptr<char[]> input = ContParser::Get().lex(len);
+    ContParser::Get().unload();
+
+    yy_buffer_state* yybuffer = yy_scan_bytes(input.get(), len);
     yyparse();
+
+    yy_delete_buffer(yybuffer);
+    input.release();
 }

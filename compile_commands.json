@@ -30,15 +30,15 @@
   "output": "block/CMakeFiles/block.dir/BlockParser.cpp.o"
 },
 {
-  "directory": "/home/stef/viml-server/Debug/ex_cmds",
-  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<ex_cmdsParser.hpp>\" -I/home/stef/viml-server/ex_cmds -I/home/stef/viml-server/Debug/ex_cmds -g -std=c++20 -o CMakeFiles/ex_cmds.dir/ex_cmdsParser.cpp.o -c /home/stef/viml-server/Debug/ex_cmds/ex_cmdsParser.cpp",
-  "file": "/home/stef/viml-server/Debug/ex_cmds/ex_cmdsParser.cpp",
-  "output": "ex_cmds/CMakeFiles/ex_cmds.dir/ex_cmdsParser.cpp.o"
+  "directory": "/home/stef/viml-server/Debug/excmds",
+  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<excmdsParser.hpp>\" -I/home/stef/viml-server/excmds -I/home/stef/viml-server/Debug/excmds -g -std=c++20 -o CMakeFiles/excmds.dir/excmdsParser.cpp.o -c /home/stef/viml-server/Debug/excmds/excmdsParser.cpp",
+  "file": "/home/stef/viml-server/Debug/excmds/excmdsParser.cpp",
+  "output": "excmds/CMakeFiles/excmds.dir/excmdsParser.cpp.o"
 },
 {
-  "directory": "/home/stef/viml-server/Debug/ex_cmds",
-  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<ex_cmdsParser.hpp>\" -I/home/stef/viml-server/ex_cmds -I/home/stef/viml-server/Debug/ex_cmds -g -std=c++20 -o CMakeFiles/ex_cmds.dir/ex_cmdsLexer.cpp.o -c /home/stef/viml-server/Debug/ex_cmds/ex_cmdsLexer.cpp",
-  "file": "/home/stef/viml-server/Debug/ex_cmds/ex_cmdsLexer.cpp",
-  "output": "ex_cmds/CMakeFiles/ex_cmds.dir/ex_cmdsLexer.cpp.o"
+  "directory": "/home/stef/viml-server/Debug/excmds",
+  "command": "/usr/bin/c++ -DGENERATED_PARSER_HEADER=\"<excmdsParser.hpp>\" -I/home/stef/viml-server/excmds -I/home/stef/viml-server/Debug/excmds -g -std=c++20 -o CMakeFiles/excmds.dir/excmdsLexer.cpp.o -c /home/stef/viml-server/Debug/excmds/excmdsLexer.cpp",
+  "file": "/home/stef/viml-server/Debug/excmds/excmdsLexer.cpp",
+  "output": "excmds/CMakeFiles/excmds.dir/excmdsLexer.cpp.o"
 }
 ]

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>
+#include <memory>
 
 struct ContParser {
 private:
@@ -10,8 +10,9 @@ private:
 
         bool tryLoad(const char* filename);
         bool isLoaded() const;
+        bool unload();
 
-        int lex();
+        std::unique_ptr<char[]> lex(int& resLen);
 
     private:
         void* yybuffer;
