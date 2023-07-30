@@ -60,10 +60,13 @@ void yylex_debug() {
     while (kt != kind_type::YYEOF && kt != kind_type::YYerror);
 }
 
-int main () {
-    const char* file = "test.txt";
-    if (!ContParser::Get().tryLoad(file)) {
-        fprintf(stderr, "Failed to load with file %s\n", file);
+int main (int argc, char** argv) {
+    if (argc < 2) {
+        fprintf(stderr, "Missing file argument\n");
+        exit(1);
+    }
+    if (!ContParser::Get().tryLoad(argv[1])) {
+        fprintf(stderr, "Failed to load with file %s\n", argv[1]);
         return 1;
     }
     int len = 0;
