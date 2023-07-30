@@ -98,7 +98,7 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
 %%
 {comment} {}
 
-^{any_space}":"?{name}"!"?/{space} {
+^{any_space}":"?{name}"!"?/[ \t\n] {
     // Return any_space to the lexer, IDX_SQB will consume it
     const char* id = yytext;
     int len = yyleng;
@@ -163,7 +163,7 @@ bool isVimCmd(const char* name, int n, const char* vimShort, const char* vimLong
     return EX;
 }
 
-<COM>{attr}\{space} {
+<COM>{attr} {
     yylval = new LexemNode(yytext);
     return COMMAND_ATTR;
 }
