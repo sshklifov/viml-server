@@ -1,6 +1,7 @@
 %option noyywrap
 
 %{
+#define YY_DECL int yylex()
 %}
 
 %%
@@ -16,9 +17,3 @@
     printf(yytext);
 }
 %%
-
-int main() {
-    int a = yylex();
-    return 0;
-}
-

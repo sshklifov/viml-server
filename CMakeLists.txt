@@ -27,5 +27,6 @@ function(build_parser exe flex_file bison_file)
     add_executable(${exe} ${bison_cpp} ${flex_cpp} ${ARGN})
 endfunction()
 
+add_subdirectory(cont)
 add_subdirectory(block)
 add_subdirectory(ex_cmds)
