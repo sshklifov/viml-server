@@ -9,12 +9,8 @@
 
 #include <string>
 
+#include GENERATED_LEXER_HEADER
 #include "ContParser.hpp"
-
-extern struct yy_buffer_state* cont_scan_bytes(const char* yybytes, int yybytes_len);
-extern void cont_delete_buffer (yy_buffer_state* b);
-
-extern int contlex (void);
 
 ContParser::Impl::Impl() {
     yybuffer = nullptr;

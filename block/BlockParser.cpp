@@ -1,13 +1,8 @@
 #include <ContParser.hpp>
 
+#include GENERATED_LEXER_HEADER
 #include GENERATED_PARSER_HEADER
 GroupBlock* root;
-
-extern struct yy_buffer_state* block_scan_bytes(const char* yybytes, int yybytes_len);
-extern void block_delete_buffer (yy_buffer_state* b);
-extern int blocklex();
-extern char* blockget_text();
-extern int blockget_leng();
 
 void yy::parser::error(const std::string& msg) {
     fprintf(stderr, "Erorr: %s\n", msg.c_str());

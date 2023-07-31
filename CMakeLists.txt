@@ -13,6 +13,7 @@ function(run_flex_generator flex_file)
         MAIN_DEPENDENCY ${flex_file}
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
         COMMAND ${FLEX_EXECUTABLE} -L --header-file=${flex_hpp} -o ${flex_cpp} ${flex_file})
+    include_directories(${FLEX_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
     add_compile_definitions(GENERATED_LEXER_HEADER=<${flex_name_hpp}>)
     # Pass the name of the cpp file. Optional.
     if(ARGV1)
@@ -37,13 +38,11 @@ function(run_bison_generator bison_file)
 endfunction()
 
 function(build_parser target flex_file bison_file)
-    set(source_path ${CMAKE_CURRENT_LIST_DIR})
-    set(generated_path ${CMAKE_CURRENT_BINARY_DIR})
     run_bison_generator(${bison_file} bison_cpp)
     run_flex_generator(${flex_file} flex_cpp)
 
     add_compile_options(-std=c++14)
-    include_directories(${FLEX_INCLUDE_DIRS} ${source_path} ${generated_path})
+    include_directories(${CMAKE_CURRENT_LIST_DIR})
     link_libraries(${FLEX_LIBRARIES})
     add_executable(${target} ${bison_cpp} ${flex_cpp} ${ARGN})
 endfunction()
