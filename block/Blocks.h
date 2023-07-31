@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <format>
 #include <vector>
 
 struct Block {
@@ -12,9 +11,9 @@ struct ExBlock : Block {
     ExBlock(const std::string& name, const std::string& body = "") : name(name), body(body) {}
 
     std::string toString() override {
-        std::string res = std::format("Ex({}", name);
+        std::string res = "Ex(" + name;
         if (!body.empty()) {
-            res += std::format(", {}", body);
+            res += (", {}" + body);
         }
         res += ")\n";
         return res;
@@ -48,7 +47,7 @@ struct WhileBlock : public Block {
     WhileBlock(const std::string& expr1, Block* body) : expr1(expr1), body(body) {}
 
     std::string toString() override {
-        std::string res = std::format("While({})\n", expr1);
+        std::string res = "While(" + expr1 + ")\n";
         res += body->toString();
         res += "Endwhile()\n";
         return res;
@@ -63,7 +62,7 @@ struct ForBlock : public Block {
     ForBlock(const std::string& args, Block* body) : args(args), body(body) {}
 
     std::string toString() override {
-        std::string res = std::format("For({})\n", args);
+        std::string res = "For(" + args + ")\n";
         res += body->toString();
         res += "Endfor()\n";
         return res;
@@ -78,7 +77,7 @@ struct FunBlock : public Block {
     FunBlock(const std::string& args, Block* body) : args(args), body(body) {}
 
     std::string toString() override {
-        std::string res = std::format("Function({})\n", args);
+        std::string res = "Function(" + args + ")\n";
         res += body->toString();
         res += "Endfunction()\n";
         return res;
@@ -93,7 +92,7 @@ struct IfBlock : public Block {
     IfBlock(std::string expr1, Block* body, Block* el = nullptr) : expr1(expr1), body(body), el(el) {}
 
     std::string toString() override {
-        std::string res = std::format("If({})\n", expr1);
+        std::string res = "If(" + expr1 + ")\n";
         res += body->toString();
 
         if (el) {
