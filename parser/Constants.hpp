@@ -15,7 +15,8 @@
     code(ENDFUNCTION, 144) \
     code(TRY, 475) \
     code(ENDTRY, 146) \
-    code(FINALLY, 159)
+    code(FINALLY, 159) \
+    code(CATCH, 55)
 
 #define DEFINE_COMMAND(name, val) const int name = val;
 

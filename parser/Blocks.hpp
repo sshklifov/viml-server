@@ -67,7 +67,6 @@ struct ExBlock : Block {
         throw std::runtime_error("Cannot add child to leaf node"); // TODO
     }
 
-private:
     int id;
     std::string name;
     std::string qargs;
@@ -122,7 +121,6 @@ struct WhileBlock : public Block {
         return res;
     }
 
-private:
     std::string expr1;
 };
 
@@ -142,7 +140,6 @@ struct ForBlock : public Block {
         return res;
     }
 
-private:
     std::string expr1;
 };
 
@@ -162,7 +159,6 @@ struct FunctionBlock : public Block {
         return res;
     }
 
-private:
     std::string expr1;
 };
 
@@ -182,6 +178,24 @@ struct TryBlock : public Block {
         return res;
     }
 
-private:
     std::string expr1;
+    std::vector<Block*> catchBlocks;
+};
+
+struct CatchBlock : public Block {
+    CatchBlock(const StringView& pattern) : pattern(pattern.begin, pattern.end) {}
+
+    static const int id = CATCH;
+
+    int getId() override {
+        return id;
+    }
+
+    std::string toString() override {
+        std::string res = "Catch(" + pattern + ")\n";
+        res += bodyToString();
+        return res;
+    }
+
+    std::string pattern;
 };

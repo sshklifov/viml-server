@@ -7,6 +7,9 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <cctype>
+#include <cstdio>
+
 #include <algorithm>
 
 bool ExDictionary::loadDict(const char* filepath) {

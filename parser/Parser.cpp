@@ -15,7 +15,7 @@ int main() {
     if (!dict.loadDict("lexer/excmds.txt")) {
         return 2;
     }
-    checkBlockConstants(dict);
+    assert(checkBlockConstants(dict));
 
     RootBlock* rootBlock = new RootBlock;
     std::stack<Block*> blocks;
@@ -109,7 +109,18 @@ int main() {
             blocks.pop();
             break;
 
-        // TODO CATCH
+        case CATCH:
+            if (blocks.top()->getId() == CATCH) {
+                blocks.pop();
+            }
+            if (blocks.top()->getId() == TRY) {
+                newBlock = new CatchBlock(lexem.qargs);
+                blocks.top()->cast<TryBlock>()->catchBlocks.push_back(newBlock);
+                blocks.push(newBlock);
+            } else {
+                throw std::runtime_error("catch without a previous try");
+            }
+            break;
 
         default:
             if (dictIdx < 0) {
