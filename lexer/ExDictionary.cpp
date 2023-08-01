@@ -61,8 +61,7 @@ int ExDictionary::search(const char* what) const {
 int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
     while (lo + 1 < hi) {
         int mid = (lo + hi) / 2;
-        StringView dictMid = cmds[mid].req.substring(key.length());
-        int c = key.cmp(dictMid);
+        int c = key.cmpn(cmds[mid].req, key.length());
         if (c < 0) {
             hi = mid - 1;
         } else if (c > 0) {
@@ -71,12 +70,10 @@ int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
             lo = mid;
         }
     }
-    StringView dictHi = cmds[hi].req.substring(key.length());
-    if (dictHi == key) {
+    if (key.cmpn(cmds[hi].req, key.length())) {
         return hi;
     }
-    StringView dictLo = cmds[lo].req.substring(key.length());
-    if (dictLo == key) {
+    if (key.cmpn(cmds[hi].req, key.length())) {
         return lo;
     }
     return -1;
@@ -85,8 +82,7 @@ int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
 int ExDictionary::firstEqualIdx(const StringView& key, int lo, int hi) const {
     while (lo + 1 < hi) {
         int mid = (lo + hi) / 2;
-        StringView dictMid = cmds[mid].req.substring(key.length());
-        int c = key.cmp(dictMid);
+        int c = key.cmpn(cmds[mid].req, key.length());
         if (c < 0) {
             hi = mid - 1;
         } else if (c > 0) {
@@ -95,12 +91,10 @@ int ExDictionary::firstEqualIdx(const StringView& key, int lo, int hi) const {
             hi = mid;
         }
     }
-    StringView dictLo = cmds[lo].req.substring(key.length());
-    if (dictLo == key) {
+    if (key.cmpn(cmds[lo].req, key.length()) == 0) {
         return lo;
     }
-    StringView dictHi = cmds[hi].req.substring(key.length());
-    if (dictHi == key) {
+    if (key.cmpn(cmds[hi].req, key.length())) {
         return hi;
     }
     return -1;
@@ -117,7 +111,8 @@ int ExDictionary::search(const StringView& key) const {
 
     for (int guessLen = 1; guessLen <= key.length(); ++guessLen) {
         Name guessKey;
-        key.split(guessLen, guessKey.req, guessKey.opt);
+        guessKey.req = StringView(key.begin, key.begin + guessLen);
+        guessKey.opt = StringView(key.begin + guessLen, key.end);
         int newLo = firstEqualIdx(guessKey.req, lo, hi);
         if (newLo == -1) {
             return -1;
@@ -127,8 +122,7 @@ int ExDictionary::search(const StringView& key) const {
 
         Name dictMatch = cmds[newLo];
         if (dictMatch.req.length() == guessLen) {
-            dictMatch.opt.shrink(guessKey.opt.length());
-            if (dictMatch.opt == guessKey.opt) {
+            if (guessKey.opt.cmpn(dictMatch.opt, guessKey.opt.length())) {
                 return newLo;
             } else {
                 if (newLo == newHi) {

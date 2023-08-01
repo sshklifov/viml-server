@@ -8,49 +8,35 @@ struct StringView {
     StringView(const char* begin, const char* end) : begin(begin), end(end) {}
     StringView(const char* s, int n) : begin(s), end(s + n) {}
 
-    bool mergeAdjacent(const StringView& adj) {
-        if (end == adj.begin) {
-            end = adj.end;
-            return true;
-        }
-        if (begin == adj.end) {
-            begin = adj.begin;
-            return true;
-        }
-        return false;
-    }
-
     bool empty() const {
-        return begin == end;
+        return begin >= end;
     }
 
     int length() const {
         return end - begin;
     }
 
-    bool shrink(int newSize) {
-        if (newSize < length()) {
+    bool truncate(int newSize) {
+        if (newSize >= 0 && newSize < length()) {
             end = begin + newSize;
             return true;
         }
         return false;
     }
 
-    StringView substring(int n) const {
-        if (n > length()) {
-            return StringView();
-        } else {
-            return StringView(begin, begin + n);
-        }
+    char operator[](int idx) {
+        return begin[idx];
     }
 
-    bool split(int n, StringView& lhs, StringView& rhs) const {
-        if (n > length()) {
-            return false;
+    StringView substr(int substrBegin, int substrEnd) const {
+        if (substrBegin >= substrEnd) {
+            return StringView();
         }
-        lhs = StringView(begin, begin + n);
-        rhs = StringView(begin + n, end);
-        return true;
+        StringView res(begin + substrBegin, begin + substrEnd);
+        if (res.begin > end || res.end < begin) {
+            return StringView();
+        }
+        return res;
     }
 
     int cmp(StringView other) const {
@@ -64,6 +50,13 @@ struct StringView {
             ++other.begin;
         }
         return copy.length() - other.length();
+    }
+
+    int cmpn(StringView other, int n) const {
+        StringView copy(*this);
+        copy.truncate(n);
+        other.truncate(n);
+        return copy.cmp(other);
     }
 
     bool operator<(const StringView& other) const {

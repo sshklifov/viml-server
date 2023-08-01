@@ -17,6 +17,8 @@ ExLexer::ExLexer() {
     mptr = nullptr;
     len = 0;
     fd = -1;
+    contBuf = nullptr;
+    contBufLen = 0;
 }
 
 ExLexer::~ExLexer() {
@@ -49,9 +51,8 @@ bool ExLexer::loadFile(const char* filename) {
     this->mptr = mptr;
     this->len = len;
     this->fd = fd;
-    progRemaining = ProgramView(buffer, buffer + len);
-    currLine = progRemaining.popLine();
-    lineCounter = 0;
+    program = ProgramView(buffer, buffer + len);
+    currLine = program.popLine();
 
     return true;
 }
@@ -62,6 +63,8 @@ bool ExLexer::unload() {
         mptr = nullptr;
         close(fd);
         fd = -1;
+        delete[] contBuf;
+
         return true;
     } else {
         return false;
@@ -77,44 +80,58 @@ bool ExLexer::lex(ExLexem* res) {
         assert(false);
         return false;
     }
+    int currLineNumber = program.poppedLines;
+    LineView nextLine = program.popLine();
+    LineView origNextLine = nextLine;
+    const char* contOrigBegin = contBuf + contBufLen;
 
-    while (!currLine.empty()) {
-        ++lineCounter;
-        // Sanity check
-        LineView futureLine = progRemaining.popLine();
-        if (!futureLine.empty()) {
-            LineView workLine = futureLine;
-            workLine.popSpaces();
-            if (*workLine.begin == '\\') {
-                throw std::runtime_error("Do not support continuations yet :/");
-            }
+    nextLine.popSpaces();
+    if (!nextLine.empty() && nextLine.front() == '\\') {
+        if (!contBuf) {
+            contBuf = new char[len + 1];
+            contBufLen = 0;
         }
-
-        LineView workingLine = currLine;
-        currLine = futureLine;
-        workingLine.popSpaces();
-        if (*workingLine.begin != '"' && *workingLine.begin != '\n') {
-            const char* lineBegin = workingLine.begin;
-            res->name = workingLine.popWord();
-            if (!res->name.empty() && res->name.front() == ':') {
-                ++res->name.begin;
-            }
-            if (!res->name.empty() && res->name.back() == '!') {
-                --res->name.end;
-                res->bang = true;
-            }
-
-            workingLine.popSpaces();
-            res->qargs = workingLine;
-            if (!res->qargs.empty()) {
-                // Remove newline
-                --res->qargs.end;
-            }
-            res->line = lineCounter;
-            res->nameCol = (res->name.begin - lineBegin);
-            res->qargsCol = (res->qargs.begin - lineBegin);
-            return true;
-        }
+        strncpy(contBuf + contBufLen, currLine.begin, currLine.length());
+        contBufLen += currLine.length();
     }
-    return false;
+    while (!nextLine.empty() && nextLine.front() == '\\') {
+        nextLine.begin += 1;
+        // Might be a comment, LOL syntax.
+        if (nextLine[0] != '"' || nextLine[1] != ' ') {
+            strncpy(contBuf + contBufLen, nextLine.begin, nextLine.length());
+            contBufLen += nextLine.length();
+        }
+        nextLine = program.popLine();
+        origNextLine = nextLine;
+        nextLine.popSpaces();
+    }
+    currLine = origNextLine;
+
+    LineView contLine(contOrigBegin, contBuf + contBufLen);
+    LineView resultLine = contLine.empty() ? origNextLine : contLine;
+    resultLine.dropSpaces();
+    if (resultLine.empty()) {
+        return false;
+    } else if (resultLine.front() == '"' || resultLine.front() != '\n') {
+        res->name = LineView();
+        res->qargs = LineView();
+        res->line = currLineNumber;
+        res->nameColumn = 1;
+        res->qargsColumn = 1;
+        return true;
+    } else {
+        const char* columnBegin = resultLine.begin;
+        // TODO more formatting needed
+        res->name = resultLine.popWord();
+        resultLine.dropSpaces();
+        res->qargs = resultLine;
+        // Remove newline
+        if (!res->qargs.empty()) {
+            --res->qargs.end;
+        }
+        res->line = currLineNumber;
+        res->nameColumn = (res->name.begin - columnBegin + 1);
+        res->qargsColumn = (res->qargs.begin - columnBegin + 1);
+        return true;
+    }
 }

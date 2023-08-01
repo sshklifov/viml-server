@@ -16,6 +16,10 @@ struct LineView : public StringView {
         return begin - oldBegin;
     }
 
+    LineView copy() {
+        return LineView(*this);
+    }
+
     StringView popWord() {
         popSpaces();
         const char* oldBegin = begin;
@@ -26,6 +30,11 @@ struct LineView : public StringView {
             ++begin;
         }
         return StringView(oldBegin, begin);
+    }
+
+    LineView& dropSpaces() {
+        popSpaces();
+        return (*this);
     }
 };
 
@@ -41,11 +50,10 @@ struct ProgramView : public StringView {
             }
             ++begin;
         }
-        return LineView(oldBegin, begin);
+        LineView res(oldBegin, begin);
+        poppedLines += !res.empty();
+        return res;
     }
 
-    LineView getLine() const {
-        ProgramView copy(*this);
-        return copy.popLine();
-    }
+    int poppedLines = 0;
 };

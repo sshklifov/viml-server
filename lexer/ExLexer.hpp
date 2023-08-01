@@ -20,6 +20,8 @@ private:
     int fd;
     // State variables for lexing
     LineView currLine;
-    ProgramView progRemaining;
-    int lineCounter;
+    ProgramView program;
+    // Additional storage required for line continuations
+    char* contBuf;
+    int contBufLen;
 };
