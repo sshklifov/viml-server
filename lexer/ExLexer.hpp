@@ -1,7 +1,6 @@
 #pragma once
 
 #include <ExLexem.hpp>
-#include <ProgramView.hpp>
 
 struct ExLexer {
     ExLexer();
@@ -19,8 +18,8 @@ private:
     int len;
     int fd;
     // State variables for lexing
-    LineView currLine;
-    ProgramView program;
+    StringView currLine;
+    StringView program;
     // Additional storage required for line continuations
     char* contBuf;
     int contBufLen;

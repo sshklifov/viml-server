@@ -13,6 +13,25 @@
 #include <string>
 #include <stdexcept>
 
+// TODO remove these when there is a proper lexer...
+static void popSpaces(StringView& line) {
+    line = line.trim(" \t");
+}
+
+static StringView popLine(StringView& program) {
+    const char* oldBegin = program.begin;
+    program = program.trimUntil("\n");
+    program.begin++; // Remove the new line
+    return StringView(oldBegin, program.begin);
+}
+
+static StringView popWord(StringView& line) {
+    popSpaces(line);
+    const char* oldBegin = line.begin;
+    line = line.trimUntil(" \t");
+    return StringView(oldBegin, line.begin);
+}
+
 ExLexer::ExLexer() {
     mptr = nullptr;
     len = 0;
@@ -51,8 +70,8 @@ bool ExLexer::loadFile(const char* filename) {
     this->mptr = mptr;
     this->len = len;
     this->fd = fd;
-    program = ProgramView(buffer, buffer + len);
-    currLine = program.popLine();
+    program = StringView(buffer, buffer + len);
+    currLine = popLine(program);
 
     return true;
 }
@@ -80,41 +99,41 @@ bool ExLexer::lex(ExLexem* res) {
         assert(false);
         return false;
     }
-    int currLineNumber = program.poppedLines;
-    LineView nextLine = program.popLine();
-    LineView origNextLine = nextLine;
-    const char* contOrigBegin = contBuf + contBufLen;
+    int currLineNumber = 0; // TODO program.poppedLines;
+    StringView nextLine = popLine(program);
+    StringView origNextLine = nextLine;
+    const int origContBufLen = contBufLen;
 
-    nextLine.popSpaces();
+    popSpaces(nextLine);
     if (!nextLine.empty() && nextLine.front() == '\\') {
         if (!contBuf) {
             contBuf = new char[len + 1];
             contBufLen = 0;
         }
-        strncpy(contBuf + contBufLen, currLine.begin, currLine.length());
-        contBufLen += currLine.length();
+        strncpy(contBuf + contBufLen, currLine.begin, currLine.length() - 1); // Remove leading '\n'
+        contBufLen += currLine.length() - 1;
     }
     while (!nextLine.empty() && nextLine.front() == '\\') {
         nextLine.begin += 1;
         // Might be a comment, LOL syntax.
         if (nextLine[0] != '"' || nextLine[1] != ' ') {
-            strncpy(contBuf + contBufLen, nextLine.begin, nextLine.length());
-            contBufLen += nextLine.length();
+            strncpy(contBuf + contBufLen, nextLine.begin, nextLine.length() - 1); // Remove leading '\n'
+            contBufLen += nextLine.length() - 1;
         }
-        nextLine = program.popLine();
+        nextLine = popLine(program);
         origNextLine = nextLine;
-        nextLine.popSpaces();
+        popSpaces(nextLine);
     }
     currLine = origNextLine;
 
-    LineView contLine(contOrigBegin, contBuf + contBufLen);
-    LineView resultLine = contLine.empty() ? origNextLine : contLine;
-    resultLine.dropSpaces();
-    if (resultLine.empty()) {
+    StringView contBufLine(contBuf + origContBufLen, contBuf + contBufLen);
+    StringView resultLine = contBufLine.empty() ? origNextLine : contBufLine;
+    popSpaces(resultLine);
+    if (resultLine.empty() || resultLine.front() == '\0') {
         return false;
-    } else if (resultLine.front() == '"' || resultLine.front() != '\n') {
-        res->name = LineView();
-        res->qargs = LineView();
+    } else if (resultLine.front() == '"' || resultLine.front() == '\n') {
+        res->name = StringView();
+        res->qargs = StringView();
         res->line = currLineNumber;
         res->nameColumn = 1;
         res->qargsColumn = 1;
@@ -122,11 +141,10 @@ bool ExLexer::lex(ExLexem* res) {
     } else {
         const char* columnBegin = resultLine.begin;
         // TODO more formatting needed
-        res->name = resultLine.popWord();
-        resultLine.dropSpaces();
+        res->name = popWord(resultLine);
         res->qargs = resultLine;
         // Remove newline
-        if (!res->qargs.empty()) {
+        if (!res->qargs.empty() && res->qargs.back() == '\n') {
             --res->qargs.end;
         }
         res->line = currLineNumber;

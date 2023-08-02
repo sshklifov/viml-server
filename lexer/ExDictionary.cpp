@@ -47,11 +47,11 @@ bool ExDictionary::loadDict(const char* filepath) {
 
 void ExDictionary::unload() {
     filebuf.reset(nullptr);
-    cmds.clear();
+    dictionary.clear();
 }
 
 bool ExDictionary::isLoaded() const {
-    return !cmds.empty();
+    return !dictionary.empty();
 }
 
 int ExDictionary::search(const char* what) const {
@@ -61,7 +61,8 @@ int ExDictionary::search(const char* what) const {
 int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
     while (lo + 1 < hi) {
         int mid = (lo + hi) / 2;
-        int c = key.cmpn(cmds[mid].req, key.length());
+        StringView midStr = dictionary[mid].req.truncated(key.length());
+        int c = key.cmp(midStr);
         if (c < 0) {
             hi = mid - 1;
         } else if (c > 0) {
@@ -70,10 +71,12 @@ int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
             lo = mid;
         }
     }
-    if (key.cmpn(cmds[hi].req, key.length())) {
+    StringView loStr = dictionary[hi].req.truncated(key.length());
+    if (key == loStr) {
         return hi;
     }
-    if (key.cmpn(cmds[hi].req, key.length())) {
+    StringView hiStr = dictionary[lo].req.truncated(key.length());
+    if (key == hiStr) {
         return lo;
     }
     return -1;
@@ -82,7 +85,8 @@ int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
 int ExDictionary::firstEqualIdx(const StringView& key, int lo, int hi) const {
     while (lo + 1 < hi) {
         int mid = (lo + hi) / 2;
-        int c = key.cmpn(cmds[mid].req, key.length());
+        StringView midStr = dictionary[mid].req.truncated(key.length());
+        int c = key.cmp(midStr);
         if (c < 0) {
             hi = mid - 1;
         } else if (c > 0) {
@@ -91,10 +95,12 @@ int ExDictionary::firstEqualIdx(const StringView& key, int lo, int hi) const {
             hi = mid;
         }
     }
-    if (key.cmpn(cmds[lo].req, key.length()) == 0) {
+    StringView loStr = dictionary[lo].req.truncated(key.length());
+    if (key == loStr) {
         return lo;
     }
-    if (key.cmpn(cmds[hi].req, key.length())) {
+    StringView hiStr = dictionary[hi].req.truncated(key.length());
+    if (key == hiStr) {
         return hi;
     }
     return -1;
@@ -107,54 +113,50 @@ int ExDictionary::search(const StringView& key) const {
     }
 
     int lo = 0;
-    int hi = cmds.size() - 1;
-
+    int hi = dictionary.size() - 1;
     for (int guessLen = 1; guessLen <= key.length(); ++guessLen) {
-        Name guessKey;
+        Entry guessKey;
         guessKey.req = StringView(key.begin, key.begin + guessLen);
         guessKey.opt = StringView(key.begin + guessLen, key.end);
-        int newLo = firstEqualIdx(guessKey.req, lo, hi);
-        if (newLo == -1) {
+        lo = firstEqualIdx(guessKey.req, lo, hi);
+        if (lo == -1) {
             return -1;
         }
-        int newHi = lastEqualIdx(guessKey.req, newLo, hi);
-        assert(newHi != -1);
+        hi = lastEqualIdx(guessKey.req, lo, hi);
+        assert(hi != -1);
 
-        Name dictMatch = cmds[newLo];
-        if (dictMatch.req.length() == guessLen) {
-            if (guessKey.opt.cmpn(dictMatch.opt, guessKey.opt.length())) {
-                return newLo;
+        Entry loEntry = dictionary[lo];
+        if (loEntry.req.length() == guessLen) {
+            StringView loStr = loEntry.opt.truncated(guessKey.opt.length());
+            if (guessKey.opt == loStr) {
+                return lo;
+            } else if (lo == hi) {
+                return -1;
             } else {
-                if (newLo == newHi) {
-                    return -1;
-                } else {
-                    ++newLo;
-                }
+                ++lo;
             }
         }
         // Need to guess more characters
-        assert(dictMatch.req.length() >= guessKey.req.length());
-        lo = newLo;
-        hi = newHi;
+        assert(loEntry.req.length() >= guessKey.req.length());
     }
     return -1;
 }
 
-ExDictionary::Name ExDictionary::getEntry(int dictIdx) const {
+ExDictionary::Entry ExDictionary::getEntry(int dictIdx) const {
     if (!isLoaded()) {
         assert(false);
-        return Name{};
+        return Entry{};
     }
-    return cmds[dictIdx];
+    return dictionary[dictIdx];
 }
 
 void ExDictionary::rebuild() {
-    cmds.clear();
+    dictionary.clear();
     
     const char* begin = filebuf.get();
     while (*begin) {
-        cmds.resize(cmds.size() + 1);
-        Name& name = cmds.back();
+        dictionary.resize(dictionary.size() + 1);
+        Entry& name = dictionary.back();
 
         const char* end = begin;
         while (isalnum(*end)) {
@@ -185,14 +187,14 @@ void ExDictionary::rebuild() {
     assert(debugCheckSorted());
 }
 
-static int less(const ExDictionary::Name& lhs, const ExDictionary::Name& rhs) {
+static int less(const ExDictionary::Entry& lhs, const ExDictionary::Entry& rhs) {
     return lhs.req < rhs.req;
 }
 
 bool ExDictionary::debugCheckSorted() {
     bool sorted = true;
-    for (int i = 1; i < cmds.size(); ++i) {
-        if (!less(cmds[i - 1], cmds[i])) {
+    for (int i = 1; i < dictionary.size(); ++i) {
+        if (!less(dictionary[i - 1], dictionary[i])) {
             sorted = false;
             break;
         }
@@ -202,10 +204,10 @@ bool ExDictionary::debugCheckSorted() {
     }
 
     fputs("Dictionary is not sorted. This is the expected order:\n", stdout);
-    std::sort(cmds.begin(), cmds.end(), less);
-    for (int i = 0; i < cmds.size(); ++i) {
-        printf("%.*s", cmds[i].req.length(), cmds[i].req.begin);
-        printf("[%.*s]", cmds[i].opt.length(), cmds[i].opt.begin);
+    std::sort(dictionary.begin(), dictionary.end(), less);
+    for (int i = 0; i < dictionary.size(); ++i) {
+        printf("%.*s", dictionary[i].req.length(), dictionary[i].req.begin);
+        printf("[%.*s]", dictionary[i].opt.length(), dictionary[i].opt.begin);
         fputc('\n', stdout);
     }
     return false;

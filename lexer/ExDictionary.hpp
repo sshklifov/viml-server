@@ -6,7 +6,7 @@
 #include <memory>
 
 struct ExDictionary {
-    struct Name {
+    struct Entry {
         StringView req;
         StringView opt;
     };
@@ -18,7 +18,7 @@ struct ExDictionary {
     int search(const char* cmd) const;
     int search(const StringView& cmd) const;
 
-    Name getEntry(int dictIdx) const;
+    Entry getEntry(int dictIdx) const;
 
 private:
     int firstEqualIdx(const StringView& key, int lo, int hi) const;
@@ -27,6 +27,6 @@ private:
     void rebuild();
     bool debugCheckSorted();
    
-    std::vector<Name> cmds;
+    std::vector<Entry> dictionary;
     std::unique_ptr<char[]> filebuf;
 };

@@ -57,7 +57,7 @@ struct ExBlock : Block {
     std::string toString() override {
         std::string res = "Ex(" + name;
         if (!qargs.empty()) {
-            res += (",  " + qargs);
+            res += (", " + qargs);
         }
         res += ")\n";
         return res;
