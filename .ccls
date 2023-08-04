@@ -3,6 +3,6 @@ clang
 %h c++-header
 %c -x
 %c c++
--std=c++20
+-std=c++17
 -Iparser
 -Ilexer
