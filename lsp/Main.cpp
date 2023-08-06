@@ -12,6 +12,7 @@
 
 #include "Initialize.hpp"
 #include "Diagnostics.hpp"
+#include "TextDocument.hpp"
 
 template <typename T>
 void writeResponse(int id, const T& resp) {
@@ -89,36 +90,39 @@ void stdinFunction() {
 		auto message = std::make_unique< char[] >(len);
 		std::copy(str.begin(), str.end(), message.get());
 
-		FILE* fp = fopen("/home/stef/viml-server/stdin.txt", "a");
-		assert(fp);
-		fprintf(fp, "Content-Length: %d\n%s\n", len, message.get());
-		fclose(fp);
+		/* FILE* fp = fopen("/home/stef/viml-server/stdin.txt", "a"); */
+		/* assert(fp); */
+		/* fprintf(fp, "Content-Length: %d\n%s\n", len, message.get()); */
+		/* fclose(fp); */
 
         rapidjson::Document document;
 		document.Parse(message.get(), len);
 		assert(!document.HasParseError());
 
-        int id = document["id"].GetInt();
-
         const char* method = document["method"].GetString();
         if (strcmp(method, "initialize") == 0) {
+            int id = document["id"].GetInt();
             writeResponse(id, InitializeResult());
         } else if (strcmp(method, "initialize") == 0) {
             // Do Nothing
+        } else if (strcmp(method, "textDocument/didOpen") == 0) {
+            ValueReader reader(document.GetObject());
+            DidOpenTextDocumentParams params;
+            reader.read(params);
         }
 
-        PublishDiagnosticsParams params;
-        Diagnostic dig;
-        dig.message = "Underfined reference to server";
-        dig.severity = Diagnostic::Error;
-        dig.range.start.line = 1;
-        dig.range.start.character = 1;
-        dig.range.end.line = 1;
-        dig.range.end.character = 2;
-        params.diagnostics.push_back(dig);
-        params.uri = "file:///home/stef/.vimrc";
-        writeNotification("textDocument/publishDiagnostics", params);
-        return;
+        /* PublishDiagnosticsParams params; */
+        /* Diagnostic dig; */
+        /* dig.message = "Underfined reference to server"; */
+        /* dig.severity = Diagnostic::Error; */
+        /* dig.range.start.line = 1; */
+        /* dig.range.start.character = 1; */
+        /* dig.range.end.line = 1; */
+        /* dig.range.end.character = 2; */
+        /* params.diagnostics.push_back(dig); */
+        /* params.uri = "file:///home/stef/.vimrc"; */
+        /* writeNotification("textDocument/publishDiagnostics", params); */
+        /* return; */
 
 #if 0
 
@@ -160,8 +164,9 @@ quit:
 }
 
 int main() {
-    FILE* fp = fopen("/home/stef/viml-server/stdin.txt", "w");
-    fclose(fp);
+    /* FILE* fp = fopen("/home/stef/viml-server/stdin.txt", "w"); */
+    /* fclose(fp); */
+
     /* int c = fgetc(stdin); */
     /* while (c != EOF) { */
     /*     fp = fopen("/home/stef/viml-server/stdin.txt", "a"); */
