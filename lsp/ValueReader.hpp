@@ -45,10 +45,3 @@ struct ValueReader {
 private:
 	rapidjson::Value val;
 };
-
-template <>
-void ValueReader::read(std::string& res) {
-    if (val.IsString()) {
-        res = val.GetString();
-    }
-}

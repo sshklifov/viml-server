@@ -36,14 +36,14 @@ struct Diagnostic {
 
     } severity;
 
-    std::string message;
+    const char* message;
 };
 
 struct PublishDiagnosticsParams {
 	/**
 	 * The URI for which diagnostic information is reported.
 	 */
-    std::string uri;
+    const char* uri;
 
 	/**
 	 * An array of diagnostic information items.

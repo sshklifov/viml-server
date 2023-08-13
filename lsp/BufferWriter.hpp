@@ -51,10 +51,6 @@ struct BufferWriter {
         w.String(str);
     }
 
-    void setKey(const std::string& str) {
-        w.String(str.c_str());
-    }
-
     void setKey(bool flag) {
         w.Bool(flag);
     }

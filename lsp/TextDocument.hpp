@@ -11,12 +11,12 @@ struct DidOpenTextDocumentParams {
 		/**
 		 * The text document's URI.
 		 */
-		std::string uri;
+		const char* uri;
 
 		/**
 		 * The text document's language identifier.
 		 */
-		std::string languageId;
+		const char* languageId;
 
 		/**
 		 * The version number of this document (it will increase after each
@@ -27,7 +27,7 @@ struct DidOpenTextDocumentParams {
 		/**
 		 * The content of the opened text document.
 		 */
-		std::string text;
+		const char* text;
 
 	} textDocument;
 };
