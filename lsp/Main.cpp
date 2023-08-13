@@ -10,9 +10,16 @@
 
 #include <cstdio>
 
+#include <argp.h>
+
 #include "Initialize.hpp"
 #include "Diagnostics.hpp"
 #include "TextDocument.hpp"
+
+struct Arguments {
+	FILE* redirOut;
+	FILE* redirIn;
+} args;
 
 template <typename T>
 void writeResponse(int id, const T& resp) {
@@ -20,15 +27,22 @@ void writeResponse(int id, const T& resp) {
 	rapidjson::Writer<rapidjson::StringBuffer> handle(output);
 	BufferWriter w(handle);
 
-	BufferWriter::ObjectScope root = w.beginObject();
-	w.add("jsonrpc", "2.0");
-	w.add("id", id);
-	w.add("result", resp);
+	{
+		BufferWriter::ObjectScope root = w.beginObject();
+		w.add("jsonrpc", "2.0");
+		w.add("id", id);
+		w.add("result", resp);
+	}
 
 	int bufferSize = output.GetSize();
 	printf("Content-Length: %d\r\n\r\n", bufferSize);
 	fputs(output.GetString(), stdout);
 	fflush(stdout);
+
+	if (args.redirOut) {
+		fprintf(args.redirOut, "Writing response: %s\n", output.GetString());
+		fflush(args.redirOut);
+	}
 }
 
 template <typename T>
@@ -37,15 +51,22 @@ void writeNotification(const char* method, const T& resp) {
 	rapidjson::Writer<rapidjson::StringBuffer> handle(output);
 	BufferWriter w(handle);
 
-	BufferWriter::ObjectScope root = w.beginObject();
-	w.add("jsonrpc", "2.0");
-	w.add("method", method);
-	w.add("params", resp);
+	{
+		BufferWriter::ObjectScope root = w.beginObject();
+		w.add("jsonrpc", "2.0");
+		w.add("method", method);
+		w.add("params", resp);
+	}
 
 	int bufferSize = output.GetSize();
 	printf("Content-Length: %d\r\n\r\n", bufferSize);
 	fputs(output.GetString(), stdout);
 	fflush(stdout);
+
+	if (args.redirOut) {
+		fprintf(args.redirOut, "Writing notification: %s\n", output.GetString());
+		fflush(args.redirOut);
+	}
 }
 
 void processJson(rapidjson::Document& document) {
@@ -122,6 +143,7 @@ void stdinFunction() {
 		}
 
 		if (expectedMsg[charsMatched] == '\0') {
+			charsMatched = 0;
 			// Read message length
 			int len = 0;
 			int s = scanf("%d", &len);
@@ -146,6 +168,12 @@ void stdinFunction() {
 					rapidjson::Document document;
 					document.Parse(message, len);
 					assert(!document.HasParseError());
+					// Log message
+					if (args.redirIn) {
+						fprintf(args.redirIn, "Received message: %s\n", message);
+						fflush(args.redirIn);
+					}
+					// Process
 					processJson(document);
 					delete[] message;
 				}
@@ -170,17 +198,63 @@ void stdinFunction() {
 #endif
 }
 
-int main() {
-	/* FILE* fp = fopen("/home/stef/viml-server/stdin.txt", "w"); */
-	/* fclose(fp); */
+error_t argsParser(int key, char *arg, argp_state *state) {
+	Arguments* user = (Arguments*)(state->input);
+	switch (key) {
+	case 'i':
+		user->redirIn = fopen(arg, "w");
+		if (!user->redirIn) {
+			int err = errno;
+			fputs("Failed to open --stdin file\n", state->err_stream);
+			return err;
+		} else {
+			return 0;
+		}
+	case 'o':
+		user->redirOut = fopen(arg, "w");
+		if (!user->redirOut) {
+			int err = errno;
+			fputs("Failed to open --stdout file", state->err_stream);
+			return err;
+		} else {
+			return 0;
+		}
 
-	/* int c = fgetc(stdin); */
-	/* while (c != EOF) { */
-	/*	   fp = fopen("/home/stef/viml-server/stdin.txt", "a"); */
-	/*	   fputc(c, fp); */
-	/*	   fclose(fp); */
-	/*	   c = fgetc(stdin); */
-	/* } */
+	default:
+		return ARGP_ERR_UNKNOWN;
+	}
+}
+
+int main(int argc, char** argv) {
+	const char* argsDoc = ""; // < No args
+	const char* doc = "Vim LSP";
+
+	struct argp_option options[] = {
+		{"stdin",  'i', "FILE", 0, "Redirect input LSP messages"},
+		{"stdout", 'o', "FILE", 0, "Redirect output LSP messages"},
+		{0}
+	};
+
+	struct argp argp = {options, argsParser, argsDoc, doc};
+
+	args.redirIn = NULL;
+	args.redirOut = NULL;
+	int errnum = argp_parse(&argp, argc, argv, 0, NULL, &args);
+	if (errnum != 0) {
+		return 1;
+	}
+
 	stdinFunction();
+
+	// Fuck it, stderr is more comfortable to use
+	if (args.redirIn) {
+		fclose(args.redirIn);
+		/* args.redirIn = stderr; */
+	}
+	if (args.redirOut) {
+		fclose(args.redirOut);
+		/* args.redirOut = stderr; */
+	}
+
 	return 0;
 }
