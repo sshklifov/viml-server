@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Writer.hpp"
+#include "BufferWriter.hpp"
 
 struct ServerCapabilities {
 	/**
@@ -280,48 +280,48 @@ struct InitializeResult {
 };
 
 template <>
-void Writer::setKey(const ServerCapabilities::TextDocumentSyncOptions::TextDocumentSyncKind& kind) {
+void BufferWriter::setKey(const ServerCapabilities::TextDocumentSyncOptions::TextDocumentSyncKind& kind) {
     w.Int(kind);
 }
 
 template <>
-void Writer::setKey(const ServerCapabilities::TextDocumentSyncOptions& opts) {
-    ObjectScope scope = newObject();
+void BufferWriter::setKey(const ServerCapabilities::TextDocumentSyncOptions& opts) {
+    ObjectScope scope = beginObject();
     add("openClose", opts.openClose);
     add("change", opts.change);
 }
 
 template <>
-void Writer::setKey(const ServerCapabilities::CompletionOptions& opts) {
-    ObjectScope scope = newObject();
+void BufferWriter::setKey(const ServerCapabilities::CompletionOptions& opts) {
+    ObjectScope scope = beginObject();
     add("workDoneProgress", opts.workDoneProgress);
 }
 
 template <>
-void Writer::setKey(const ServerCapabilities::SignatureHelpOptions& opts) {
-    ObjectScope scope = newObject();
+void BufferWriter::setKey(const ServerCapabilities::SignatureHelpOptions& opts) {
+    ObjectScope scope = beginObject();
     add("workDoneProgress", opts.workDoneProgress);
 }
 
 template <>
-void Writer::setKey(const ServerCapabilities::DiagnosticOptions& opts) {
-    ObjectScope scope = newObject();
+void BufferWriter::setKey(const ServerCapabilities::DiagnosticOptions& opts) {
+    ObjectScope scope = beginObject();
     add("workDoneProgress", opts.workDoneProgress);
 }
 
 template <>
-void Writer::setKey(const ServerCapabilities::WorkspaceAnon& ws) {
-    ObjectScope scope = newObject();
+void BufferWriter::setKey(const ServerCapabilities::WorkspaceAnon& ws) {
+    ObjectScope scope = beginObject();
 
     {
-        ObjectScope scope = newObject("workspaceFolders");
+        ObjectScope scope = beginObject("workspaceFolders");
         add("supported", ws.workspaceFolders.supported);
     }
 }
 
 template <>
-void Writer::setKey(const ServerCapabilities& cap) {
-    ObjectScope scope = newObject();
+void BufferWriter::setKey(const ServerCapabilities& cap) {
+    ObjectScope scope = beginObject();
     add("positionEncoding", cap.positionEncoding);
     add("textDocumentSync", cap.textDocumentSync);
     add("completionProvider", cap.completionProvider);
@@ -358,12 +358,12 @@ void Writer::setKey(const ServerCapabilities& cap) {
 }
 
 template<>
-void Writer::setKey(const InitializeResult& res) {
-    ObjectScope scope = newObject();
+void BufferWriter::setKey(const InitializeResult& res) {
+    ObjectScope scope = beginObject();
     add("capabilities", res.capabilities);
     
     {
-        ObjectScope scope = newObject("serverInfo");
+        ObjectScope scope = beginObject("serverInfo");
         add("name", res.serverInfo.name);
         add("version", res.serverInfo.version);
 

@@ -18,14 +18,12 @@ template <typename T>
 void writeResponse(int id, const T& resp) {
     rapidjson::StringBuffer output;
     rapidjson::Writer<rapidjson::StringBuffer> handle(output);
+    BufferWriter w(handle);
 
-    Writer w(handle);
-
-    ObjectScope root = w.newObject();
+    BufferWriter::ObjectScope root = w.beginObject();
     w.add("jsonrpc", "2.0");
     w.add("id", id);
     w.add("result", resp);
-    root.close();
 
     int bufferSize = output.GetSize();
     printf("Content-Length: %d\r\n\r\n", bufferSize);
@@ -37,14 +35,12 @@ template <typename T>
 void writeNotification(const char* method, const T& resp) {
     rapidjson::StringBuffer output;
     rapidjson::Writer<rapidjson::StringBuffer> handle(output);
+    BufferWriter w(handle);
 
-    Writer w(handle);
-
-    ObjectScope root = w.newObject();
+    BufferWriter::ObjectScope root = w.beginObject();
     w.add("jsonrpc", "2.0");
     w.add("method", method);
     w.add("params", resp);
-    root.close();
 
     int bufferSize = output.GetSize();
     printf("Content-Length: %d\r\n\r\n", bufferSize);

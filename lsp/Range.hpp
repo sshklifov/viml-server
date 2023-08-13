@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Writer.hpp"
+#include "BufferWriter.hpp"
 
 struct Position {
 	/**
@@ -31,15 +31,15 @@ struct Range {
 };
 
 template<>
-void Writer::setKey(const Position& pos) {
-    ObjectScope s = newObject();
+void BufferWriter::setKey(const Position& pos) {
+    ObjectScope s = beginObject();
     add("line", pos.line);
     add("character", pos.character);
 }
 
 template<>
-void Writer::setKey(const Range& range) {
-    ObjectScope s = newObject();
+void BufferWriter::setKey(const Range& range) {
+    ObjectScope s = beginObject();
     add("start", range.start);
     add("end", range.end);
 }

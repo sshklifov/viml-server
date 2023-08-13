@@ -5,49 +5,39 @@
 #include <string>
 #include <vector>
 
-struct ObjectScope {
-    ObjectScope(rapidjson::Writer<rapidjson::StringBuffer>& w, const char* name = 0) : w(w) {
-        if (name && *name) {
-            w.Key(name);
+struct BufferWriter {
+    struct ObjectScope {
+        ObjectScope(rapidjson::Writer<rapidjson::StringBuffer>& w, const char* name = 0) : w(w) {
+            if (name && *name) {
+                w.Key(name);
+            }
+            w.StartObject();
         }
-        w.StartObject();
-        closed = false;
-    }
 
-    ObjectScope(const ObjectScope&) = delete;
-    ObjectScope(ObjectScope&&) = delete;
-
-    ~ObjectScope() {
-        if (!closed) {
+        ~ObjectScope() {
             w.EndObject();
         }
-    }
 
-    void close() {
-        assert(!closed);
-        closed = true;
-        w.EndObject();
-    }
+        ObjectScope(const ObjectScope&) = delete;
+        ObjectScope(ObjectScope&&) = delete;
 
-private:
-    rapidjson::Writer<rapidjson::StringBuffer>& w;
-    int closed;
-};
+    private:
+        rapidjson::Writer<rapidjson::StringBuffer>& w;
+    };
 
-struct Writer {
-    Writer(rapidjson::Writer<rapidjson::StringBuffer>& w) : w(w) {}
+    BufferWriter(rapidjson::Writer<rapidjson::StringBuffer>& w) : w(w) {}
 
-    ObjectScope newObject(const char* name = nullptr) { return ObjectScope(w, name); }
+    ObjectScope beginObject(const char* name = nullptr) { return ObjectScope(w, name); }
 
     template <typename T>
-    Writer& add(const char* name, const T& fwd) {
+    BufferWriter& add(const char* name, const T& fwd) {
         w.Key(name);
         setKey(fwd);
         return (*this);
     }
 
     template <typename T>
-    Writer& add(const char* name, const std::vector<T>& arr) {
+    BufferWriter& add(const char* name, const std::vector<T>& arr) {
         w.Key(name);
         w.StartArray();
         for (int i = 0; i < arr.size(); ++i) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Writer.hpp"
+#include "BufferWriter.hpp"
 #include "Range.hpp"
 
 struct Diagnostic {
@@ -52,13 +52,13 @@ struct PublishDiagnosticsParams {
 };
 
 template <>
-void Writer::setKey(const Diagnostic::DiagnosticSeverity& severity) {
+void BufferWriter::setKey(const Diagnostic::DiagnosticSeverity& severity) {
     w.Int(severity);
 }
 
 template <>
-void Writer::setKey(const Diagnostic& dig) {
-    ObjectScope scoped = newObject();
+void BufferWriter::setKey(const Diagnostic& dig) {
+    ObjectScope scoped = beginObject();
     add("range", dig.range);
     add("range", dig.range);
     add("severity", dig.severity);
@@ -66,8 +66,8 @@ void Writer::setKey(const Diagnostic& dig) {
 }
 
 template <>
-void Writer::setKey(const PublishDiagnosticsParams& params) {
-    ObjectScope scoped = newObject();
+void BufferWriter::setKey(const PublishDiagnosticsParams& params) {
+    ObjectScope scoped = beginObject();
     add("uri", params.uri);
     add("diagnostics", params.diagnostics);
 }
