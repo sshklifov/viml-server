@@ -19,16 +19,60 @@ struct StringView {
         return end - begin;
     }
 
-    char operator[](int idx) {
+    char operator[](int idx) const {
         return begin[idx];
     }
 
-    char front() const { return *begin; }
-    char back() const { return *(end - 1); }
+    char left() const { return *begin; }
+    char right() const { return *(end - 1); }
 
-    // Mutators
+    bool beginsWith(char c) const {
+        return !empty() && left() == c;
+    }
 
-    StringView truncated(int newSize) const {
+    bool endsWith(char c) const {
+        return !empty() && right() == c;
+    }
+
+    bool beginsWith(const char* prefix) const {
+        const char* it = begin;
+        while (it < end && *prefix) {
+            if (*prefix != *it) {
+                return false;
+            }
+            ++it;
+            ++prefix;
+        }
+        return *prefix == '\0';
+    }
+
+    // Iterators
+
+    const char* find(char c) const {
+        const char* it = begin;
+        while (it < end) {
+            if (*it == c) {
+                return it;
+            }
+            ++it;
+        }
+        return end;
+    }
+
+    const char* find(char c1, char c2) const {
+        const char* it = begin;
+        while (it < end) {
+            if (*it == c1 || *it == c2) {
+                return it;
+            }
+            ++it;
+        }
+        return end;
+    }
+
+    // Generators
+
+    StringView trunc(int newSize) const {
         assert(newSize >= 0);
         if (newSize < length()) {
             return StringView(begin, begin + newSize);
@@ -37,50 +81,46 @@ struct StringView {
         }
     }
 
-    StringView substr(int beginOffset, int endOffset) const {
-        assert(beginOffset >= 0 && endOffset >= 0);
-        assert(beginOffset <= endOffset);
-        assert(begin + beginOffset < end);
-        assert(begin + endOffset <= end);
-        return StringView(begin + beginOffset, begin + endOffset);
+    StringView popLeft(int count = 1) const {
+        return StringView(begin + count, end);
     }
 
-    StringView trim(const char* all) {
-        const char* newBegin = begin;
-        while (newBegin < end) {
-            int found = false;
-            for (int i = 0; all[i]; ++i) {
-                if (*newBegin == all[i] ) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                ++newBegin;
-            } else {
-                break;
-            }
-        }
-        return StringView(newBegin, end);
+    StringView popRight(int count = 1) const {
+        return StringView(begin, end - count);
     }
 
-    StringView trimUntil(const char* any) {
-        const char* newBegin = begin;
-        while (newBegin < end) {
-            int found = false;
-            for (int i = 0; any[i]; ++i) {
-                if (*newBegin == any[i] ) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
+    StringView trimLeftSpace() const {
+        const char* it = begin;
+        while (it < end) {
+            if (*it != ' ' && *it != '\t') {
                 break;
-            } else {
-                ++newBegin;
             }
+            ++it;
         }
-        return StringView(newBegin, end);
+        return StringView(it, end);
+    }
+
+    StringView trimRightSpace() const {
+        const char* it = end - 1;
+        while (it >= begin) {
+            if (*it != ' ' && *it != '\t') {
+                break;
+            }
+            ++it;
+        }
+        return StringView(begin, it + 1);
+    }
+
+    StringView trimSpace() {
+        return trimLeftSpace().trimRightSpace();
+    }
+
+    StringView popLineFeed() {
+        if (!empty() && right() == '\n') {
+            return StringView(begin, end - 1);
+        } else {
+            return *this;
+        }
     }
 
     // Comparators
@@ -120,3 +160,25 @@ struct StringView {
     const char* begin;
     const char* end;
 };
+
+#if 0
+void trimLeft(StringView& s) {
+}
+
+void trimRight(StringView& s) {
+    const char* it = s.end - 1;
+    while (it >= s.begin) {
+        if (*it == ' ' || *it == '\t') {
+            --it;
+        } else {
+            break;
+        }
+    }
+    s.end = it + 1;
+}
+
+void trim(StringView& s) {
+    trimLeft(s);
+    trimRight(s);
+}
+#endif

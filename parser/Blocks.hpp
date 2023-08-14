@@ -11,6 +11,8 @@
 struct Block {
     Block() {}
 
+    virtual ~Block() {}
+
     virtual int getId() = 0;
 
     virtual std::string toString() { return bodyToString(); }

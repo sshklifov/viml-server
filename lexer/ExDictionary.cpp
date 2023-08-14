@@ -61,7 +61,7 @@ int ExDictionary::search(const char* what) const {
 int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
     while (lo + 1 < hi) {
         int mid = (lo + hi) / 2;
-        StringView midStr = dictionary[mid].req.truncated(key.length());
+        StringView midStr = dictionary[mid].req.trunc(key.length());
         int c = key.cmp(midStr);
         if (c < 0) {
             hi = mid - 1;
@@ -71,11 +71,11 @@ int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
             lo = mid;
         }
     }
-    StringView loStr = dictionary[hi].req.truncated(key.length());
+    StringView loStr = dictionary[hi].req.trunc(key.length());
     if (key == loStr) {
         return hi;
     }
-    StringView hiStr = dictionary[lo].req.truncated(key.length());
+    StringView hiStr = dictionary[lo].req.trunc(key.length());
     if (key == hiStr) {
         return lo;
     }
@@ -85,7 +85,7 @@ int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
 int ExDictionary::firstEqualIdx(const StringView& key, int lo, int hi) const {
     while (lo + 1 < hi) {
         int mid = (lo + hi) / 2;
-        StringView midStr = dictionary[mid].req.truncated(key.length());
+        StringView midStr = dictionary[mid].req.trunc(key.length());
         int c = key.cmp(midStr);
         if (c < 0) {
             hi = mid - 1;
@@ -95,11 +95,11 @@ int ExDictionary::firstEqualIdx(const StringView& key, int lo, int hi) const {
             hi = mid;
         }
     }
-    StringView loStr = dictionary[lo].req.truncated(key.length());
+    StringView loStr = dictionary[lo].req.trunc(key.length());
     if (key == loStr) {
         return lo;
     }
-    StringView hiStr = dictionary[hi].req.truncated(key.length());
+    StringView hiStr = dictionary[hi].req.trunc(key.length());
     if (key == hiStr) {
         return hi;
     }
@@ -127,7 +127,7 @@ int ExDictionary::search(const StringView& key) const {
 
         Entry loEntry = dictionary[lo];
         if (loEntry.req.length() == guessLen) {
-            StringView loStr = loEntry.opt.truncated(guessKey.opt.length());
+            StringView loStr = loEntry.opt.trunc(guessKey.opt.length());
             if (guessKey.opt == loStr) {
                 return lo;
             } else if (lo == hi) {
