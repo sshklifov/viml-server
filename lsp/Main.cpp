@@ -15,6 +15,7 @@
 #include "Initialize.hpp"
 #include "Diagnostics.hpp"
 #include "TextDocument.hpp"
+#include <Parser.hpp>
 
 struct Arguments {
 	FILE* redirOut;
@@ -88,20 +89,32 @@ void processJson(rapidjson::Document& document) {
 		ValueReader reader(document.GetObject());
 		DidOpenTextDocumentParams params;
 		reader.read(params);
-	}
 
-	/* PublishDiagnosticsParams params; */
-	/* Diagnostic dig; */
-	/* dig.message = "Underfined reference to server"; */
-	/* dig.severity = Diagnostic::Error; */
-	/* dig.range.start.line = 1; */
-	/* dig.range.start.character = 1; */
-	/* dig.range.end.line = 1; */
-	/* dig.range.end.character = 2; */
-	/* params.diagnostics.push_back(dig); */
-	/* params.uri = "file:///home/stef/.vimrc"; */
-	/* writeNotification("textDocument/publishDiagnostics", params); */
-	/* return; */
+		const char* uri = params.textDocument.uri;
+		char scheme[] = "file://";
+		if (strncmp(uri, scheme, sizeof(scheme)) != 0) {
+			// Report error idk
+		}
+		const char* filename = uri + sizeof(scheme);
+		const bool hasQuery = strchr(filename, '?') != nullptr;
+		const bool hasFragment = strchr(filename, '#') != nullptr;
+		if (hasQuery || hasFragment) {
+			// Report error idk
+		}
+		
+		SyntaxTree ast;
+		PublishDiagnosticsParams diagnosticsParams;
+		RootBlock* root = ast.build(filename, diagnosticsParams.diagnostics);
+		if (!root) {
+			// Report error idk
+		}
+
+        // Report errors
+        if (!diagnosticsParams.diagnostics.empty()) {
+            diagnosticsParams.uri = uri;
+            writeNotification("textDocument/publishDiagnostics", params);
+        }
+	}
 
 #if 0
 
@@ -170,7 +183,9 @@ void stdinFunction() {
 					assert(!document.HasParseError());
 					// Log message
 					if (args.redirIn) {
-						fprintf(args.redirIn, "Received message: %s\n", message);
+                        fprintf(args.redirIn, "Content-Length: %d\n\n", len + 1);
+						fputs(message, args.redirIn);
+                        fputc('\n', args.redirIn);
 						fflush(args.redirIn);
 					}
 					// Process

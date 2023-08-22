@@ -31,14 +31,14 @@ struct Range {
 };
 
 template<>
-void BufferWriter::setKey(const Position& pos) {
+inline void BufferWriter::setKey(const Position& pos) {
     ObjectScope s = beginObject();
     add("line", pos.line);
     add("character", pos.character);
 }
 
 template<>
-void BufferWriter::setKey(const Range& range) {
+inline void BufferWriter::setKey(const Range& range) {
     ObjectScope s = beginObject();
     add("start", range.start);
     add("end", range.end);

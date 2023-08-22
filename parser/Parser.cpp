@@ -1,187 +1,188 @@
-#include <Constants.hpp>
+#include "Parser.hpp"
+#include "Constants.hpp"
+
+#include <ExDictionary.hpp>
 #include <ExLexer.hpp>
-#include <Blocks.hpp>
 
-#include <type_traits>
-#include <stack>
+bool checkBlockConstants(const ExDictionary& dict) {
+    std::string lowercase;
+    std::vector<int> values;
 
-#include <cassert>
+    int okay = true;
 
-// TODO
-#include "../lsp/Diagnostics.hpp"
+#define COMPUTE_COMMAND_VALUE(name, val)              \
+    lowercase = #name;                                \
+    for (int i = 0; i < lowercase.length(); ++i) {    \
+        lowercase[i] = tolower(lowercase[i]);         \
+    }                                                 \
+    values.push_back(dict.search(lowercase.c_str())); \
+    okay &= (values.back() == val);                   \
 
-struct BlockFactory {
-    BlockFactory() = default;
-    BlockFactory(const BlockFactory&) = delete;
-    BlockFactory(BlockFactory&&) = delete;
+    FOR_EACH_COMMAND(COMPUTE_COMMAND_VALUE);
 
-    ~BlockFactory() {
-        for (Block* block : allocatedBlocks) {
-            delete block;
-        }
+#undef COMPUTE_COMMAND_VALUE
+
+    if (okay) {
+        return true;
     }
 
-    template <typename T, typename ... Args>
-    T* create(Args&&... args) {
-        static_assert(std::is_base_of<Block, T>::value, "Bad template argument");
+    int i = 0;
 
-        T* res = new T(std::forward<Args>(args)...);
-        allocatedBlocks.push_back(res);
-        return res;
-    }
+#define PRINT_COMMAND_VALUE(name, val) printf("    code(%s, %d) \\\n", #name, values[i++]);
 
-    std::vector<Block*> allocatedBlocks;
-};
+    FOR_EACH_COMMAND(PRINT_COMMAND_VALUE)
 
-struct SyntaxTree {
-    SyntaxTree() = default;
-    SyntaxTree(const SyntaxTree&) = delete;
-    SyntaxTree(SyntaxTree&&) = delete;
+#undef PRINT_COMMAND_VALUE
 
-    // TODO return and stuff
-    int build(const char* file) {
-        ExLexer lexer;
-        if (!lexer.loadFile(file)) {
-            return 1;
-        }
+    return okay;
+}
 
-        ExDictionary dict;
-        if (!dict.loadDict("/home/stef/viml-server/lexer/excmds.txt")) {
-            return 2;
-        }
+RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) {
+	ExLexer lexer;
+	if (!lexer.loadFile(file)) {
+		return nullptr;
+	}
 
-        assert(checkBlockConstants(dict));
+	ExDictionary dict;
+	if (!dict.loadDict("/home/stef/viml-server/lexer/excmds.txt")) {
+		return nullptr;
+	}
 
-        root = factory.create<RootBlock>();
-        std::stack<Block*> blocks;
-        blocks.push(root);
+	assert(checkBlockConstants(dict));
 
-        ExLexem lexem;
-        while (lexer.lex(&lexem)) {
-            int dictIdx = dict.search(lexem.name);
-            Block* newBlock = nullptr;
-            switch (dictIdx) {
-            case IF:
-                newBlock = factory.create<IfBlock>(lexem.qargs);
-                blocks.top()->addChild(newBlock);
-                blocks.push(newBlock);
-                break;
+	root = factory.create<RootBlock>();
+	std::stack<Block*> blocks;
+	blocks.push(root);
 
-            case ELSEIF:
-                if (blocks.top()->getId() != IF) {
-                    throw std::runtime_error("elseif without a previous if");
-                }
-                newBlock = factory.create<IfBlock>(lexem.qargs);
-                blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
-                blocks.top() = newBlock;
-                break;
+	ExLexem lexem;
+	while (lexer.lex(&lexem)) {
+		int dictIdx = dict.search(lexem.name);
+		Block* newBlock = nullptr;
+		switch (dictIdx) {
+		case IF:
+			newBlock = factory.create<IfBlock>(lexem.qargs);
+			blocks.top()->addChild(newBlock);
+			blocks.push(newBlock);
+			break;
 
-            case ELSE:
-                if (blocks.top()->getId() != IF) {
-                    throw std::runtime_error("else without a previous if");
-                }
-                newBlock = factory.create<ElseBlock>();
-                blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
-                blocks.top() = newBlock;
-                break;
+		case ELSEIF:
+			if (blocks.top()->getId() != IF) {
+				const char* msg = "elseif without a previous if";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			} else {
+				newBlock = factory.create<IfBlock>(lexem.qargs);
+				blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
+				blocks.top() = newBlock;
+			}
+			break;
 
-            case ENDIF:
-                if (blocks.top()->getId() != IF && blocks.top()->getId() != ELSE) {
-                    throw std::runtime_error("endif without a previous if/else");
-                }
-                blocks.pop();
-                break;
+		case ELSE:
+			if (blocks.top()->getId() != IF) {
+				const char* msg = "elseif without a previous if";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			} else {
+				newBlock = factory.create<ElseBlock>();
+				blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
+				blocks.top() = newBlock;
+			}
+			break;
 
-            case WHILE:
-                newBlock = factory.create<WhileBlock>(lexem.qargs);
-                blocks.top()->addChild(newBlock);
-                blocks.push(newBlock);
-                break;
+		case ENDIF:
+			if (blocks.top()->getId() != IF && blocks.top()->getId() != ELSE) {
+				const char* msg = "endif without a previous if/else";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			} else {
+				blocks.pop();
+			}
+			break;
 
-            case ENDWHILE:
-                if (blocks.top()->getId() != WHILE) {
-                    throw std::runtime_error("endwhile without a previous while");
-                }
-                blocks.pop();
-                break;
+		case WHILE:
+			newBlock = factory.create<WhileBlock>(lexem.qargs);
+			blocks.top()->addChild(newBlock);
+			blocks.push(newBlock);
+			break;
 
-            case FOR:
-                newBlock = factory.create<ForBlock>(lexem.qargs);
-                blocks.top()->addChild(newBlock);
-                blocks.push(newBlock);
-                break;
+		case ENDWHILE:
+			if (blocks.top()->getId() != WHILE) {
+				const char* msg = "endwhile without a previous while";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			} else {
+				blocks.pop();
+			}
+			break;
 
-            case ENDFOR:
-                if (blocks.top()->getId() != FOR) {
-                    throw std::runtime_error("endfor without a previous for");
-                }
-                blocks.pop();
-                break;
+		case FOR:
+			newBlock = factory.create<ForBlock>(lexem.qargs);
+			blocks.top()->addChild(newBlock);
+			blocks.push(newBlock);
+			break;
 
-            case FUNCTION:
-                newBlock = factory.create<FunctionBlock>(lexem.qargs);
-                blocks.top()->addChild(newBlock);
-                blocks.push(newBlock);
-                break;
+		case ENDFOR:
+			if (blocks.top()->getId() != FOR) {
+				const char* msg = "endfor without a previous for";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			} else {
+				blocks.pop();
+			}
+			break;
 
-            case ENDFUNCTION:
-                if (blocks.top()->getId() != FUNCTION) {
-                    throw std::runtime_error("endfunction without a previous function");
-                }
-                blocks.pop();
-                break;
+		case FUNCTION:
+			newBlock = factory.create<FunctionBlock>(lexem.qargs);
+			blocks.top()->addChild(newBlock);
+			blocks.push(newBlock);
+			break;
 
-            case TRY:
-                newBlock = factory.create<TryBlock>(lexem.qargs);
-                blocks.top()->addChild(newBlock);
-                blocks.push(newBlock);
-                break;
+		case ENDFUNCTION:
+			if (blocks.top()->getId() != FUNCTION) {
+				const char* msg = "endfunction without a previous function";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			} else {
+				blocks.pop();
+			}
+			break;
 
-            case ENDTRY:
-                if (blocks.top()->getId() != TRY) {
-                    throw std::runtime_error("endtry without a previous try");
-                }
-                blocks.pop();
-                break;
+		case TRY:
+			newBlock = factory.create<TryBlock>(lexem.qargs);
+			blocks.top()->addChild(newBlock);
+			blocks.push(newBlock);
+			break;
 
-            case CATCH:
-                if (blocks.top()->getId() == CATCH) {
-                    blocks.pop();
-                }
-                if (blocks.top()->getId() == TRY) {
-                    newBlock = factory.create<CatchBlock>(lexem.qargs);
-                    blocks.top()->cast<TryBlock>()->catchBlocks.push_back(newBlock);
-                    blocks.push(newBlock);
-                } else {
-                    throw std::runtime_error("catch without a previous try");
-                }
-                break;
+		case ENDTRY:
+			if (blocks.top()->getId() != TRY) {
+				const char* msg = "endtry without a previous try";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			} else {
+				blocks.pop();
+			}
+			break;
 
-            default:
-                if (dictIdx < 0) {
-                    /* std::string cmd(lexem.name.begin, lexem.name.end); */
-                    /* throw std::runtime_error("unknown command + " + cmd); */
-                }
-                blocks.top()->addChild(factory.create<ExBlock>(dictIdx, lexem));
-            }
-        }
+		case CATCH:
+			if (blocks.top()->getId() == CATCH) {
+				blocks.pop();
+			}
+			if (blocks.top()->getId() == TRY) {
+				newBlock = factory.create<CatchBlock>(lexem.qargs);
+				blocks.top()->cast<TryBlock>()->catchBlocks.push_back(newBlock);
+				blocks.push(newBlock);
+			} else {
+				const char* msg = "catch without a previous try";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			}
+			break;
 
-        if (blocks.top() != root) {
-            throw std::runtime_error("unclosed block");
-        }
-        /* blocks.pop(); */
-        /* std::string res = root->toString(); */
-        /* printf("%s", res.c_str()); */
-        return 0;
-    }
+		default:
+			if (dictIdx < 0) {
+				const char* msg = "unknown command";
+				errors.emplace_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+			}
+			// Add it anyway
+			blocks.top()->addChild(factory.create<ExBlock>(dictIdx, lexem.name, lexem.qargs));
+		}
+	}
 
-private:
-    RootBlock* root;
-    BlockFactory factory;
-    std::vector<Diagnostic> errors;
-};
-
-int main() {
-    SyntaxTree ast;
-    ast.build("/home/stef/viml-server/test.txt");
+	if (blocks.top() != root) {
+		const char* msg = "unclosed block";
+		errors.push_back(Diagnostic{lexem.getNameRange(), Diagnostic::Error, msg});
+	}
+	return root;
 }

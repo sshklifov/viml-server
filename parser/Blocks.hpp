@@ -5,7 +5,6 @@
 #include <stdexcept>
 
 #include <Constants.hpp>
-#include <ExLexem.hpp>
 #include <StringView.hpp>
 
 struct Block {
@@ -49,8 +48,8 @@ struct RootBlock : Block {
 };
 
 struct ExBlock : Block {
-    ExBlock(int id, const ExLexem& lexem) :
-        id(id), name(lexem.name.begin, lexem.name.end), qargs(lexem.qargs.begin, lexem.qargs.end) {}
+    ExBlock(int id, const StringView& name, const StringView& qargs) :
+        id(id), name(name.begin, name.end), qargs(qargs.begin, qargs.end) {}
 
     int getId() override {
         return id;

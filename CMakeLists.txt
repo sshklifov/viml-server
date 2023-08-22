@@ -49,4 +49,4 @@ endfunction()
 
 add_subdirectory(lexer)
 add_subdirectory(parser)
-# add_subdirectory(excmds)
+add_subdirectory(lsp)

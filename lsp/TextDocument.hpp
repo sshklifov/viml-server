@@ -33,7 +33,7 @@ struct DidOpenTextDocumentParams {
 };
 
 template<>
-void ValueReader::read(DidOpenTextDocumentParams& params) {
+inline void ValueReader::read(DidOpenTextDocumentParams& params) {
     MemberScope paramsScope = beginMember("params");
     MemberScope documentScope = beginMember("textDocument");
     readMember("uri", params.textDocument.uri);

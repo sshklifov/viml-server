@@ -280,37 +280,37 @@ struct InitializeResult {
 };
 
 template <>
-void BufferWriter::setKey(const ServerCapabilities::TextDocumentSyncOptions::TextDocumentSyncKind& kind) {
+inline void BufferWriter::setKey(const ServerCapabilities::TextDocumentSyncOptions::TextDocumentSyncKind& kind) {
     w.Int(kind);
 }
 
 template <>
-void BufferWriter::setKey(const ServerCapabilities::TextDocumentSyncOptions& opts) {
+inline void BufferWriter::setKey(const ServerCapabilities::TextDocumentSyncOptions& opts) {
     ObjectScope scope = beginObject();
     add("openClose", opts.openClose);
     add("change", opts.change);
 }
 
 template <>
-void BufferWriter::setKey(const ServerCapabilities::CompletionOptions& opts) {
+inline void BufferWriter::setKey(const ServerCapabilities::CompletionOptions& opts) {
     ObjectScope scope = beginObject();
     add("workDoneProgress", opts.workDoneProgress);
 }
 
 template <>
-void BufferWriter::setKey(const ServerCapabilities::SignatureHelpOptions& opts) {
+inline void BufferWriter::setKey(const ServerCapabilities::SignatureHelpOptions& opts) {
     ObjectScope scope = beginObject();
     add("workDoneProgress", opts.workDoneProgress);
 }
 
 template <>
-void BufferWriter::setKey(const ServerCapabilities::DiagnosticOptions& opts) {
+inline void BufferWriter::setKey(const ServerCapabilities::DiagnosticOptions& opts) {
     ObjectScope scope = beginObject();
     add("workDoneProgress", opts.workDoneProgress);
 }
 
 template <>
-void BufferWriter::setKey(const ServerCapabilities::WorkspaceAnon& ws) {
+inline void BufferWriter::setKey(const ServerCapabilities::WorkspaceAnon& ws) {
     ObjectScope scope = beginObject();
 
     {
@@ -320,7 +320,7 @@ void BufferWriter::setKey(const ServerCapabilities::WorkspaceAnon& ws) {
 }
 
 template <>
-void BufferWriter::setKey(const ServerCapabilities& cap) {
+inline void BufferWriter::setKey(const ServerCapabilities& cap) {
     ObjectScope scope = beginObject();
     add("positionEncoding", cap.positionEncoding);
     add("textDocumentSync", cap.textDocumentSync);
@@ -358,7 +358,7 @@ void BufferWriter::setKey(const ServerCapabilities& cap) {
 }
 
 template<>
-void BufferWriter::setKey(const InitializeResult& res) {
+inline void BufferWriter::setKey(const InitializeResult& res) {
     ObjectScope scope = beginObject();
     add("capabilities", res.capabilities);
     

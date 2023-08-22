@@ -1,7 +1,5 @@
 #pragma once
 
-#include <ExDictionary.hpp>
-
 #define FOR_EACH_COMMAND(code) \
     code(IF, 186) \
     code(ELSEIF, 141) \
@@ -23,7 +21,5 @@
 FOR_EACH_COMMAND(DEFINE_COMMAND)
 
 #undef DEFINE_COMMAND
-
-bool checkBlockConstants(const ExDictionary& dict);
 
 const int ROOT = -1;
