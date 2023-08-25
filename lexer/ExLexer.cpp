@@ -65,7 +65,7 @@ bool ExLexer::loadFile(const char* filename) {
     this->len = len;
     this->fd = fd;
     
-    program.init(StringView(buffer, buffer + len));
+    program.set(StringView(buffer, buffer + len));
     conts.init(len);
 
     return true;
@@ -90,7 +90,7 @@ bool ExLexer::isLoaded() const {
 bool ExLexer::lex(ExLexem* res) {
     assert(isLoaded());
 
-    int lineNumber = program.lineNumber();
+    int lineNumber = program.topNumber();
 
     StringView resultLine;
     int ignore = false;
@@ -118,7 +118,8 @@ bool ExLexer::lex(ExLexem* res) {
             while (continuation);
             resultLine = conts.finish();
         } else {
-            resultLine = program.pop();
+            resultLine = program.top();
+            program.pop();
         }
 
         line = resultLine.trimLeftSpace();

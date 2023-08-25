@@ -49,7 +49,11 @@ struct StringView {
     // Iterators
 
     const char* find(char c) const {
-        const char* it = begin;
+        return find(begin, c);
+    }
+
+    const char* find(const char* it, char c) const {
+        assert(it >= begin && it <= end);
         while (it < end) {
             if (*it == c) {
                 return it;

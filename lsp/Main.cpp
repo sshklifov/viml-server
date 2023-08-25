@@ -240,7 +240,23 @@ error_t argsParser(int key, char *arg, argp_state *state) {
 	}
 }
 
+void alternateMain() {
+    SyntaxTree ast;
+    std::vector<Diagnostic> digs;
+    RootBlock* root = ast.build("/home/stef/viml-server/test.txt", digs);
+    if (!root) {
+        // Report error idk
+    }
+    for (const Diagnostic& dig : digs) {
+        printf("%s\n", dig.message);
+    }
+
+    exit(0);
+}
+
 int main(int argc, char** argv) {
+    alternateMain();
+
 	const char* argsDoc = ""; // < No args
 	const char* doc = "Vim LSP";
 

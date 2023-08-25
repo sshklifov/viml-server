@@ -61,52 +61,75 @@ private:
 };
 
 struct Program {
-    void init(const StringView& p) {
+    Program() = default;
+
+    Program(const StringView& p) {
+        set(p);
+    }
+
+    void set(const StringView& p) {
         program = p;
-        currLine = popHelper();
-        nextLine = popHelper();
-        lineCounter = 1;
+        line.end = program.begin; // Kinda hacky whoops
+        lineCounter = 0;
+        pop();
     }
     
-    StringView pop() {
-        currLine = nextLine;
-        nextLine = popHelper();
-        if (!currLine.empty()) {
+    void pop() {
+        line.begin = line.end;
+        line.end = program.find(line.begin, '\n');
+        if (line.end < program.end) {
+            ++line.end; // Include the new line
+        }
+
+        // Handle weird case where end of file would be returned as a separate line.
+        if (line.beginsWith('\0')) {
+            line.begin = line.end;
+        }
+        // Increment line counter if not past end of program.
+        if (!line.empty()) {
             ++lineCounter;
         }
-        return currLine;
     }
 
-    const StringView& top() {
-        return currLine;
-    }
-
-    const StringView& next() {
-        return nextLine;
-    }
+    const StringView& top() { return line; }
 
     int lineNumber() const { return lineCounter; }
 
 private:
-    // Actually removes a line from program. Unlike pop method, which is more complicated because
-    // of the lookahead.
-    StringView popHelper() {
-        StringView line(program.begin, program.find('\n'));
-        if (line.end < program.end) {
-            ++line.end; // Include the new line
-        }
-        program.begin = line.end;
-        // Handle weird case where end of file would be returned as a separate line.
-        if (line.beginsWith('\0')) {
-            return StringView();
-        }
-        return line;
-    }
-
-    StringView currLine;
-    StringView nextLine;
+    StringView line;
     StringView program;
     int lineCounter;
+};
+
+struct TwoLineProgram {
+    TwoLineProgram() = default;
+
+    void set(const StringView& p) {
+        oneLineProg.set(p);
+        savedLine = oneLineProg.top();
+        oneLineProg.pop();
+    }
+    
+    void pop() {
+        savedLine = oneLineProg.top();
+        oneLineProg.pop();
+    }
+
+    const StringView& top() {
+        return savedLine;
+    }
+
+    const StringView& next() {
+        return oneLineProg.top();
+    }
+
+    int topNumber() const { return nextNumber() - 1; }
+
+    int nextNumber() const { return oneLineProg.lineNumber(); }
+
+private:
+    StringView savedLine;
+    Program oneLineProg;
 };
 
 struct ExLexer {
@@ -125,8 +148,8 @@ private:
     int len;
     int fd;
 
-    // Program (StringView of file buffer)
-    Program program;
+    // Input program allowing to access current and next lines.
+    TwoLineProgram program;
     // Additional storage required for line continuations
     LineConts conts;
 };
