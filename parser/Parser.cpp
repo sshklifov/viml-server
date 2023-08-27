@@ -56,7 +56,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
 
 	ExLexem lexem;
 	while (lexer.lex(&lexem)) {
-		int dictIdx = dict.search(lexem.name);
+		int dictIdx = dict.search(lexem.name.c_str());
 		Block* newBlock = nullptr;
 		switch (dictIdx) {
 		case IF:

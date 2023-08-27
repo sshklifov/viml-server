@@ -2,62 +2,127 @@
 
 #include <ExLexem.hpp>
 
-struct LineConts {
-    LineConts() {
-        maxLen = 0;
+struct ContinuationStorage {
+    friend struct Continuation;
+
+    ContinuationStorage() {
+        maxlen = 0;
         buf = nullptr;
         len = 0;
-        curr = nullptr;
     }
 
-    ~LineConts() {
+    ~ContinuationStorage() {
         delete[] buf;
     }
 
     void init(int capacity) {
-        maxLen = capacity;
-        // Lazily create buffer, very likely to be never used
+        maxlen = capacity + 1; // Additional line feed in the end if missing.
+        delete[] buf;
+        buf = new char[capacity];
+        len = 0;
     }
 
-    void startNew() {
-        assert(maxLen > 0 && "Missing prior call to init");
-        // Force allocation of buffer
-        if (!buf) {
-            buf = new char[maxLen + 1];
+    void getRealPosition(int& lineId, int& colId) {
+        assert(colId >= 0);
+        if (lineId < 0 || lineId > colBreaksOffset.size()) {
+            assert(false);
+            return;
         }
-        curr = buf;
-    }
 
-    StringView finish() {
-        assert(curr && "Missing prior call to startNew");
-
-        buf[len] = '\n';
-        ++len;
-        assert(len <= maxLen);
-
-        StringView res(curr, buf + len);
-        curr = nullptr;
-        return res;
-    }
-
-    void append(StringView line) {
-        assert(curr && "Missing prior call to startNew");
-
-        // Remove trailing newline
-        if (line.endsWith('\n')) {
-            --line.end;
+        int lo = colBreaksOffset[lineId];
+        int hi;
+        if (lineId == colBreaksOffset.size() - 1) {
+            hi = colBreaksTable.size() - 1;
+        } else {
+            hi = colBreaksTable[lineId + 1] - 1;
         }
-        int n = line.length();
-        memcpy(buf + len, line.begin, n);
-        len += n;
+
+        while (hi - lo > 1) {
+            int mid = (lo + hi) / 2;
+            if (colId < colBreaksTable[mid]) {
+                hi = mid - 1;
+            } else {
+                lo = mid;
+            }
+        }
+        if (colId >= colBreaksTable[lo]) {
+            int breaksOffset = lo - colBreaksOffset[lineId];
+            lineId = lineMap[lineId] + breaksOffset;
+            colId = colId - colBreaksTable[lo];
+        } else if (colId >= colBreaksTable[hi]) {
+            int breaksOffset = hi - colBreaksOffset[lineId];
+            lineId = lineMap[lineId] + breaksOffset;
+            colId = colId - colBreaksTable[hi];
+        }
+        assert(false);
     }
 
 private:
+    std::vector<int> colBreaksTable;
+    std::vector<int> colBreaksOffset;
+
+    std::vector<int> lineMap;
+
     char* buf;
     int len;
-    int maxLen;
+    int maxlen;
+};
 
-    char* curr;
+/// Only one instance at a time! Otherwise, instances will output to the same storage location.
+struct Continuation {
+    Continuation(ContinuationStorage& contStorage) : contStorage(contStorage) {
+        beginPtr = contStorage.buf + contStorage.len;
+        writePtr = beginPtr;
+        availableStorage = contStorage.maxlen - contStorage.len;
+        lineContinuations = 0;
+    }
+
+    void add(StringView lineNoBackslash) {
+        // Remove trailing newline
+        if (lineNoBackslash.endsWith('\n')) {
+            --lineNoBackslash.end;
+        }
+        int n = lineNoBackslash.length();
+        assert(n <= availableStorage);
+        if (n <= availableStorage) {
+            memcpy(writePtr, lineNoBackslash.begin, n);
+
+            contStorage.colBreaksTable.push_back(writePtr-beginPtr);
+            ++lineContinuations;
+
+            writePtr += n;
+            availableStorage -= n;
+        }
+    }
+
+    StringView flush(int lineNumber) {
+        assert(lineContinuations >= 1);
+        assert(availableStorage >= 1);
+
+        *writePtr = '\n';
+        ++writePtr;
+
+        int numWritten = writePtr - beginPtr;
+        contStorage.len += numWritten;
+        assert(contStorage.len <= contStorage.maxlen);
+        StringView res(beginPtr, writePtr);
+
+        contStorage.lineMap.push_back(lineNumber);
+        int columnsOffset = contStorage.colBreaksTable.size() - lineContinuations;
+        contStorage.colBreaksOffset.push_back(columnsOffset);
+
+        writePtr = nullptr;
+        beginPtr = nullptr;
+        availableStorage = 0;
+        return res;
+    }
+
+private:
+    ContinuationStorage& contStorage;
+    char* writePtr;
+    char* beginPtr;
+    int availableStorage;
+    int lineContinuations;
 };
 
 struct Program {
@@ -69,29 +134,37 @@ struct Program {
 
     void set(const StringView& p) {
         program = p;
-        line.end = program.begin; // Kinda hacky whoops
-        lineCounter = 0;
+
+        // Kinda hachy whoops
+        line.begin = NULL;
+        line.end = program.begin;
         pop();
+
+        lineCounter = 0;
     }
+
+    bool empty() const { return line.empty(); }
     
     void pop() {
+        if (empty()) {
+            return;
+        }
+
         line.begin = line.end;
         line.end = program.find(line.begin, '\n');
         if (line.end < program.end) {
             ++line.end; // Include the new line
         }
 
-        // Handle weird case where end of file would be returned as a separate line.
+        // Discard EOF
         if (line.beginsWith('\0')) {
             line.begin = line.end;
+            return;
         }
-        // Increment line counter if not past end of program.
-        if (!line.empty()) {
-            ++lineCounter;
-        }
+        ++lineCounter;
     }
 
-    const StringView& top() { return line; }
+    const StringView& top() const { return line; }
 
     int lineNumber() const { return lineCounter; }
 
@@ -99,37 +172,6 @@ private:
     StringView line;
     StringView program;
     int lineCounter;
-};
-
-struct TwoLineProgram {
-    TwoLineProgram() = default;
-
-    void set(const StringView& p) {
-        oneLineProg.set(p);
-        savedLine = oneLineProg.top();
-        oneLineProg.pop();
-    }
-    
-    void pop() {
-        savedLine = oneLineProg.top();
-        oneLineProg.pop();
-    }
-
-    const StringView& top() {
-        return savedLine;
-    }
-
-    const StringView& next() {
-        return oneLineProg.top();
-    }
-
-    int topNumber() const { return nextNumber() - 1; }
-
-    int nextNumber() const { return oneLineProg.lineNumber(); }
-
-private:
-    StringView savedLine;
-    Program oneLineProg;
 };
 
 struct ExLexer {
@@ -149,7 +191,7 @@ private:
     int fd;
 
     // Input program allowing to access current and next lines.
-    TwoLineProgram program;
+    Program program;
     // Additional storage required for line continuations
-    LineConts conts;
+    ContinuationStorage contStorage;
 };

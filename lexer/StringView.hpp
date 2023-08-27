@@ -93,6 +93,17 @@ struct StringView {
         return StringView(begin, end - count);
     }
 
+    StringView trimLineFeed() const {
+        StringView res(*this);
+        if (res.endsWith('\n')) {
+            res = popRight();
+            if (res.endsWith('\r')) {
+                res = popRight();
+            }
+        }
+        return res;
+    }
+
     StringView trimLeftSpace() const {
         const char* it = begin;
         while (it < end) {

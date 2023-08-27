@@ -5,7 +5,6 @@
 #include <stdexcept>
 
 #include <Constants.hpp>
-#include <StringView.hpp>
 
 struct Block {
     Block() {}
@@ -48,8 +47,8 @@ struct RootBlock : Block {
 };
 
 struct ExBlock : Block {
-    ExBlock(int id, const StringView& name, const StringView& qargs) :
-        id(id), name(name.begin, name.end), qargs(qargs.begin, qargs.end) {}
+    ExBlock(int id, const std::string& name, const std::string& qargs) :
+        id(id), name(name), qargs(qargs) {}
 
     int getId() override {
         return id;
@@ -74,7 +73,7 @@ struct ExBlock : Block {
 };
 
 struct IfBlock : public Block {
-    IfBlock(const StringView& qargs) : expr1(qargs.begin, qargs.end), elseBlock(nullptr) {}
+    IfBlock(const std::string& qargs) : expr1(qargs), elseBlock(nullptr) {}
 
     static const int id = IF;
 
@@ -107,7 +106,7 @@ struct ElseBlock : public Block {
 };
 
 struct WhileBlock : public Block {
-    WhileBlock(const StringView& qargs) : expr1(qargs.begin, qargs.end) {}
+    WhileBlock(const std::string& qargs) : expr1(qargs) {}
 
     static const int id = WHILE;
 
@@ -126,7 +125,7 @@ struct WhileBlock : public Block {
 };
 
 struct ForBlock : public Block {
-    ForBlock(const StringView& qargs) : expr1(qargs.begin, qargs.end) {}
+    ForBlock(const std::string& qargs) : expr1(qargs) {}
 
     static const int id = FOR;
 
@@ -145,7 +144,7 @@ struct ForBlock : public Block {
 };
 
 struct FunctionBlock : public Block {
-    FunctionBlock(const StringView& qargs) : expr1(qargs.begin, qargs.end) {}
+    FunctionBlock(const std::string& qargs) : expr1(qargs) {}
 
     static const int id = FUNCTION;
 
@@ -164,7 +163,7 @@ struct FunctionBlock : public Block {
 };
 
 struct TryBlock : public Block {
-    TryBlock(const StringView& qargs) : expr1(qargs.begin, qargs.end) {}
+    TryBlock(const std::string& qargs) : expr1(qargs) {}
 
     static const int id = TRY;
 
@@ -184,7 +183,7 @@ struct TryBlock : public Block {
 };
 
 struct CatchBlock : public Block {
-    CatchBlock(const StringView& pattern) : pattern(pattern.begin, pattern.end) {}
+    CatchBlock(const std::string& pattern) : pattern(pattern) {}
 
     static const int id = CATCH;
 

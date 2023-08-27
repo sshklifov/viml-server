@@ -4,25 +4,19 @@ project(viml_server LANGUAGES CXX)
 find_package(FLEX REQUIRED)
 find_package(BISON REQUIRED)
 
-# function(run_flex_generator flex_file)
-#     message(FATAL_ERROR "Not implemented, see run_bison_generator")
-#     get_filename_component(flex_name ${flex_file} NAME_WE)
-#     set(flex_cpp ${CMAKE_CURRENT_BINARY_DIR}/${flex_name}Lexer.cpp)
-#     set(flex_name_hpp ${flex_name}Lexer.hpp)
-#     set(flex_hpp ${CMAKE_CURRENT_BINARY_DIR}/${flex_name_hpp})
-#     add_custom_command(OUTPUT ${flex_cpp}
-#         MAIN_DEPENDENCY ${flex_file}
-#         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-#         COMMAND ${FLEX_EXECUTABLE} -L --header-file=${flex_hpp} -o ${flex_cpp} ${flex_file})
-#     include_directories(${FLEX_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
-#     add_compile_definitions(GENERATED_LEXER_HEADER=<${flex_name_hpp}>)
-#     # Pass the name of the cpp file. Optional.
-#     if(ARGV1)
-#         set(${ARGV1} ${flex_cpp} PARENT_SCOPE)
-#     endif()
-# endfunction()
+function(run_flex_generator flex_file flex_cpp)
+    get_filename_component(gen_name ${flex_cpp} NAME_WE)
+    set(flex_cpp ${CMAKE_CURRENT_LIST_DIR}/${gen_name}.cpp)
+    set(flex_hpp ${CMAKE_CURRENT_LIST_DIR}/${gen_name}.hpp)
+    add_custom_command(OUTPUT ${flex_cpp} ${flex_hpp}
+        MAIN_DEPENDENCY ${flex_file}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        COMMAND ${FLEX_EXECUTABLE} -L --header-file=${flex_hpp} -o ${flex_cpp} ${flex_file})
+    include_directories(${FLEX_INCLUDE_DIRS} ${CMAKE_CURRENT_LIST_DIR})
+endfunction()
 
 function(run_bison_generator bison_file bison_we)
+    message(FATAL_ERROR "Needs update, see run_flex_generator")
     set(bison_cpp ${CMAKE_CURRENT_BINARY_DIR}/${bison_we}.cpp)
     add_custom_command(OUTPUT ${bison_cpp}
         MAIN_DEPENDENCY ${bison_file}

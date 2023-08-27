@@ -13,19 +13,63 @@
 #include <string>
 #include <stdexcept>
 
-static bool splitCmdAndArgs(StringView line, StringView& name, StringView& args) {
-    line = line.trimLeftSpace();
-    const char* it = line.begin;
-    while (it < line.end) {
-        if (*it != ' ' && *it != '\t' && *it != '\n' && *it != '\0') {
-            ++it;
-        } else {
-            name = StringView(line.begin, it);
-            args = StringView(it, line.end).popLineFeed().trimSpace();
-            return true;
+#include "Command.hpp"
+
+static int buildExLexem(StringView line, int lineNumber, ExLexem& lex) {
+    YY_BUFFER_STATE buf = cmd_scan_bytes(line.begin, line.length());
+
+    lex.name.clear();
+    lex.qargs.clear();
+
+    lex.line = lineNumber;
+    lex.nameColumn = 0;
+    lex.qargsColumn = 0;
+    lex.bang = 0;
+    lex.range = 0;
+
+    enum {ERROR = 256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, NAME, QARGS};
+    int numMatched = 0;
+    int done = false;
+    int unexpectedSymbol = 0;
+    do {
+        int tok = cmdlex();
+        switch (tok) {
+            case '\0':
+                done = true;
+                break;
+
+            case ERROR:
+                // Set first time only
+                if (!unexpectedSymbol) {
+                    unexpectedSymbol = tok;
+                }
+                break;
+
+            case RANGE_ARG:
+            case RANGE_DELIM:
+                lex.range = 1;
+                break;
+
+            case NAME:
+                lex.name = cmdget_text();
+                if (!lex.name.empty() && lex.name.back() == '!') {
+                    lex.bang = 1;
+                    lex.name.resize(lex.name.size() - 1);
+                }
+                lex.nameColumn = numMatched;
+                break;
+
+            case QARGS:
+                lex.qargs = cmdget_text();
+                lex.qargsColumn = numMatched;
+                break;
         }
+        numMatched += cmdget_leng();
     }
-    return false;
+    while (!done);
+
+    cmd_delete_buffer(buf);
+    return unexpectedSymbol;
 }
 
 ExLexer::ExLexer() {
@@ -66,7 +110,7 @@ bool ExLexer::loadFile(const char* filename) {
     this->fd = fd;
     
     program.set(StringView(buffer, buffer + len));
-    conts.init(len);
+    contStorage.init(len);
 
     return true;
 }
@@ -90,24 +134,28 @@ bool ExLexer::isLoaded() const {
 bool ExLexer::lex(ExLexem* res) {
     assert(isLoaded());
 
-    int lineNumber = program.topNumber();
+    if (program.empty()) {
+        return false;
+    }
 
-    StringView resultLine;
+    int lineNumber = program.lineNumber();
+    Continuation cont(contStorage);
+    StringView contStr;
+
     int ignore = false;
     do {
-        StringView line = program.next().trimLeftSpace();
-        if (line.beginsWith('\\')) {
-            conts.startNew();
-            conts.append(program.top());
-            program.pop();
+        cont.add(program.top());
+        program.pop();
 
+        StringView line = program.top().trimLeftSpace();
+        if (line.beginsWith('\\')) {
             int continuation = true;
             do {
                 int codeCont = line.beginsWith('\\');
                 int commentCont = line.beginsWith("\"\\ ");
                 if (codeCont || commentCont) {
                     if (codeCont) {
-                        conts.append(line.popLeft());
+                        cont.add(line.popLeft());
                     }
                     program.pop();
                     line = program.top().trimLeftSpace();
@@ -116,24 +164,21 @@ bool ExLexer::lex(ExLexem* res) {
                 }
             }
             while (continuation);
-            resultLine = conts.finish();
-        } else {
-            resultLine = program.top();
-            program.pop();
         }
+        contStr = cont.flush(lineNumber);
 
-        line = resultLine.trimLeftSpace();
-        if (line.empty()) {
-           return false;
-        }
+        // Check if line is a comment or empty
+        line = contStr.trimLeftSpace();
+        // Must include a line feed character (at least)
+        assert(line.length() >= 1);
         ignore = (line.left() == '"' || line.left() == '\n');
     } while (ignore);
 
-    const char* columnBegin = resultLine.begin;
-
-    splitCmdAndArgs(resultLine, res->name, res->qargs);
-    res->line = lineNumber;
-    res->nameColumn = (res->name.begin - columnBegin + 1);
-    res->qargsColumn = (res->qargs.begin - columnBegin + 1);
+    int errors = buildExLexem(contStr, lineNumber, *res);
+    if (res->name.empty()) {
+        return false;
+    }
     return true;
 }
+
+// TODO carriage returns
