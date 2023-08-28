@@ -6,13 +6,13 @@ find_package(BISON REQUIRED)
 
 function(run_flex_generator flex_file flex_cpp)
     get_filename_component(gen_name ${flex_cpp} NAME_WE)
-    set(flex_cpp ${CMAKE_CURRENT_LIST_DIR}/${gen_name}.cpp)
-    set(flex_hpp ${CMAKE_CURRENT_LIST_DIR}/${gen_name}.hpp)
+    set(flex_cpp ${CMAKE_CURRENT_BINARY_DIR}/${gen_name}.cpp)
+    set(flex_hpp ${CMAKE_CURRENT_BINARY_DIR}/${gen_name}.hpp)
     add_custom_command(OUTPUT ${flex_cpp} ${flex_hpp}
         MAIN_DEPENDENCY ${flex_file}
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
         COMMAND ${FLEX_EXECUTABLE} -L --header-file=${flex_hpp} -o ${flex_cpp} ${flex_file})
-    include_directories(${FLEX_INCLUDE_DIRS} ${CMAKE_CURRENT_LIST_DIR})
+    include_directories(${FLEX_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 endfunction()
 
 function(run_bison_generator bison_file bison_we)
