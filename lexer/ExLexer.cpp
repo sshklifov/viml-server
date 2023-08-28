@@ -15,15 +15,15 @@
 
 #include "Command.hpp"
 
-static int buildExLexem(StringView line, int lineNumber, ExLexem& lex) {
+static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& lex) {
     YY_BUFFER_STATE buf = cmd_scan_bytes(line.begin, line.length());
 
     lex.name.clear();
     lex.qargs.clear();
 
-    lex.line = lineNumber;
-    lex.nameColumn = 0;
-    lex.qargsColumn = 0;
+    lex.locationKey = locationKey;
+    lex.nameOffset = 0;
+    lex.qargsOffset = 0;
     lex.bang = 0;
     lex.range = 0;
 
@@ -56,12 +56,12 @@ static int buildExLexem(StringView line, int lineNumber, ExLexem& lex) {
                     lex.bang = 1;
                     lex.name.resize(lex.name.size() - 1);
                 }
-                lex.nameColumn = numMatched;
+                lex.nameOffset = numMatched;
                 break;
 
             case QARGS:
                 lex.qargs = cmdget_text();
-                lex.qargsColumn = numMatched;
+                lex.qargsOffset = numMatched;
                 break;
         }
         numMatched += cmdget_leng();
@@ -138,43 +138,40 @@ bool ExLexer::lex(ExLexem* res) {
         return false;
     }
 
-    int lineNumber = program.lineNumber();
-    Continuation cont(contStorage);
-    StringView contStr;
+    LocationMap::Key locationKey;
+    StringView programLine;
 
     int ignore = false;
     do {
-        cont.add(program.top());
+        Continuation cont(contStorage, locationMap);
+        cont.add(program.top(), program.lineNumber(), 0);
         program.pop();
 
-        StringView line = program.top().trimLeftSpace();
-        if (line.beginsWith('\\')) {
-            int continuation = true;
-            do {
-                int codeCont = line.beginsWith('\\');
-                int commentCont = line.beginsWith("\"\\ ");
-                if (codeCont || commentCont) {
-                    if (codeCont) {
-                        cont.add(line.popLeft());
-                    }
-                    program.pop();
-                    line = program.top().trimLeftSpace();
-                } else {
-                    continuation = false;
-                }
+        while (true) {
+            const char* colBegin = program.top().begin;
+            StringView workLine = program.top().trimLeftSpace();
+            int codeCont = workLine.beginsWith('\\');
+            int commentCont = workLine.beginsWith("\"\\ ");
+            if (!codeCont && !commentCont) {
+                break;
             }
-            while (continuation);
+            if (codeCont) {
+                workLine = workLine.popLeft(); // Remove continuation character
+                int colOffset = workLine.begin - colBegin;
+                cont.add(workLine, program.lineNumber(), colOffset);
+            }
+            program.pop();
         }
-        contStr = cont.flush(lineNumber);
 
+        programLine = cont.finish(locationKey);
         // Check if line is a comment or empty
-        line = contStr.trimLeftSpace();
+        StringView workLine = programLine.trimLeftSpace();
         // Must include a line feed character (at least)
-        assert(line.length() >= 1);
-        ignore = (line.left() == '"' || line.left() == '\n');
+        assert(workLine.length() >= 1);
+        ignore = (workLine.left() == '"' || workLine.left() == '\n');
     } while (ignore);
 
-    int errors = buildExLexem(contStr, lineNumber, *res);
+    int errors = buildExLexem(programLine, locationKey, *res);
     if (res->name.empty()) {
         return false;
     }

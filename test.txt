@@ -1,3 +1,7 @@
+echo
+"\ wtf comment m8
+\ 2
+
 function! Rename(arg)
 1,3:p
 1;/asd/:p

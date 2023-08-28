@@ -1,10 +1,43 @@
 #pragma once
 
-#include <ExLexem.hpp>
+#include <StringView.hpp>
+#include <Diagnostics.hpp>
+
+struct LocationMap {
+    struct Key {
+        Key() = default;
+        Key(int begin, int end) : entryBegin(begin), entryEnd(end) {}
+
+        int entryBegin;
+        int entryEnd;
+    };
+
+    struct Location {
+        Location() = default;
+        Location(int line, int col, int entryLen) : line(line), col(col), entryLen(entryLen) {}
+
+        int line;
+        int col;
+        int entryLen;
+    };
+
+    void getRealLocation(const Key& key, int strOffset, int& line, int& col) {
+        int strBegin = 0;
+        for (int i = key.entryBegin; i < key.entryEnd; ++i) {
+            int strEnd = strBegin + locations[i].entryLen;
+            if (strOffset >= strBegin && strOffset < strEnd) {
+                line = locations[i].line;
+                col = locations[i].col + (strOffset - strBegin);
+                return;
+            }
+            strBegin = strEnd;
+        }
+    }
+
+    std::vector<Location> locations;
+};
 
 struct ContinuationStorage {
-    friend struct Continuation;
-
     ContinuationStorage() {
         maxlen = 0;
         buf = nullptr;
@@ -22,47 +55,6 @@ struct ContinuationStorage {
         len = 0;
     }
 
-    void getRealPosition(int& lineId, int& colId) {
-        assert(colId >= 0);
-        if (lineId < 0 || lineId > colBreaksOffset.size()) {
-            assert(false);
-            return;
-        }
-
-        int lo = colBreaksOffset[lineId];
-        int hi;
-        if (lineId == colBreaksOffset.size() - 1) {
-            hi = colBreaksTable.size() - 1;
-        } else {
-            hi = colBreaksTable[lineId + 1] - 1;
-        }
-
-        while (hi - lo > 1) {
-            int mid = (lo + hi) / 2;
-            if (colId < colBreaksTable[mid]) {
-                hi = mid - 1;
-            } else {
-                lo = mid;
-            }
-        }
-        if (colId >= colBreaksTable[lo]) {
-            int breaksOffset = lo - colBreaksOffset[lineId];
-            lineId = lineMap[lineId] + breaksOffset;
-            colId = colId - colBreaksTable[lo];
-        } else if (colId >= colBreaksTable[hi]) {
-            int breaksOffset = hi - colBreaksOffset[lineId];
-            lineId = lineMap[lineId] + breaksOffset;
-            colId = colId - colBreaksTable[hi];
-        }
-        assert(false);
-    }
-
-private:
-    std::vector<int> colBreaksTable;
-    std::vector<int> colBreaksOffset;
-
-    std::vector<int> lineMap;
-
     char* buf;
     int len;
     int maxlen;
@@ -70,14 +62,14 @@ private:
 
 /// Only one instance at a time! Otherwise, instances will output to the same storage location.
 struct Continuation {
-    Continuation(ContinuationStorage& contStorage) : contStorage(contStorage) {
+    Continuation(ContinuationStorage& contStorage, LocationMap& locMap) : contStorage(contStorage), locMap(locMap) {
         beginPtr = contStorage.buf + contStorage.len;
         writePtr = beginPtr;
         availableStorage = contStorage.maxlen - contStorage.len;
-        lineContinuations = 0;
+        locationBegin = locMap.locations.size();
     }
 
-    void add(StringView lineNoBackslash) {
+    void add(StringView lineNoBackslash, int line, int col) {
         // Remove trailing newline
         if (lineNoBackslash.endsWith('\n')) {
             --lineNoBackslash.end;
@@ -87,16 +79,15 @@ struct Continuation {
         if (n <= availableStorage) {
             memcpy(writePtr, lineNoBackslash.begin, n);
 
-            contStorage.colBreaksTable.push_back(writePtr-beginPtr);
-            ++lineContinuations;
+            int entryLen = lineNoBackslash.length();
+            locMap.locations.push_back(LocationMap::Location(line, col, entryLen));
 
             writePtr += n;
             availableStorage -= n;
         }
     }
 
-    StringView flush(int lineNumber) {
-        assert(lineContinuations >= 1);
+    StringView finish(LocationMap::Key& key) {
         assert(availableStorage >= 1);
 
         *writePtr = '\n';
@@ -107,9 +98,8 @@ struct Continuation {
         assert(contStorage.len <= contStorage.maxlen);
         StringView res(beginPtr, writePtr);
 
-        contStorage.lineMap.push_back(lineNumber);
-        int columnsOffset = contStorage.colBreaksTable.size() - lineContinuations;
-        contStorage.colBreaksOffset.push_back(columnsOffset);
+        key.entryBegin = this->locationBegin;
+        key.entryEnd = locMap.locations.size();
 
         writePtr = nullptr;
         beginPtr = nullptr;
@@ -119,10 +109,12 @@ struct Continuation {
 
 private:
     ContinuationStorage& contStorage;
-    char* writePtr;
+    LocationMap& locMap;
+
     char* beginPtr;
+    char* writePtr;
     int availableStorage;
-    int lineContinuations;
+    int locationBegin;
 };
 
 struct Program {
@@ -174,6 +166,35 @@ private:
     int lineCounter;
 };
 
+struct ExLexem {
+    // TODO RENAME
+    Range getNameRange() {
+        assert(false);
+        /* int len = name.length(); */
+        /* Position start{locationKey, nameOffset}; */
+        /* Position end{locationKey, nameOffset + len}; */
+        /* return Range{start, end}; */
+    }
+
+    Range getQargsRange() {
+        assert(false);
+        /* int len = qargs.length(); */
+        /* Position start{locationKey, qargsOffset}; */
+        /* Position end{locationKey, qargsOffset + len}; */
+        /* return Range{start, end}; */
+    }
+
+    std::string name;
+    std::string qargs;
+
+    LocationMap::Key locationKey;
+    int nameOffset;
+    int qargsOffset;
+
+    bool bang;
+    int range;
+};
+
 struct ExLexer {
     ExLexer();
     ~ExLexer();
@@ -194,4 +215,6 @@ private:
     Program program;
     // Additional storage required for line continuations
     ContinuationStorage contStorage;
+    // Mapper correcting line/column numbers from continuation lines
+    LocationMap locationMap;
 };
