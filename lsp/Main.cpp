@@ -15,7 +15,7 @@
 #include "Initialize.hpp"
 #include "Diagnostics.hpp"
 #include "TextDocument.hpp"
-#include <Parser.hpp>
+#include <SyntaxTree.hpp>
 
 struct Arguments {
 	FILE* redirOut;
