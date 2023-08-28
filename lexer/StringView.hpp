@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string> // For toString method
+
 #include <cstring>
 #include <cassert>
 
@@ -8,6 +10,12 @@ struct StringView {
     explicit StringView(const char* s) : begin(s), end(s + strlen(begin)) {}
     StringView(const char* begin, const char* end) : begin(begin), end(end) {}
     StringView(const char* s, int n) : begin(s), end(s + n) {}
+
+    // Utility
+
+    std::string toString() const {
+        return std::string(begin, length());
+    }
 
     // Access
 
@@ -175,25 +183,3 @@ struct StringView {
     const char* begin;
     const char* end;
 };
-
-#if 0
-void trimLeft(StringView& s) {
-}
-
-void trimRight(StringView& s) {
-    const char* it = s.end - 1;
-    while (it >= s.begin) {
-        if (*it == ' ' || *it == '\t') {
-            --it;
-        } else {
-            break;
-        }
-    }
-    s.end = it + 1;
-}
-
-void trim(StringView& s) {
-    trimLeft(s);
-    trimRight(s);
-}
-#endif

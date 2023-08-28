@@ -4,10 +4,11 @@
 #include <vector>
 #include <stdexcept>
 
+#include <ExLexer.hpp>
 #include <Constants.hpp>
 
 struct Block {
-    Block() {}
+    Block(const ExLexem& lexem) : lexem(lexem) {}
 
     virtual ~Block() {}
 
@@ -32,48 +33,45 @@ struct Block {
         }
     }
 
-    virtual void addChild(Block* child) {
+    void addToScope(Block* child) {
         body.push_back(child);
     }
 
-protected:
+    ExLexem lexem;
     std::vector<Block*> body;
 };
 
 struct RootBlock : Block {
+    RootBlock() : Block(ExLexem()) {}
+
+    static const int id = ROOT;
+
     virtual int getId() {
-        return ROOT;
+        return id;
     }
 };
 
 struct ExBlock : Block {
-    ExBlock(int id, const std::string& name, const std::string& qargs) :
-        id(id), name(name), qargs(qargs) {}
+    ExBlock(const ExLexem& lexem, int id) : Block(lexem), id(id) {}
 
     int getId() override {
         return id;
     }
 
     std::string toString() override {
-        std::string res = "Ex(" + name;
-        if (!qargs.empty()) {
-            res += (", " + qargs);
+        std::string res = "Ex(" + lexem.name.toString();
+        if (!lexem.qargs.empty()) {
+            res += (", " + lexem.qargs.toString());
         }
         res += ")\n";
         return res;
     }
 
-    void addChild(Block* child) override {
-        throw std::runtime_error("Cannot add child to leaf node"); // TODO
-    }
-
     int id;
-    std::string name;
-    std::string qargs;
 };
 
 struct IfBlock : public Block {
-    IfBlock(const std::string& qargs) : expr1(qargs), elseBlock(nullptr) {}
+    IfBlock(const ExLexem& lexem) : Block(lexem), elseBlock(nullptr) {}
 
     static const int id = IF;
 
@@ -82,31 +80,37 @@ struct IfBlock : public Block {
     }
 
     std::string toString() override {
-        std::string res = "If(" + expr1 + ")\n";
+        std::string res = "If(" + lexem.qargs.toString() + ")\n";
         res += bodyToString();
 
         if (elseBlock) {
             res += "Else()\n";
-            res += elseBlock->toString();
+            res += elseBlock->bodyToString();
         }
         res += "Endif()\n";
         return res;
     }
 
-    std::string expr1;
     Block* elseBlock;
 };
 
 struct ElseBlock : public Block {
+    ElseBlock(const ExLexem& lexem) : Block(lexem) {}
+
     static const int id = ELSE;
 
     int getId() override {
         return id;
     };
+
+    std::string toString() override {
+        assert(false);
+        return "";
+    }
 };
 
 struct WhileBlock : public Block {
-    WhileBlock(const std::string& qargs) : expr1(qargs) {}
+    WhileBlock(const ExLexem& lexem) : Block(lexem) {}
 
     static const int id = WHILE;
 
@@ -115,17 +119,15 @@ struct WhileBlock : public Block {
     }
 
     std::string toString() override {
-        std::string res = "While(" + expr1 + ")\n";
+        std::string res = "While(" + lexem.qargs.toString() + ")\n";
         res += bodyToString();
         res += "Endwhile()\n";
         return res;
     }
-
-    std::string expr1;
 };
 
 struct ForBlock : public Block {
-    ForBlock(const std::string& qargs) : expr1(qargs) {}
+    ForBlock(const ExLexem& lexem) : Block(lexem) {}
 
     static const int id = FOR;
 
@@ -134,17 +136,15 @@ struct ForBlock : public Block {
     }
 
     std::string toString() override {
-        std::string res = "For(" + expr1 + ")\n";
+        std::string res = "For(" + lexem.qargs.toString() + ")\n";
         res += bodyToString();
         res += "Endfor()\n";
         return res;
     }
-
-    std::string expr1;
 };
 
 struct FunctionBlock : public Block {
-    FunctionBlock(const std::string& qargs) : expr1(qargs) {}
+    FunctionBlock(const ExLexem& lexem) : Block(lexem) {}
 
     static const int id = FUNCTION;
 
@@ -153,7 +153,7 @@ struct FunctionBlock : public Block {
     }
 
     std::string toString() override {
-        std::string res = "Function(" + expr1 + ")\n";
+        std::string res = "Function(" + lexem.qargs.toString() + ")\n";
         res += bodyToString();
         res += "Endfunction()\n";
         return res;
@@ -163,7 +163,7 @@ struct FunctionBlock : public Block {
 };
 
 struct TryBlock : public Block {
-    TryBlock(const std::string& qargs) : expr1(qargs) {}
+    TryBlock(const ExLexem& lexem) : Block(lexem), finally(nullptr) {}
 
     static const int id = TRY;
 
@@ -172,18 +172,29 @@ struct TryBlock : public Block {
     }
 
     std::string toString() override {
-        std::string res = "Try(" + expr1 + ")\n";
+        std::string res = "Try(" + lexem.qargs.toString() + ")\n";
         res += bodyToString();
+
+        for (Block* block : catchBlocks) {
+            res += ("Catch(" + block->lexem.qargs.toString() + ")\n");
+            res += block->bodyToString();
+        }
+
+        if (finally) {
+            res += "Finally()\n";
+            res += finally->bodyToString();
+        }
+
         res += "EndTry()\n";
         return res;
     }
 
-    std::string expr1;
     std::vector<Block*> catchBlocks;
+    Block* finally;
 };
 
 struct CatchBlock : public Block {
-    CatchBlock(const std::string& pattern) : pattern(pattern) {}
+    CatchBlock(const ExLexem& lexem) : Block(lexem) {}
 
     static const int id = CATCH;
 
@@ -192,10 +203,22 @@ struct CatchBlock : public Block {
     }
 
     std::string toString() override {
-        std::string res = "Catch(" + pattern + ")\n";
-        res += bodyToString();
-        return res;
+        assert(false);
+        return "";
+    }
+};
+
+struct FinallyBlock : public Block {
+    FinallyBlock(const ExLexem& lexem) : Block(lexem) {}
+
+    static const int id = FINALLY;
+
+    int getId() override {
+        return id;
     }
 
-    std::string pattern;
+    std::string toString() override {
+        assert(false);
+        return "";
+    }
 };

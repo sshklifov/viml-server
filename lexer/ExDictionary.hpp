@@ -20,6 +20,14 @@ struct ExDictionary {
 
     Entry getEntry(int dictIdx) const;
 
+	static const ExDictionary& getSingleton() {
+		static ExDictionary res;
+		if (!res.isLoaded()) {
+			res.loadDict("/home/stef/viml-server/lexer/excmds.txt");
+		}
+		return res;
+	}
+
 private:
     int firstEqualIdx(const StringView& key, int lo, int hi) const;
     int lastEqualIdx(const StringView& key, int lo, int hi) const;

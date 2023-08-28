@@ -1,7 +1,7 @@
 #pragma once
 
 #include <StringView.hpp>
-#include <Diagnostics.hpp>
+#include <vector>
 
 struct LocationMap {
     struct Key {
@@ -21,17 +21,18 @@ struct LocationMap {
         int entryLen;
     };
 
-    void getRealLocation(const Key& key, int strOffset, int& line, int& col) {
+    bool resolve(const Key& key, int strOffset, int& line, int& col) const {
         int strBegin = 0;
         for (int i = key.entryBegin; i < key.entryEnd; ++i) {
             int strEnd = strBegin + locations[i].entryLen;
             if (strOffset >= strBegin && strOffset < strEnd) {
                 line = locations[i].line;
                 col = locations[i].col + (strOffset - strBegin);
-                return;
+                return true;
             }
             strBegin = strEnd;
         }
+        return false;
     }
 
     std::vector<Location> locations;
@@ -167,25 +168,8 @@ private:
 };
 
 struct ExLexem {
-    // TODO RENAME
-    Range getNameRange() {
-        assert(false);
-        /* int len = name.length(); */
-        /* Position start{locationKey, nameOffset}; */
-        /* Position end{locationKey, nameOffset + len}; */
-        /* return Range{start, end}; */
-    }
-
-    Range getQargsRange() {
-        assert(false);
-        /* int len = qargs.length(); */
-        /* Position start{locationKey, qargsOffset}; */
-        /* Position end{locationKey, qargsOffset + len}; */
-        /* return Range{start, end}; */
-    }
-
-    std::string name;
-    std::string qargs;
+    StringView name;
+    StringView qargs;
 
     LocationMap::Key locationKey;
     int nameOffset;
@@ -201,9 +185,15 @@ struct ExLexer {
 
     bool loadFile(const char* filename);
     bool isLoaded() const;
-    bool unload();
+    bool unloadFile();
 
-    bool lex(ExLexem* res);
+    int lex(ExLexem& res);
+
+    bool resolveLoc(const ExLexem& lexem, int off, int& line, int& col) const;
+    bool resolveNameLoc(const ExLexem& lexem, int& line, int& col) const;
+    bool resolveNameEndLoc(const ExLexem& lexem, int& line, int& col) const;
+    bool resolveQargsLoc(const ExLexem& lexem, int& line, int& col) const;
+    bool resolveQargsEndLoc(const ExLexem& lexem, int& line, int& col) const;
 
 private:
     // File handles

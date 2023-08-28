@@ -35,7 +35,9 @@ struct SyntaxTree {
 
     RootBlock* build(const char* file, std::vector<Diagnostic>& errors);
 
+    bool isBuild() const;
+
 private:
-    RootBlock* root;
-    BlockFactory factory;
+    ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
+    BlockFactory factory; //< Holds memory for the created blocks
 };

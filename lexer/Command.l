@@ -53,9 +53,13 @@ enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, NAME, QARGS};
     return NAME;
 }
 
-<STATE_QARGS>.*$ {
+<STATE_QARGS>.* {
     BEGIN(INITIAL);
     return QARGS;
+}
+
+<*>"\n" {
+    BEGIN(INITIAL);
 }
 
 <*>. {

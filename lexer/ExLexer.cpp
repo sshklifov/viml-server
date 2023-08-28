@@ -18,8 +18,8 @@
 static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& lex) {
     YY_BUFFER_STATE buf = cmd_scan_bytes(line.begin, line.length());
 
-    lex.name.clear();
-    lex.qargs.clear();
+    lex.name.begin = lex.name.end;
+    lex.qargs.begin = lex.qargs.end;
 
     lex.locationKey = locationKey;
     lex.nameOffset = 0;
@@ -51,16 +51,19 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                 break;
 
             case NAME:
-                lex.name = cmdget_text();
-                if (!lex.name.empty() && lex.name.back() == '!') {
+                lex.name.begin = line.begin + numMatched;
+                lex.name.end = lex.name.begin + cmdget_leng();
+                if (lex.name.endsWith('!')) {
                     lex.bang = 1;
-                    lex.name.resize(lex.name.size() - 1);
+                    lex.name.end--;
                 }
                 lex.nameOffset = numMatched;
                 break;
 
             case QARGS:
-                lex.qargs = cmdget_text();
+                lex.qargs.begin = line.begin + numMatched;
+                lex.qargs.end = lex.qargs.begin + cmdget_leng();
+                lex.qargs = lex.qargs.trimLeftSpace();
                 lex.qargsOffset = numMatched;
                 break;
         }
@@ -79,10 +82,14 @@ ExLexer::ExLexer() {
 }
 
 ExLexer::~ExLexer() {
-    unload();
+    unloadFile();
 }
 
 bool ExLexer::loadFile(const char* filename) {
+    if (isLoaded()) {
+        return false;
+    }
+
     int fd = open(filename, O_RDWR);
     if (fd < 0) {
         return false;
@@ -115,7 +122,7 @@ bool ExLexer::loadFile(const char* filename) {
     return true;
 }
 
-bool ExLexer::unload() {
+bool ExLexer::unloadFile() {
     if (isLoaded()) {
         munmap(mptr, len);
         mptr = nullptr;
@@ -131,11 +138,11 @@ bool ExLexer::isLoaded() const {
     return mptr != nullptr;
 }
 
-bool ExLexer::lex(ExLexem* res) {
+int ExLexer::lex(ExLexem& res) {
     assert(isLoaded());
 
     if (program.empty()) {
-        return false;
+        return EOF;
     }
 
     LocationMap::Key locationKey;
@@ -171,11 +178,42 @@ bool ExLexer::lex(ExLexem* res) {
         ignore = (workLine.left() == '"' || workLine.left() == '\n');
     } while (ignore);
 
-    int errors = buildExLexem(programLine, locationKey, *res);
-    if (res->name.empty()) {
-        return false;
-    }
-    return true;
+    return buildExLexem(programLine, locationKey, res);
 }
 
+bool ExLexer::resolveLoc(const ExLexem& lexem, int off, int& line, int& col) const {
+    bool ok = locationMap.resolve(lexem.locationKey, off, line, col);
+    // Convert to 1-based indexing
+    if (ok) {
+        ++line;
+        ++col;
+    }
+    return ok;
+}
+
+bool ExLexer::resolveNameLoc(const ExLexem& lexem, int& line, int& col) const {
+    return resolveLoc(lexem, lexem.nameOffset, line, col);
+}
+
+bool ExLexer::resolveNameEndLoc(const ExLexem& lexem, int& line, int& col) const {
+    int offset = lexem.nameOffset;
+    if (lexem.name.length() > 1) {
+        offset += lexem.name.length() - 1;
+    }
+    return resolveLoc(lexem, offset, line, col);
+}
+
+bool ExLexer::resolveQargsLoc(const ExLexem& lexem, int& line, int& col) const {
+    return resolveLoc(lexem, lexem.qargsOffset, line, col);
+}
+
+bool ExLexer::resolveQargsEndLoc(const ExLexem& lexem, int& line, int& col) const {
+    int offset = lexem.qargsOffset;
+    if (lexem.qargs.length() > 1) {
+        offset += lexem.qargs.length() - 1;
+    }
+    return resolveLoc(lexem, offset, line, col);
+}
+
+// TODO echo1234 is not parsed correctly :(
 // TODO carriage returns
