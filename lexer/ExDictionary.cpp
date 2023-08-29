@@ -12,6 +12,15 @@
 
 #include <algorithm>
 
+
+const ExDictionary& ExDictionary::getSingleton() {
+    static ExDictionary res;
+    if (!res.isLoaded()) {
+        res.loadDict(DICTIONARY_FILE);
+    }
+    return res;
+}
+
 bool ExDictionary::loadDict(const char* filepath) {
     if (isLoaded()) {
         assert(false);

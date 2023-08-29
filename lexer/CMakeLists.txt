@@ -1,3 +1,5 @@
 run_flex_generator(Command.l Command.cpp)
 include_directories(${CMAKE_CURRENT_LIST_DIR})
+find_file(EXCMDS_TXT NAMES excmds.txt PATHS ${CMAKE_CURRENT_LIST_DIR} REQUIRED NO_DEFAULT_PATH)
+add_compile_definitions(DICTIONARY_FILE="${EXCMDS_TXT}")
 add_library(lexer ExLexer.cpp ExDictionary.cpp Command.cpp)
