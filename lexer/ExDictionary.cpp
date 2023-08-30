@@ -63,11 +63,7 @@ bool ExDictionary::isLoaded() const {
     return !dictionary.empty();
 }
 
-int ExDictionary::search(const char* what) const {
-    return search(StringView(what));
-}
-
-int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
+int ExDictionary::lastReqMatch(const StringView& key, int lo, int hi) const {
     while (lo + 1 < hi) {
         int mid = (lo + hi) / 2;
         StringView midStr = dictionary[mid].req.trunc(key.length());
@@ -80,18 +76,18 @@ int ExDictionary::lastEqualIdx(const StringView& key, int lo, int hi) const {
             lo = mid;
         }
     }
-    StringView loStr = dictionary[hi].req.trunc(key.length());
-    if (key == loStr) {
+    StringView hiStr = dictionary[hi].req.trunc(key.length());
+    if (key == hiStr) {
         return hi;
     }
-    StringView hiStr = dictionary[lo].req.trunc(key.length());
-    if (key == hiStr) {
+    StringView loStr = dictionary[lo].req.trunc(key.length());
+    if (key == loStr) {
         return lo;
     }
     return -1;
 }
 
-int ExDictionary::firstEqualIdx(const StringView& key, int lo, int hi) const {
+int ExDictionary::firstReqMatch(const StringView& key, int lo, int hi) const {
     while (lo + 1 < hi) {
         int mid = (lo + hi) / 2;
         StringView midStr = dictionary[mid].req.trunc(key.length());
@@ -115,40 +111,68 @@ int ExDictionary::firstEqualIdx(const StringView& key, int lo, int hi) const {
     return -1;
 }
 
+int ExDictionary::search(const char* key) const {
+    return search(StringView(key));
+}
+
 int ExDictionary::search(const StringView& key) const {
+    int maxMatched = 0;
+    int res = partialSearch(key, maxMatched);
+    if (maxMatched == key.length()) {
+        return res;
+    } else {
+        return -1;
+    }
+}
+
+int ExDictionary::partialSearch(const char* key, int& maxMatched) const {
+    return partialSearch(StringView(key), maxMatched);
+}
+
+int ExDictionary::partialSearch(const StringView& key, int& maxMatched) const {
     if (!isLoaded()) {
         assert(false);
         return -1;
     }
 
+    int resultIdx = -1;
+
     int lo = 0;
     int hi = dictionary.size() - 1;
     for (int guessLen = 1; guessLen <= key.length(); ++guessLen) {
-        Entry guessKey;
-        guessKey.req = StringView(key.begin, key.begin + guessLen);
-        guessKey.opt = StringView(key.begin + guessLen, key.end);
-        lo = firstEqualIdx(guessKey.req, lo, hi);
-        if (lo == -1) {
-            return -1;
+        Entry guessKey(key, guessLen);
+        lo = firstReqMatch(guessKey.req, lo, hi);
+        if (lo < 0) {
+            return resultIdx;
         }
-        hi = lastEqualIdx(guessKey.req, lo, hi);
-        assert(hi != -1);
+        hi = lastReqMatch(guessKey.req, lo, hi);
+        assert(lo <= hi);
 
-        Entry loEntry = dictionary[lo];
-        if (loEntry.req.length() == guessLen) {
-            StringView loStr = loEntry.opt.trunc(guessKey.opt.length());
-            if (guessKey.opt == loStr) {
-                return lo;
-            } else if (lo == hi) {
-                return -1;
-            } else {
-                ++lo;
+        const Entry& resEntry = dictionary[lo];
+        assert(resEntry.req.length() >= guessLen);
+        if (resEntry.req.length() == guessLen) {
+            StringView resOpt = resEntry.opt;
+            StringView keyOpt = guessKey.opt;
+            int numMatched = guessLen;
+            while (!resOpt.empty() && !keyOpt.empty()) {
+                if (resOpt.left() != keyOpt.left()) {
+                    break;
+                }
+                ++numMatched;
+                ++resOpt.begin;
+                ++keyOpt.begin;
+            }
+            if (numMatched > maxMatched) {
+                maxMatched = numMatched;
+                resultIdx = lo;
+            }
+            ++lo;
+            if (lo > hi) {
+                return resultIdx;
             }
         }
-        // Need to guess more characters
-        assert(loEntry.req.length() >= guessKey.req.length());
     }
-    return -1;
+    return resultIdx;
 }
 
 ExDictionary::Entry ExDictionary::getEntry(int dictIdx) const {

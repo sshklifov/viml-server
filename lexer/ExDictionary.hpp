@@ -7,6 +7,10 @@
 
 struct ExDictionary {
     struct Entry {
+        Entry() = default;
+        Entry(const StringView& req, const StringView& opt) : req(req), opt(opt) {}
+        Entry(const StringView& cmd, int splitIdx) : req(cmd.begin, cmd.begin + splitIdx), opt(cmd.begin + splitIdx, cmd.end) {}
+
         StringView req;
         StringView opt;
     };
@@ -18,13 +22,16 @@ struct ExDictionary {
     int search(const char* cmd) const;
     int search(const StringView& cmd) const;
 
+    int partialSearch(const char* cmd, int& numMatched) const;
+    int partialSearch(const StringView& cmd, int& numMatched) const;
+
     Entry getEntry(int dictIdx) const;
 
 	static const ExDictionary& getSingleton();
 
 private:
-    int firstEqualIdx(const StringView& key, int lo, int hi) const;
-    int lastEqualIdx(const StringView& key, int lo, int hi) const;
+    int firstReqMatch(const StringView& key, int lo, int hi) const;
+    int lastReqMatch(const StringView& key, int lo, int hi) const;
 
     void rebuild();
     bool debugCheckSorted();
