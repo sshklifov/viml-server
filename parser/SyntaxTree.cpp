@@ -1,41 +1,7 @@
 #include "SyntaxTree.hpp"
-#include "Constants.hpp"
 
-#include <ExDictionary.hpp>
+#include <ExConstants.hpp>
 #include <ExLexer.hpp>
-
-static bool checkBlockConstants(const ExDictionary& dict) {
-    std::string lowercase;
-    std::vector<int> values;
-
-    int okay = true;
-
-#define COMPUTE_COMMAND_VALUE(name, val)              \
-    lowercase = #name;                                \
-    for (int i = 0; i < lowercase.length(); ++i) {    \
-        lowercase[i] = tolower(lowercase[i]);         \
-    }                                                 \
-    values.push_back(dict.search(lowercase.c_str())); \
-    okay &= (values.back() == val);                   \
-
-    FOR_EACH_COMMAND(COMPUTE_COMMAND_VALUE);
-
-#undef COMPUTE_COMMAND_VALUE
-
-    if (okay) {
-        return true;
-    }
-
-    int i = 0;
-
-#define PRINT_COMMAND_VALUE(name, val) printf("    code(%s, %d) \\\n", #name, values[i++]);
-
-    FOR_EACH_COMMAND(PRINT_COMMAND_VALUE)
-
-#undef PRINT_COMMAND_VALUE
-
-    return okay;
-}
 
 static Diagnostic error(const ExLexer& creator, const ExLexem& lexem, const char* msg) {
     Diagnostic res;
@@ -63,13 +29,6 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
         return nullptr;
     }
 
-    const ExDictionary& dict = ExDictionary::getSingleton();
-    if (!dict.isLoaded()) {
-        return nullptr;
-    }
-
-    assert(checkBlockConstants(dict));
-
     RootBlock* root = factory.create<RootBlock>();
     std::stack<Block*> blocks;
     blocks.push(root); //< Guarantees that stack is never empty
@@ -81,9 +40,8 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
             const char* msg = "trailing characters";
             // TODO report
         }
-        int dictIdx = dict.search(lexem.name);
         Block* newBlock = nullptr;
-        switch (dictIdx) {
+        switch (lexem.exDictIdx) {
         case IF:
             newBlock = factory.create<IfBlock>(lexem);
             blocks.top()->addToScope(newBlock);
@@ -228,13 +186,13 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
             break;
 
         default:
-            if (dictIdx < 0) {
+            if (lexem.exDictIdx < 0) { // TODO handle in lexer?
                 const char* msg = "not an editor command";
                 errors.push_back(error(lexer, lexem, msg));
             }
             // Add it anyway
             if (!lexem.name.empty()) {
-                blocks.top()->addToScope(factory.create<ExBlock>(lexem, dictIdx));
+                blocks.top()->addToScope(factory.create<ExBlock>(lexem));
             }
         }
     }

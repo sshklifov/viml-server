@@ -243,7 +243,7 @@ error_t argsParser(int key, char *arg, argp_state *state) {
 void alternateMain() {
     SyntaxTree ast;
     std::vector<Diagnostic> digs;
-    RootBlock* root = ast.build("/home/stef/viml-server/test.txt", digs);
+    RootBlock* root = ast.build("/home/shs1sf/viml-server/test.txt", digs);
     if (!root) {
         // Report error idk
     }

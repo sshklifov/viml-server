@@ -16,10 +16,13 @@
     code(FINALLY, 159) \
     code(CATCH, 55)
 
+
 #define DEFINE_COMMAND(name, val) const int name = val;
 
+const int ROOT = -1;
 FOR_EACH_COMMAND(DEFINE_COMMAND)
 
 #undef DEFINE_COMMAND
 
-const int ROOT = -1;
+struct ExDictionary; // Forward declare
+bool checkExConstants(const ExDictionary& dict);

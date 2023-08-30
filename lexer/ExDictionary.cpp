@@ -1,4 +1,5 @@
 #include <ExDictionary.hpp>
+#include <ExConstants.hpp>
 
 #include <cassert>
 #include <sys/types.h>
@@ -17,6 +18,7 @@ const ExDictionary& ExDictionary::getSingleton() {
     static ExDictionary res;
     if (!res.isLoaded()) {
         res.loadDict(DICTIONARY_FILE);
+        assert(checkExConstants(res));
     }
     return res;
 }

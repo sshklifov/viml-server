@@ -5,14 +5,14 @@
 #include <stdexcept>
 
 #include <ExLexer.hpp>
-#include <Constants.hpp>
+#include <ExConstants.hpp>
 
 struct Block {
     Block(const ExLexem& lexem) : lexem(lexem) {}
 
     virtual ~Block() {}
 
-    virtual int getId() = 0;
+    virtual int getId() { return lexem.exDictIdx; }
 
     virtual std::string toString() { return bodyToString(); }
 
@@ -52,11 +52,7 @@ struct RootBlock : Block {
 };
 
 struct ExBlock : Block {
-    ExBlock(const ExLexem& lexem, int id) : Block(lexem), id(id) {}
-
-    int getId() override {
-        return id;
-    }
+    ExBlock(const ExLexem& lexem) : Block(lexem) {}
 
     std::string toString() override {
         std::string res = "Ex(" + lexem.name.toString();
@@ -66,18 +62,10 @@ struct ExBlock : Block {
         res += ")\n";
         return res;
     }
-
-    int id;
 };
 
 struct IfBlock : public Block {
     IfBlock(const ExLexem& lexem) : Block(lexem), elseBlock(nullptr) {}
-
-    static const int id = IF;
-
-    int getId() override {
-        return id;
-    }
 
     std::string toString() override {
         std::string res = "If(" + lexem.qargs.toString() + ")\n";
@@ -91,32 +79,23 @@ struct IfBlock : public Block {
         return res;
     }
 
+    static const int id = IF;
     Block* elseBlock;
 };
 
 struct ElseBlock : public Block {
     ElseBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    static const int id = ELSE;
-
-    int getId() override {
-        return id;
-    };
-
     std::string toString() override {
         assert(false);
         return "";
     }
+
+    static const int id = ELSE;
 };
 
 struct WhileBlock : public Block {
     WhileBlock(const ExLexem& lexem) : Block(lexem) {}
-
-    static const int id = WHILE;
-
-    int getId() override {
-        return id;
-    }
 
     std::string toString() override {
         std::string res = "While(" + lexem.qargs.toString() + ")\n";
@@ -124,16 +103,12 @@ struct WhileBlock : public Block {
         res += "Endwhile()\n";
         return res;
     }
+
+    static const int id = WHILE;
 };
 
 struct ForBlock : public Block {
     ForBlock(const ExLexem& lexem) : Block(lexem) {}
-
-    static const int id = FOR;
-
-    int getId() override {
-        return id;
-    }
 
     std::string toString() override {
         std::string res = "For(" + lexem.qargs.toString() + ")\n";
@@ -141,16 +116,12 @@ struct ForBlock : public Block {
         res += "Endfor()\n";
         return res;
     }
+
+    static const int id = FOR;
 };
 
 struct FunctionBlock : public Block {
     FunctionBlock(const ExLexem& lexem) : Block(lexem) {}
-
-    static const int id = FUNCTION;
-
-    int getId() override {
-        return id;
-    }
 
     std::string toString() override {
         std::string res = "Function(" + lexem.qargs.toString() + ")\n";
@@ -159,17 +130,12 @@ struct FunctionBlock : public Block {
         return res;
     }
 
+    static const int id = FUNCTION;
     std::string expr1;
 };
 
 struct TryBlock : public Block {
     TryBlock(const ExLexem& lexem) : Block(lexem), finally(nullptr) {}
-
-    static const int id = TRY;
-
-    int getId() override {
-        return id;
-    }
 
     std::string toString() override {
         std::string res = "Try(" + lexem.qargs.toString() + ")\n";
@@ -189,6 +155,7 @@ struct TryBlock : public Block {
         return res;
     }
 
+    static const int id = TRY;
     std::vector<Block*> catchBlocks;
     Block* finally;
 };
@@ -196,29 +163,21 @@ struct TryBlock : public Block {
 struct CatchBlock : public Block {
     CatchBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    static const int id = CATCH;
-
-    int getId() override {
-        return id;
-    }
-
     std::string toString() override {
         assert(false);
         return "";
     }
+
+    static const int id = CATCH;
 };
 
 struct FinallyBlock : public Block {
     FinallyBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    static const int id = FINALLY;
-
-    int getId() override {
-        return id;
-    }
-
     std::string toString() override {
         assert(false);
         return "";
     }
+
+    static const int id = FINALLY;
 };
