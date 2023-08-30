@@ -4,7 +4,7 @@
 %option pointer
 %option prefix="cmd"
 
-%x STATE_QARGS
+%x STATE_COMMAND
 
 space [ \t]
 any_space {space}*
@@ -16,7 +16,7 @@ quote_char [ -~]{-}[\\']
 quote [']({quote_char}*|\\.)*[']
 
 name [a-zA-Z][a-zA-Z0-9]*
-command {name}|"!"|"!!"|"#"|"&"|"*"|"<"|"="|">"|"@"|"@@"|"~"
+command_special "!"|"!!"|"#"|"&"|"*"|"<"|"="|">"|"@"|"@@"|"~"
 
 radix "0x"|"0X"|"0b"|"0B"
 number [+-]?{radix}?[0-9]+
@@ -32,11 +32,12 @@ rev_pattern_char [ -~]{-}[?]
 rev_pattern "?"({rev_pattern_char}*|\\.)*"?"
 
 %{
-enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, NAME, QARGS};
+enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, COMMAND};
 %}
 
 %%
 ":" {
+    BEGIN(STATE_COMMAND);
     return COMMAND_COLON;
 }
 
@@ -48,14 +49,9 @@ enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, NAME, QARGS};
     return RANGE_DELIM;
 }
 
-{command}"!"? {
-    BEGIN(STATE_QARGS);
-    return NAME;
-}
-
-<STATE_QARGS>.* {
-    BEGIN(INITIAL);
-    return QARGS;
+[a-zA-Z].* {
+    // TODO command special!
+    return COMMAND;
 }
 
 <*>"\n" {

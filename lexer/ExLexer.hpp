@@ -168,6 +168,7 @@ private:
 };
 
 struct ExLexem {
+    int exDictIdx;
     StringView name;
     StringView qargs;
 

@@ -14,23 +14,25 @@
 #include <stdexcept>
 
 #include "Command.hpp"
+#include "ExDictionary.hpp"
 
 static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& lex) {
     YY_BUFFER_STATE buf = cmd_scan_bytes(line.begin, line.length());
 
+    lex.exDictIdx = -1;
     lex.name.begin = lex.name.end;
     lex.qargs.begin = lex.qargs.end;
-
     lex.locationKey = locationKey;
     lex.nameOffset = 0;
     lex.qargsOffset = 0;
     lex.bang = 0;
     lex.range = 0;
 
+    const ExDictionary& dict = ExDictionary::getSingleton();
+
     enum {ERROR = 256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, NAME, QARGS};
-    int numMatched = 0;
+    int lineOffset = 0;
     int done = false;
-    int unexpectedSymbol = 0;
     do {
         int tok = cmdlex();
         switch (tok) {
@@ -39,10 +41,7 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                 break;
 
             case ERROR:
-                // Set first time only
-                if (!unexpectedSymbol) {
-                    unexpectedSymbol = tok;
-                }
+                // TODO error
                 break;
 
             case RANGE_ARG:
@@ -51,28 +50,38 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                 break;
 
             case NAME:
-                lex.name.begin = line.begin + numMatched;
-                lex.name.end = lex.name.begin + cmdget_leng();
-                if (lex.name.endsWith('!')) {
-                    lex.bang = 1;
-                    lex.name.end--;
+                int cmdNameLen = 0;
+                int dictIdx = dict.partialSearch(cmdget_text(), cmdNameLen);
+                if (dictIdx < 0) {
+                    // TODO error
+                    break;
+                } else {
+                    // TODO special commands (check with bang)
+                    StringView namePart(line.begin + lineOffset, cmdNameLen);
+                    StringView restPart(namePart.end, namePart.begin + cmdget_leng());
+                    if (!restPart.empty()) {
+                        if (isalpha(restPart.left())) {
+                            // TODO error
+                            break;
+                        } else if (restPart.left() == '!') {
+                            ++restPart.begin;
+                            lex.bang = true;
+                        }
+                    }
+                    lex.exDictIdx = dictIdx;
+                    lex.name = namePart;
+                    lex.qargs = restPart.trimLeftSpace();
+                    lex.nameOffset = namePart.begin - line.begin;
+                    lex.qargsOffset = restPart.begin - line.begin;
                 }
-                lex.nameOffset = numMatched;
-                break;
-
-            case QARGS:
-                lex.qargs.begin = line.begin + numMatched;
-                lex.qargs.end = lex.qargs.begin + cmdget_leng();
-                lex.qargs = lex.qargs.trimLeftSpace();
-                lex.qargsOffset = numMatched;
                 break;
         }
-        numMatched += cmdget_leng();
+        lineOffset += cmdget_leng();
     }
     while (!done);
 
     cmd_delete_buffer(buf);
-    return unexpectedSymbol;
+    return 0; // TODO
 }
 
 ExLexer::ExLexer() {
@@ -215,5 +224,4 @@ bool ExLexer::resolveQargsEndLoc(const ExLexem& lexem, int& line, int& col) cons
     return resolveLoc(lexem, offset, line, col);
 }
 
-// TODO echo1234 is not parsed correctly :(
 // TODO carriage returns
