@@ -18,7 +18,7 @@ const ExDictionary& ExDictionary::getSingleton() {
     static ExDictionary res;
     if (!res.isLoaded()) {
         res.loadDict(DICTIONARY_FILE);
-        assert(checkExConstants(res));
+        assert(debugCheckExConstants());
     }
     return res;
 }
@@ -137,6 +137,7 @@ int ExDictionary::partialSearch(const StringView& key, int& maxMatched) const {
         return -1;
     }
 
+    maxMatched = 0;
     int resultIdx = -1;
 
     int lo = 0;
@@ -194,27 +195,21 @@ void ExDictionary::rebuild() {
         Entry& name = dictionary.back();
 
         const char* end = begin;
-        while (isalnum(*end)) {
+        while (*end != '[') {
             ++end;
         }
         name.req.begin = begin;
         name.req.end = end;
 
-        if (*end == '[') {
-            begin = end + 1;
-            end = begin;
-            while (isalnum(*end)) {
-                ++end;
-            }
-            name.opt.begin = begin;
-            name.opt.end = end;
-            assert(*end == ']');
+        begin = end + 1;
+        end = begin;
+        while (*end != ']') {
             ++end;
-        } else {
-            name.opt.begin = nullptr;
-            name.opt.end = nullptr;
         }
+        name.opt.begin = begin;
+        name.opt.end = end;
 
+        ++end;
         assert(*end == '\n');
         begin = end + 1;
     }

@@ -1,7 +1,8 @@
 #include "ExConstants.hpp"
 #include "ExDictionary.hpp"
 
-bool checkExConstants(const ExDictionary& dict) {
+bool debugCheckExConstants() {
+    const ExDictionary& dict = ExDictionary::getSingleton();
     std::string lowercase;
     std::vector<int> values;
 
@@ -13,6 +14,7 @@ bool checkExConstants(const ExDictionary& dict) {
         lowercase[i] = tolower(lowercase[i]);         \
     }                                                 \
     values.push_back(dict.search(lowercase.c_str())); \
+    assert(values.back() != -1);                      \
     okay &= (values.back() == val);                   \
 
     FOR_EACH_COMMAND(COMPUTE_COMMAND_VALUE);

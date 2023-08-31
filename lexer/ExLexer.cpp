@@ -30,7 +30,7 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
 
     const ExDictionary& dict = ExDictionary::getSingleton();
 
-    enum {ERROR = 256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, NAME, QARGS};
+    enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, COMMAND, COMMAND_SPECIAL};
     int lineOffset = 0;
     int done = false;
     do {
@@ -49,14 +49,13 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                 lex.range = 1;
                 break;
 
-            case NAME:
+            case COMMAND: {
                 int cmdNameLen = 0;
                 int dictIdx = dict.partialSearch(cmdget_text(), cmdNameLen);
                 if (dictIdx < 0) {
                     // TODO error
                     break;
                 } else {
-                    // TODO special commands (check with bang)
                     StringView namePart(line.begin + lineOffset, cmdNameLen);
                     StringView restPart(namePart.end, namePart.begin + cmdget_leng());
                     if (!restPart.empty()) {
@@ -75,6 +74,24 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                     lex.qargsOffset = restPart.begin - line.begin;
                 }
                 break;
+            }
+
+            case COMMAND_SPECIAL: {
+                int cmdNameLen = 0;
+                int dictIdx = dict.partialSearch(cmdget_text(), cmdNameLen);
+                if (dictIdx < 0) {
+                    // TODO error
+                } else {
+                    StringView namePart(line.begin + lineOffset, cmdNameLen);
+                    StringView restPart(namePart.end, namePart.begin + cmdget_leng());
+                    lex.exDictIdx = dictIdx;
+                    lex.name = namePart;
+                    lex.qargs = restPart.trimLeftSpace();
+                    lex.nameOffset = namePart.begin - line.begin;
+                    lex.qargsOffset = restPart.begin - line.begin;
+                }
+                break;
+            }
         }
         lineOffset += cmdget_leng();
     }

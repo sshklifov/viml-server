@@ -1,4 +1,5 @@
-echo1234
+5@@
+!!
 function! Rename(arg)
   if a:arg == ""
     echo "Did not rename file"
