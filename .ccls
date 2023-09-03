@@ -7,3 +7,4 @@ clang
 -Iparser
 -Ilexer
 -Ilsp
+-Ieval

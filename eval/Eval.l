@@ -1,11 +1,7 @@
 %option noyywrap
-%option yylineno
-%option stack
-%x EX_LEADING EX_BODY COM
+%option prefix="eval"
 
 space [ \t]
-any_space {space}*
-comment ^{any_space}["].*[\n]
 
 str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
@@ -26,201 +22,180 @@ va_id "a:"{number}?
 
 radix "0x"|"0X"|"0b"|"0B"
 number [+-]?{radix}?[0-9]+
-
 float [+-]?{number}"."{number}([eE][+-]?{number})?
-
 blob "0z"[0-9a-fA-F.]+
 
 %{
-#include "Node.h"
-
-extern Node* yylval;
-
-  enum yytokentype
-  {
-    STR = 258,
-    AU_ID,
-    SID_ID,
-    ID,
-    OPT_ID,
-    REG_ID,
-    ENV_ID,
-    NUMBER,
-    FLOAT,
-    BLOB,
-    SPC_SQB,
-    IDX_SQB,
-    EQ,
-    NOT_EQ,
-    LESS_EQ,
-    GR_EQ,
-    MATCH,
-    NOT_MATCH,
-    CONCAT,
-    ADD_EQ,
-    SUB_EQ,
-    MUL_EQ,
-    DIV_EQ,
-    MOD_EQ,
-    CON_EQ,
-    AND,
-    OR,
-    FUNCTION,
-    ENDFUNCTION,
-    IF,
-    ELSE,
-    ELSEIF,
-    ENDIF,
-    WHILE,
-    ENDWHILE,
-    FOR,
-    ENDFOR,
-    LET,
-    COMMAND,
-    QARGS,
-    EX,
-    VA_DOTS,
-    VA,
-    ARROW
-  };
+#include "EvalParser.hpp"
 %}
 
 %%
-<COM>{name} {
-    yylval = new LexemNode(yytext);
-    BEGIN(EX_LEADING);
-    return ID;
-}
-
-{str} {
-    yylval = new LexemNode(yytext);
-    return STR;
-}
-
-{quote} {
-    yylval = new LexemNode(yytext);
-    return STR;
-}
-
-{va_id} {
-    yylval = new LexemNode(yytext);
-    return VA;
-}
-
-{sid_id} {
-    yylval = new LexemNode(yytext);
-    return SID_ID;
-}
-
-{au_id} {
-    yylval = new LexemNode(yytext);
-    return AU_ID;
-}
-
-{opt_id} {
-    yylval = new LexemNode(yytext);
-    return OPT_ID;
-}
-
-{reg_id} {
-    yylval = new LexemNode(yytext);
-    return REG_ID;
-}
-
-{env_id} {
-    yylval = new LexemNode(yytext);
-    return ENV_ID;
-}
-
-{id} {
-    yylval = new LexemNode(yytext);
-    return ID;
-}
-
-"==" {
-    return EQ;
-}
-
-"!=" {
-    return NOT_EQ;
-}
-
-">=" {
-    return GR_EQ;
-}
-
-"<=" {
-    return LESS_EQ;
-}
 
 "&&" {
-    return AND;
+    return eval::parser::token::AND;
 }
 
 "||" {
-    return OR;
+    return eval::parser::token::OR;
+}
+
+"==" {
+    return eval::parser::token::EQ;
+}
+
+"!=" {
+    return eval::parser::token::NOT_EQ;
+}
+
+">" {
+    return eval::parser::token::GR;
+}
+
+">=" {
+    return eval::parser::token::GR_EQ;
+}
+
+"<" {
+    return eval::parser::token::LESS;
+}
+
+"<=" {
+    return eval::parser::token::LESS_EQ;
 }
 
 "=~" {
-    return MATCH;
+    return eval::parser::token::MATCH;
 }
 
 "!~" {
-    return NOT_MATCH;
+    return eval::parser::token::NOT_MATCH;
 }
 
-"+=" {
-    return ADD_EQ;
+"==#" {
+    return eval::parser::token::EQ_CASE;
 }
 
-"-=" {
-    return SUB_EQ;
+"!=#" {
+    return eval::parser::token::NOT_EQ_CASE;
 }
 
-"*=" {
-    return MUL_EQ;
+">#" {
+    return eval::parser::token::GR_CASE;
 }
 
-"/=" {
-    return DIV_EQ;
+">=#" {
+    return eval::parser::token::GR_EQ_CASE;
+}
+
+"<#" {
+    return eval::parser::token::LESS_CASE;
+}
+
+"<=#" {
+    return eval::parser::token::LESS_EQ_CASE;
+}
+
+"=~#" {
+    return eval::parser::token::MATCH_CASE;
+}
+
+"!~#" {
+    return eval::parser::token::NOT_MATCH_CASE;
+}
+
+"==?" {
+    return eval::parser::token::EQ_ICASE;
+}
+
+"!=?" {
+    return eval::parser::token::NOT_EQ_ICASE;
+}
+
+">?" {
+    return eval::parser::token::GR_ICASE;
+}
+
+">=?" {
+    return eval::parser::token::GR_EQ_ICASE;
+}
+
+"<?" {
+    return eval::parser::token::LESS_ICASE;
+}
+
+"<=?" {
+    return eval::parser::token::LESS_EQ_ICASE;
+}
+
+"=~?" {
+    return eval::parser::token::MATCH_ICASE;
+}
+
+"!~?" {
+    return eval::parser::token::NOT_MATCH_ICASE;
 }
 
 ".." {
-    return CONCAT;
-}
-
-"->" {
-    return ARROW;
-}
-
-{space}"[" {
-    return SPC_SQB;
-}
-
-"[" {
-    return IDX_SQB;
+    return eval::parser::token::CONCAT;
 }
 
 {number} {
-    yylval = new LexemNode(yytext);
-    return NUMBER;
+    return eval::parser::token::NUMBER;
 }
 
 {float} {
-    yylval = new LexemNode(yytext);
-    return FLOAT;
+    return eval::parser::token::FLOAT;
 }
 
 {blob} {
-    yylval = new LexemNode(yytext);
-    return BLOB;
+    return eval::parser::token::BLOB;
 }
 
-<*>{space} {
+{str} {
+    return eval::parser::token::STR;
+}
+
+{quote} {
+    return eval::parser::token::STR;
+}
+
+"->" {
+    return eval::parser::token::ARROW;
+}
+
+{va_id} {
+    return eval::parser::token::VA_ID;
+}
+
+{sid_id} {
+    return eval::parser::token::SID_ID;
+}
+
+{au_id} {
+    return eval::parser::token::AUTOLOAD_ID;
+}
+
+{opt_id} {
+    return eval::parser::token::OPTION_ID;
+}
+
+{reg_id} {
+    return eval::parser::token::REGISTER_ID;
+}
+
+{env_id} {
+    return eval::parser::token::ENV_ID;
+}
+
+{id} {
+    return eval::parser::token::ID;
+}
+
+{space} {
     // IGNORE
 }
 
-<*>"\n" {
+"\n" {
     BEGIN(INITIAL);
     return yytext[0];
 }
