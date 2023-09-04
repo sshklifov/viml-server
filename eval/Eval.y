@@ -10,6 +10,9 @@
     MATCH "=~"
     NOT_MATCH "!~"
 
+%token IS "is"
+    ISNOT "isnot"
+
 %token EQ_CASE "==#"
     NOT_EQ_CASE "!=#"
     GR_CASE ">#"
@@ -35,11 +38,9 @@
 %token <std::string> VA_ID SID_ID AUTOLOAD_ID OPTION_ID REGISTER_ID ENV_ID ID
 
 %type <EvalNode*> input
-%type <std::string> fname
 %type <std::vector<std::string>> id_list
 %type <std::vector<EvalNode*>> expr1_list
-%type <std::unordered_map<std::string,EvalNode*>> expr1_pairs
-%type <std::string> expr1_key
+%type <std::vector<DictNode::Pair>> expr1_pairs
 
 %type <EvalNode*> expr1 expr2 expr3 expr4 expr5 expr6 expr7 expr8 expr9
 %type <EvalNode*> expr6_sum expr6_sub expr6_dot expr6_con
@@ -104,6 +105,10 @@ expr4: expr5
      | expr5 LESS_EQ_ICASE expr5              { $$ = factory.create<InfixOpNode>($1, $3, ">?"); }
      | expr5 MATCH_ICASE expr5                { $$ = factory.create<InfixOpNode>($1, $3, "=~?"); }
      | expr5 NOT_MATCH_ICASE expr5            { $$ = factory.create<InfixOpNode>($1, $3, "!~?"); }
+
+
+     | expr5 IS expr5                         { $$ = factory.create<InfixOpNode>($1, $3, "is"); }
+     | expr5 ISNOT expr5                      { $$ = factory.create<InfixOpNode>($1, $3, "isnot"); }
 ;
 
 expr5: expr6 | expr6_sum | expr6_sub | expr6_dot | expr6_con
@@ -141,25 +146,25 @@ expr7: expr8
      | '+' expr7            { $$ = factory.create<PrefixOpNode>($2, "+"); }
 ;
 
+// TODO subscript
+// TODO method
 expr8: expr9
-     | expr8 '[' expr1 ']'               { $$ = factory.create<IndexNode>(IndexNode::Single(), $1, $3); }
-     | expr8 '[' expr1 ':' expr1 ']'     { $$ = factory.create<IndexNode>(IndexNode::Double(), $1, $3, $5); }
-     | expr8 '[' expr1 ':' ']'           { $$ = factory.create<IndexNode>(IndexNode::Left(), $1, $3); }
-     | expr8 '[' ':' expr1 ']'           { $$ = factory.create<IndexNode>(IndexNode::Right(), $1, $4); }
-     | expr8 '[' ':' ']'                 { $$ = factory.create<IndexNode>(IndexNode::None(), $1); }
-     | fname '(' expr1_list ')'          { $$ = factory.create<InvokeNode>(std::move($1), std::move($3)); }
+     | expr8 '[' expr1 ']'               { $$ = factory.create<IndexNode>($1, $3); }
+     | expr8 '[' expr1 ':' expr1 ']'     { $$ = factory.create<IndexRangeNode>($1, $3, $5); }
+     | expr8 '[' expr1 ':' ']'           { $$ = factory.create<IndexRangeNode>($1, $3, nullptr); }
+     | expr8 '[' ':' expr1 ']'           { $$ = factory.create<IndexRangeNode>($1, nullptr, $4); }
+     | expr8 '[' ':' ']'                 { $$ = factory.create<IndexRangeNode>($1, nullptr, nullptr); }
+     | expr8 '(' expr1_list ')'          { $$ = factory.create<InvokeNode>($1, std::move($3)); }
 ;
 
-fname: SID_ID | AUTOLOAD_ID | ID
-;
-
+// TODO Dictionary #{}
 expr9: NUMBER                               { $$ = factory.create<TokenNode>(std::move($1), TokenNode::NUMBER); }
      | FLOAT                                { $$ = factory.create<TokenNode>(std::move($1), TokenNode::FLOAT); }
      | BLOB                                 { $$ = factory.create<TokenNode>(std::move($1), TokenNode::BLOB); }
      | STR                                  { $$ = factory.create<TokenNode>(std::move($1), TokenNode::STRING); }
      | '[' expr1_list ']'                   { $$ = factory.create<ListNode>(std::move($2)); }
      | '{' expr1_pairs '}'                  { $$ = factory.create<DictNode>(std::move($2)); }
-     | '(' expr1 ')'                        { $$ = $2; }
+     | '(' expr1 ')'                        { $$ = factory.create<NestedNode>($2); }
      | '{' id_list ARROW expr1 '}'          { $$ = factory.create<LambdaNode>(std::move($2), $4); }
      | OPTION_ID                            { $$ = factory.create<TokenNode>(std::move($1), TokenNode::OPTION); }
      | REGISTER_ID                          { $$ = factory.create<TokenNode>(std::move($1), TokenNode::REGISTER); }
@@ -180,8 +185,6 @@ expr1_list: %empty                 { $$ = {}; }
 ;
 
 expr1_pairs: %empty                               { $$ = {}; }
-           | expr1_key ':' expr1                  { $$ = {}; $$[$1] = $3; }
-           | expr1_pairs ',' expr1_key ':' expr1  { $$ = $1; $$[$3] = $5; }
+           | expr1 ':' expr1                      { $$ = {}; $$.push_back(DictNode::Pair($1, $3)); }
+           | expr1_pairs ',' expr1 ':' expr1      { $$ = $1; $$.push_back(DictNode::Pair($3, $5)); }
 ;
-
-expr1_key: NUMBER | ID

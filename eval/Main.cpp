@@ -50,14 +50,14 @@ void debug() {
 }
 
 int main (int argc, char** argv) {
-    YY_BUFFER_STATE buf = eval_scan_string("1 + 2");
+    YY_BUFFER_STATE buf = eval_scan_string("a.3");
     EvalFactory factory;
     eval::parser parser(factory);
     int res = parser();
-    printf("Result: %d\n", res);
+    printf("Result code: %d\n", res);
     EvalNode* node = factory.getTopLevel();
     std::string str = node->toString();
-    printf("String: %s\n", str.c_str());
+    printf("Result string: %s\n", str.c_str());
 
     eval_delete_buffer(buf);
     return res;

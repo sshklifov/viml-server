@@ -117,37 +117,34 @@ private:
 };
 
 struct IndexNode : public EvalNode {
-    struct None {};
-    struct Single {};
-    struct Left {};
-    struct Right {};
-    struct Double {};
-
-    IndexNode(None, EvalNode* val) :
-        val(val), type(NONE), from(nullptr), to(nullptr) {}
-
-    IndexNode(Single, EvalNode* val, EvalNode* from) :
-        val(val), type(SINGLE), from(from), to(nullptr) {}
-
-    IndexNode(Left, EvalNode* val, EvalNode* from) :
-        val(val), type(LEFT), from(from), to(nullptr) {}
-
-    IndexNode(Right, EvalNode* val, EvalNode* to) :
-        val(val), type(LEFT), from(nullptr), to(to) {}
-
-    IndexNode(Double, EvalNode* val, EvalNode* from, EvalNode* to) :
-        val(val), type(DOUBLE), from(from), to(to) {}
+    IndexNode(EvalNode* what, EvalNode* index) : what(what), index(index) {}
 
     std::string toString() override {
         std::string res;
-        res += val->toString();
+        res += what->toString();
+        res += "[";
+        res += index->toString();
+        res += "]";
+        return res;
+    }
+
+private:
+    EvalNode* what;
+    EvalNode* index;
+};
+
+struct IndexRangeNode : public EvalNode {
+    IndexRangeNode(EvalNode* what, EvalNode* from, EvalNode* to) :
+        what(what), from(from), to(to) {}
+
+    std::string toString() override {
+        std::string res;
+        res += what->toString();
         res += "[";
         if (from) {
             res += from->toString();
         }
-        if (type != SINGLE) {
-            res += ":";
-        }
+        res += ":";
         if (to) {
             res += to->toString();
         }
@@ -156,19 +153,16 @@ struct IndexNode : public EvalNode {
     }
 
 private:
-    enum Type { NONE, SINGLE, LEFT, RIGHT, DOUBLE};
-
-    Type type;
-    EvalNode* val;
+    EvalNode* what;
     EvalNode* from;
     EvalNode* to;
 };
 
 struct InvokeNode : public EvalNode {
-    InvokeNode(std::string name, std::vector<EvalNode*> args) : name(std::move(name)), args(std::move(args)) {}
+    InvokeNode(EvalNode* fun, std::vector<EvalNode*> args) : fun(fun), args(std::move(args)) {}
 
     std::string toString() override {
-        std::string res = name;
+        std::string res = fun->toString();
 
         res += "(";
         if (!args.empty()) {
@@ -184,7 +178,7 @@ struct InvokeNode : public EvalNode {
     }
 
 private:
-    std::string name;
+    EvalNode* fun;
     std::vector<EvalNode*> args;
 };
 
@@ -223,18 +217,27 @@ private:
 };
 
 struct DictNode : public EvalNode {
-    DictNode(std::unordered_map<std::string, EvalNode*> entries) : entries(std::move(entries)) {}
+    struct Pair {
+        Pair() = default;
+        Pair(EvalNode* key, EvalNode* value) : key(key), value(value) {}
+
+        EvalNode* key;
+        EvalNode* value;
+    };
+
+    DictNode(std::vector<Pair> entries) : entries(std::move(entries)) {}
 
     std::string toString() override {
         std::string res = "{";
         if (!entries.empty()) {
-            std::unordered_map<std::string, EvalNode*>::iterator it = entries.begin();
-            ++it;
-            while (it != entries.end()) {
-                res += ", ";
-                res += it->first;
+            res += entries[0].key->toString();
                 res += ": ";
-                res += it->second->toString();
+            res += entries[0].value->toString();
+            for (int i = 1; i < entries.size(); ++i) {
+                res += ", ";
+                res += entries[i].key->toString();
+                res += ": ";
+                res += entries[i].value->toString();
             }
         }
         res += "}";
@@ -242,7 +245,21 @@ struct DictNode : public EvalNode {
     }
 
 private:
-    std::unordered_map<std::string, EvalNode*> entries;
+    std::vector<Pair> entries;
+};
+
+struct NestedNode : public EvalNode {
+    NestedNode(EvalNode* expr) : expr(expr) {}
+
+    std::string toString() override {
+        std::string res = "(";
+        res += expr->toString();
+        res += ")";
+        return res;
+    }
+
+private:
+    EvalNode* expr;
 };
 
 struct LambdaNode : public EvalNode {

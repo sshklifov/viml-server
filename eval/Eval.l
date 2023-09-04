@@ -135,6 +135,14 @@ blob "0z"[0-9a-fA-F.]+
     return eval::parser::token::NOT_MATCH_ICASE;
 }
 
+"is" {
+    return eval::parser::token::IS;
+}
+
+"isnot" {
+    return eval::parser::token::ISNOT;
+}
+
 ".." {
     return eval::parser::token::CONCAT;
 }
