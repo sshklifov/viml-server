@@ -50,15 +50,21 @@ void debug() {
 }
 
 int main (int argc, char** argv) {
-    YY_BUFFER_STATE buf = eval_scan_string("a.3");
-    EvalFactory factory;
-    eval::parser parser(factory);
-    int res = parser();
-    printf("Result code: %d\n", res);
-    EvalNode* node = factory.getTopLevel();
-    std::string str = node->toString();
-    printf("Result string: %s\n", str.c_str());
+    YY_BUFFER_STATE buf = eval_scan_string("3 + 123 - 2");
+    const bool lexdbg = true;
+    if (lexdbg) {
+        debug();
+    } else {
+        EvalFactory factory;
+        eval::parser parser(factory);
+        /* parser.set_debug_level(1); */
+        int res = parser();
+        printf("Result code: %d\n", res);
+        EvalNode* node = factory.getTopLevel();
+        std::string str = node->toString();
+        printf("Result string: %s\n", str.c_str());
+    }
 
     eval_delete_buffer(buf);
-    return res;
+    return 0;
 }

@@ -38,13 +38,11 @@
 %token <std::string> VA_ID SID_ID AUTOLOAD_ID OPTION_ID REGISTER_ID ENV_ID ID
 
 %type <EvalNode*> input
-%type <std::vector<std::string>> id_list
-%type <std::vector<EvalNode*>> expr1_list
-%type <std::vector<DictNode::Pair>> expr1_pairs
+%type <std::vector<std::string>> id_list id_list_or_empty
+%type <std::vector<EvalNode*>> expr1_list expr1_list_or_empty
+%type <std::vector<DictNode::Pair>> expr1_pairs expr1_pairs_or_empty
 
 %type <EvalNode*> expr1 expr2 expr3 expr4 expr5 expr6 expr7 expr8 expr9
-%type <EvalNode*> expr6_sum expr6_sub expr6_dot expr6_con
-%type <EvalNode*> expr7_mul expr7_div expr7_mod
 
 %code requires {
     #include "EvalNode.hpp"
@@ -61,12 +59,13 @@
 // TODO %define api.pure full
 %define parse.error detailed
 %define api.prefix {eval}
+%define parse.trace
 
 %{
 %}
 
 %%
-input: expr1                                { factory.setTopLevel($1); $$ = $1; }
+input: expr1                                { $$ = $1; factory.setTopLevel($1); }
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = factory.create<TernaryNode>($1, $3, $5); }
@@ -111,33 +110,17 @@ expr4: expr5
      | expr5 ISNOT expr5                      { $$ = factory.create<InfixOpNode>($1, $3, "isnot"); }
 ;
 
-expr5: expr6 | expr6_sum | expr6_sub | expr6_dot | expr6_con
+expr5: expr6
+     | expr6 '+' expr5        {  $$ = factory.create<InfixOpNode>($1, $3, "+");  }
+     | expr6 '-' expr5        {  $$ = factory.create<InfixOpNode>($1, $3, "-");  }
+     | expr6 '.' expr5        {  $$ = factory.create<InfixOpNode>($1, $3, ".");  }
+     | expr6 CONCAT expr5     {  $$ = factory.create<InfixOpNode>($1, $3, "..");  }
 ;
 
-expr6_sum: expr6 '+' expr6        {  $$ = factory.create<InfixOpNode>($1, $3, "+");  }
-         | expr6 '+' expr6_sum    {  $$ = factory.create<InfixOpNode>($1, $3, "+");  }
-;
-expr6_sub: expr6 '-' expr6        {  $$ = factory.create<InfixOpNode>($1, $3, "-");  }
-         | expr6 '-' expr6_sub    {  $$ = factory.create<InfixOpNode>($1, $3, "-");  }
-;
-expr6_dot: expr6 '.' expr6        {  $$ = factory.create<InfixOpNode>($1, $3, ".");  }
-         | expr6 '.' expr6_dot    {  $$ = factory.create<InfixOpNode>($1, $3, ".");  }
-;
-expr6_con: expr6 CONCAT expr6     {  $$ = factory.create<InfixOpNode>($1, $3, "..");  }
-         | expr6 CONCAT expr6_con {  $$ = factory.create<InfixOpNode>($1, $3, "..");  }
-;
-
-expr6: expr7 | expr7_mul | expr7_div | expr7_mod
-;
-
-expr7_mul: expr7 '*' expr7        { $$ = factory.create<InfixOpNode>($1, $3, "*"); }
-         | expr7 '*' expr7_mul    { $$ = factory.create<InfixOpNode>($1, $3, "*"); }
-;
-expr7_div: expr7 '/' expr7        { $$ = factory.create<InfixOpNode>($1, $3, "/"); }
-         | expr7 '/' expr7_mul    { $$ = factory.create<InfixOpNode>($1, $3, "/"); }
-;
-expr7_mod: expr7 '%' expr7        { $$ = factory.create<InfixOpNode>($1, $3, "%"); }
-         | expr7 '%' expr7_mod    { $$ = factory.create<InfixOpNode>($1, $3, "%"); }
+expr6: expr7
+     | expr7 '*' expr6        { $$ = factory.create<InfixOpNode>($1, $3, "*"); }
+     | expr7 '/' expr6        { $$ = factory.create<InfixOpNode>($1, $3, "/"); }
+     | expr7 '%' expr6        { $$ = factory.create<InfixOpNode>($1, $3, "%"); }
 ;
 
 expr7: expr8
@@ -162,10 +145,10 @@ expr9: NUMBER                               { $$ = factory.create<TokenNode>(std
      | FLOAT                                { $$ = factory.create<TokenNode>(std::move($1), TokenNode::FLOAT); }
      | BLOB                                 { $$ = factory.create<TokenNode>(std::move($1), TokenNode::BLOB); }
      | STR                                  { $$ = factory.create<TokenNode>(std::move($1), TokenNode::STRING); }
-     | '[' expr1_list ']'                   { $$ = factory.create<ListNode>(std::move($2)); }
-     | '{' expr1_pairs '}'                  { $$ = factory.create<DictNode>(std::move($2)); }
+     | '[' expr1_list_or_empty ']'          { $$ = factory.create<ListNode>(std::move($2)); }
+     | '{' expr1_pairs_or_empty '}'         { $$ = factory.create<DictNode>(std::move($2)); }
      | '(' expr1 ')'                        { $$ = factory.create<NestedNode>($2); }
-     | '{' id_list ARROW expr1 '}'          { $$ = factory.create<LambdaNode>(std::move($2), $4); }
+     | '{' id_list_or_empty ARROW expr1 '}' { $$ = factory.create<LambdaNode>(std::move($2), $4); }
      | OPTION_ID                            { $$ = factory.create<TokenNode>(std::move($1), TokenNode::OPTION); }
      | REGISTER_ID                          { $$ = factory.create<TokenNode>(std::move($1), TokenNode::REGISTER); }
      | ENV_ID                               { $$ = factory.create<TokenNode>(std::move($1), TokenNode::ENV); }
@@ -174,17 +157,24 @@ expr9: NUMBER                               { $$ = factory.create<TokenNode>(std
      | VA_ID                                { $$ = factory.create<TokenNode>(std::move($1), TokenNode::VA); }
 ;
 
-id_list: %empty                    { $$ = {}; }
-    | ID                           { $$ = {}; $$.push_back($1); }
-    | ID ',' id_list               { $$ = $3; $$.push_back($1); }
+id_list_or_empty: %empty           { $$ = {}; }
+                | id_list          { $$ = $1; }
+
+id_list: ID                        { $$ = {}; $$.push_back($1); }
+       | ID ',' id_list            { $$ = $3; $$.push_back($1); }
 ;
 
-expr1_list: %empty                 { $$ = {}; }
-          | expr1                  { $$ = {}; $$.push_back($1); }
-          | expr1_list ',' expr1   { $$ = $1; $$.push_back($3); }
+expr1_list_or_empty: %empty        { $$ = {}; }
+                   | expr1_list    { $$ = $1; }
 ;
 
-expr1_pairs: %empty                               { $$ = {}; }
-           | expr1 ':' expr1                      { $$ = {}; $$.push_back(DictNode::Pair($1, $3)); }
-           | expr1_pairs ',' expr1 ':' expr1      { $$ = $1; $$.push_back(DictNode::Pair($3, $5)); }
+expr1_list: expr1                  { $$ = {}; $$.push_back($1); }
+          | expr1 ',' expr1_list   { $$ = $3; $$.push_back($1); }
+;
+
+expr1_pairs_or_empty: %empty       { $$ = {}; }
+                    | expr1_pairs  { $$ = $1; }
+
+expr1_pairs: expr1 ':' expr1                      { $$ = {}; $$.push_back(DictNode::Pair($1, $3)); }
+           | expr1 ':' expr1 ',' expr1_pairs      { $$ = $5; $$.push_back(DictNode::Pair($1, $3)); }
 ;
