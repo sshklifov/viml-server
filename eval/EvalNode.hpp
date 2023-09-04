@@ -202,7 +202,7 @@ struct ListNode : public EvalNode {
     std::string toString() override {
         std::string res = "[";
         if (!elems.empty()) {
-            elems[0]->toString();
+            res += elems[0]->toString();
             for (int i = 1; i < elems.size(); ++i) {
                 res += ", ";
                 res += elems[i]->toString();
