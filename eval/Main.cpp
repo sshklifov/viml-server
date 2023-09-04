@@ -50,14 +50,14 @@ void debug() {
 }
 
 int main (int argc, char** argv) {
-    YY_BUFFER_STATE buf = eval_scan_string("3 + 123 - 2");
-    const bool lexdbg = true;
+    YY_BUFFER_STATE buf = eval_scan_string("3+123");
+    const bool lexdbg = false;
     if (lexdbg) {
         debug();
     } else {
         EvalFactory factory;
         eval::parser parser(factory);
-        /* parser.set_debug_level(1); */
+        parser.set_debug_level(1);
         int res = parser();
         printf("Result code: %d\n", res);
         EvalNode* node = factory.getTopLevel();

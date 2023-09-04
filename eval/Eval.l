@@ -21,8 +21,8 @@ env_id "$"{curly_name}
 va_id "a:"{number}?
 
 radix "0x"|"0X"|"0b"|"0B"
-number [+-]?{radix}?[0-9]+
-float [+-]?{number}"."{number}([eE][+-]?{number})?
+number {radix}?[0-9]+
+float {number}"."{number}([eE][+-]?{number})?
 blob "0z"[0-9a-fA-F.]+
 
 %{
