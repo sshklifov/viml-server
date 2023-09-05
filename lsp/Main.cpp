@@ -240,22 +240,53 @@ error_t argsParser(int key, char *arg, argp_state *state) {
 	}
 }
 
-void alternateMain() {
-    SyntaxTree ast;
-    std::vector<Diagnostic> digs;
-    RootBlock* root = ast.build("/home/shs1sf/viml-server/test.txt", digs);
-    if (!root) {
-        // Report error idk
-    }
-    for (const Diagnostic& dig : digs) {
-        printf("%s\n", dig.message);
+#include <ExDictionary.hpp>
+
+void printExCommands(Block* block) {
+    if (!block) {
+        return;
     }
 
+    int id = block->getId();
+    if (id >= 0) {
+        auto entry = ExDictionary::getSingleton().getEntry(id);
+        printf("%.*s", entry.req.length(), entry.req.begin);
+        printf("%.*s\n", entry.opt.length(), entry.opt.begin);
+    }
+
+    for (Block* child : block->body) {
+        printExCommands(child);
+    }
+
+    if (id == IfBlock::id) {
+        IfBlock* ifBlock = block->cast<IfBlock>();
+        printExCommands(ifBlock->elseBlock);
+    }
+    if (id == TryBlock::id) {
+        TryBlock* tryBlock = block->cast<TryBlock>();
+        for (Block* catchBlock : tryBlock->catchBlocks) {
+            printExCommands(catchBlock);
+        }
+        printExCommands(tryBlock->finally);
+    }
+}
+
+void alternateMain(const char* file) {
+    std::vector<Diagnostic> digs;
+    SyntaxTree ast;
+    RootBlock* root = ast.build(file, digs);
+    printExCommands(root);
     exit(0);
+    /* if (!root) { */
+    /*     // Report error idk */
+    /* } */
+    /* for (const Diagnostic& dig : digs) { */
+    /*     printf("%s\n", dig.message); */
+    /* } */
 }
 
 int main(int argc, char** argv) {
-    alternateMain();
+    alternateMain(argv[1]);
 
 	const char* argsDoc = ""; // < No args
 	const char* doc = "Vim LSP";

@@ -118,7 +118,11 @@ bool ExLexer::loadFile(const char* filename) {
 
     int fd = open(filename, O_RDWR);
     if (fd < 0) {
-        return false;
+        // TODO
+        fd = open(filename, O_RDONLY);
+        if (fd < 0) {
+            return false;
+        }
     }
 
     struct stat statbuf;
@@ -167,15 +171,15 @@ bool ExLexer::isLoaded() const {
 int ExLexer::lex(ExLexem& res) {
     assert(isLoaded());
 
-    if (program.empty()) {
-        return EOF;
-    }
-
     LocationMap::Key locationKey;
     StringView programLine;
 
     int ignore = false;
     do {
+        if (program.empty()) {
+            return EOF;
+        }
+
         Continuation cont(contStorage, locationMap);
         cont.add(program.top(), program.lineNumber(), 0);
         program.pop();
