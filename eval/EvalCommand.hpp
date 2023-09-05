@@ -125,3 +125,31 @@ struct UnlockVar : public EvalCommand {
     std::vector<std::string> ids;
     std::string depth;
 };
+
+struct FunctionCommand : public EvalCommand {
+    int getId() override { return FUNCTION; }
+};
+
+struct FunctionPrint : public FunctionCommand {
+    FunctionPrint() = default;
+    FunctionPrint(std::string pat) : pat(std::move(pat)) {}
+
+    std::string pat;
+};
+
+struct Function : public FunctionCommand {
+    Function(std::string name, std::vector<std::string> args) :
+        name(std::move(name)), args(std::move(args)) {}
+
+    std::string name;
+    std::vector<std::string> args;
+};
+
+struct FunctionDict : public FunctionCommand {
+    FunctionDict(std::string dict, std::string key, std::vector<std::string> args) :
+        dict(std::move(dict)), key(std::move(key)), args(std::move(args)) {}
+
+    std::string dict;
+    std::string key;
+    std::vector<std::string> args;
+};

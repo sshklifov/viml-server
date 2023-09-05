@@ -19,21 +19,44 @@ struct EvalState {
     YY_BUFFER_STATE yybuffer;
 };
 
+eval::parser::token::token_kind_type exDictToKindType(int exDict) {
+    using kind_type = eval::parser::token::token_kind_type;
+    switch (exDict) {
+        case LET:
+            return kind_type::LET;
+
+        case UNLET:
+            return kind_type::UNLET;
+
+        case CONST:
+            return kind_type::CONST;
+
+        case LOCKVAR:
+            return kind_type::LOCKVAR;
+
+        case UNLOCKVAR:
+            return kind_type::UNLOCKVAR;
+
+        case FUNCTION:
+            return kind_type::FUNCTION;
+
+        default:
+            return kind_type::EVALerror;
+    }
+}
+
 int evallex(eval::parser::value_type* v, eval::parser::location_type* l, EvalState* state) {
     using kind_type = eval::parser::token::token_kind_type;
 
     if (state->yycol == 0) {
-        switch (state->lexem.exDictIdx) {
-            case LET:
-                l->begin = state->lexem.nameOffset;
-                l->end = state->lexem.qargsOffset;
-                state->yycol = l->end;
-                v->build<int>(kind_type::LET);
-                return kind_type::LET;
-
-            default:
-                return kind_type::EVALerror;
+        kind_type sym = exDictToKindType(state->lexem.exDictIdx);
+        if (sym != kind_type::EVALerror) {
+            l->begin = state->lexem.nameOffset;
+            l->end = state->lexem.qargsOffset;
+            state->yycol = l->end;
         }
+        v->build<int>(sym);
+        return sym;
     }
 
     while (true) {

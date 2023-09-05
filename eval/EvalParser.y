@@ -49,10 +49,13 @@
     CONST "const"
     LOCKVAR "lockvar"
     UNLOCKVAR "unlockvar"
+    FUNCTION "function"
 
 %type <EvalCommand*> let unlet const lockvar unlockvar
 %type <std::string> varname
 %type <std::vector<std::string>> varname_list varname_multiple
+
+%type <EvalCommand*> function
 
 %type <EvalCommand*> input command
 
@@ -93,6 +96,7 @@ command: let
      | const
      | lockvar
      | unlockvar
+     | function
 
 // TODO remove .. from tokens pls! (and others)
 // TODO additional checking!
@@ -147,6 +151,12 @@ varname_list: varname                        { $$ = {}; $$.push_back($1); }
 
 varname_multiple: varname                    { $$ = {}; $$.push_back($1); }
                 | varname varname_multiple   { $$ = {}; $$.push_back($1); }
+
+// TODO function matching pattern
+// TODO function attributes
+function: FUNCTION                                            { $$ = new FunctionPrint(); }
+        | FUNCTION varname '(' varname_list ')'               { $$ = new Function($2, $4); }
+        | FUNCTION varname '.' varname '(' varname_list ')'   { $$ = new FunctionDict($2, $4, $6); }
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = factory.create<TernaryNode>($1, $3, $5); }
