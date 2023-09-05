@@ -59,13 +59,14 @@
 // TODO %define api.pure full
 %define parse.error detailed
 %define api.prefix {eval}
+%define api.value.automove
 %define parse.trace
 
 %{
 %}
 
 %%
-input: expr1                                { $$ = $1; factory.setTopLevel($1); }
+input: expr1                                { $$ = $1; factory.setTopLevel($$); }
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = factory.create<TernaryNode>($1, $3, $5); }
@@ -137,24 +138,24 @@ expr8: expr9
      | expr8 '[' expr1 ':' ']'           { $$ = factory.create<IndexRangeNode>($1, $3, nullptr); }
      | expr8 '[' ':' expr1 ']'           { $$ = factory.create<IndexRangeNode>($1, nullptr, $4); }
      | expr8 '[' ':' ']'                 { $$ = factory.create<IndexRangeNode>($1, nullptr, nullptr); }
-     | expr8 '(' expr1_list ')'          { $$ = factory.create<InvokeNode>($1, std::move($3)); }
+     | expr8 '(' expr1_list ')'          { $$ = factory.create<InvokeNode>($1, $3); }
 ;
 
 // TODO Dictionary #{}
-expr9: NUMBER                               { $$ = factory.create<TokenNode>(std::move($1), TokenNode::NUMBER); }
-     | FLOAT                                { $$ = factory.create<TokenNode>(std::move($1), TokenNode::FLOAT); }
-     | BLOB                                 { $$ = factory.create<TokenNode>(std::move($1), TokenNode::BLOB); }
-     | STR                                  { $$ = factory.create<TokenNode>(std::move($1), TokenNode::STRING); }
-     | '[' expr1_list_or_empty ']'          { $$ = factory.create<ListNode>(std::move($2)); }
-     | '{' expr1_pairs_or_empty '}'         { $$ = factory.create<DictNode>(std::move($2)); }
+expr9: NUMBER                               { $$ = factory.create<TokenNode>($1, TokenNode::NUMBER); }
+     | FLOAT                                { $$ = factory.create<TokenNode>($1, TokenNode::FLOAT); }
+     | BLOB                                 { $$ = factory.create<TokenNode>($1, TokenNode::BLOB); }
+     | STR                                  { $$ = factory.create<TokenNode>($1, TokenNode::STRING); }
+     | '[' expr1_list_or_empty ']'          { $$ = factory.create<ListNode>($2); }
+     | '{' expr1_pairs_or_empty '}'         { $$ = factory.create<DictNode>($2); }
      | '(' expr1 ')'                        { $$ = factory.create<NestedNode>($2); }
-     | '{' id_list_or_empty ARROW expr1 '}' { $$ = factory.create<LambdaNode>(std::move($2), $4); }
-     | OPTION_ID                            { $$ = factory.create<TokenNode>(std::move($1), TokenNode::OPTION); }
-     | REGISTER_ID                          { $$ = factory.create<TokenNode>(std::move($1), TokenNode::REGISTER); }
-     | ENV_ID                               { $$ = factory.create<TokenNode>(std::move($1), TokenNode::ENV); }
-     | ID                                   { $$ = factory.create<TokenNode>(std::move($1), TokenNode::ID); }
-     | AUTOLOAD_ID                          { $$ = factory.create<TokenNode>(std::move($1), TokenNode::AUTOLOAD); }
-     | VA_ID                                { $$ = factory.create<TokenNode>(std::move($1), TokenNode::VA); }
+     | '{' id_list_or_empty ARROW expr1 '}' { $$ = factory.create<LambdaNode>($2, $4); }
+     | OPTION_ID                            { $$ = factory.create<TokenNode>($1, TokenNode::OPTION); }
+     | REGISTER_ID                          { $$ = factory.create<TokenNode>($1, TokenNode::REGISTER); }
+     | ENV_ID                               { $$ = factory.create<TokenNode>($1, TokenNode::ENV); }
+     | ID                                   { $$ = factory.create<TokenNode>($1, TokenNode::ID); }
+     | AUTOLOAD_ID                          { $$ = factory.create<TokenNode>($1, TokenNode::AUTOLOAD); }
+     | VA_ID                                { $$ = factory.create<TokenNode>($1, TokenNode::VA); }
 ;
 
 id_list_or_empty: %empty           { $$ = {}; }
