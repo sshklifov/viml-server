@@ -44,6 +44,15 @@
 
 %type <EvalNode*> expr1 expr2 expr3 expr4 expr5 expr6 expr7 expr8 expr9
 
+%token
+    LET "let"
+    UNLET "unlet"
+    CONST "const"
+
+%type <void*> let unlet const
+%type <std::string> varname
+%type <std::vector<std::string>> varname_list
+
 %code requires {
     #include "EvalNode.hpp"
     #include "Location.hpp"
@@ -70,7 +79,52 @@
 %}
 
 %%
-input: expr1                                { $$ = $1; factory.setTopLevel($$); }
+input: let  { $$ = nullptr; }
+     | unlet { $$ = nullptr; }
+     | const { $$ = nullptr; }
+     | expr1 { $$ = nullptr; }
+
+// TODO remove .. from tokens pls! (and others)
+// TODO additional checking!
+let: LET varname '=' expr1                                { $$ = nullptr; }
+   | LET varname '[' ':' ']' '=' expr1                    { $$ = nullptr; }
+   | LET varname '[' expr1 ']' '=' expr1                  { $$ = nullptr; }
+   | LET varname '[' ':' expr1 ']' '=' expr1              { $$ = nullptr; }
+   | LET varname '[' expr1 ':' expr1 ']' '=' expr1        { $$ = nullptr; }
+   | LET varname '+' '=' expr1                            { $$ = nullptr; }
+   | LET varname '-' '=' expr1                            { $$ = nullptr; }
+   | LET varname '*' '=' expr1                            { $$ = nullptr; }
+   | LET varname '/' '=' expr1                            { $$ = nullptr; }
+   | LET varname '%' '=' expr1                            { $$ = nullptr; }
+   | LET varname '.' '=' expr1                            { $$ = nullptr; }
+   | LET varname '.' '.' '=' expr1                        { $$ = nullptr; }
+   | LET '[' varname_list ']' '=' expr1                   { $$ = nullptr; }
+   | LET '[' varname_list ']' '.' '=' expr1               { $$ = nullptr; }
+   | LET '[' varname_list ']' '+' '=' expr1               { $$ = nullptr; }
+   | LET '[' varname_list ']' '-' '=' expr1               { $$ = nullptr; }
+   | LET '[' varname_list ';' varname ']' '=' expr1       { $$ = nullptr; }
+   | LET '[' varname_list ';' varname ']' '.' '=' expr1   { $$ = nullptr; }
+   | LET '[' varname_list ';' varname ']' '+' '=' expr1   { $$ = nullptr; }
+   | LET '[' varname_list ';' varname ']' '-' '=' expr1   { $$ = nullptr; }
+   | LET                                                  { $$ = nullptr; }
+   | LET varname_list                                     { $$ = nullptr; }
+;
+
+unlet: UNLET varname_list                                 { $$ = nullptr; }
+;
+
+const: CONST varname '=' expr1                            { $$ = nullptr; }
+     | CONST '[' varname_list ']' '=' expr1               { $$ = nullptr; }
+     | CONST '[' varname_list ';' varname ']' '=' expr1   { $$ = nullptr; }
+     | CONST                                              { $$ = nullptr; }
+     | CONST varname                                      { $$ = nullptr; }
+
+varname: VA_ID | SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID
+;
+
+varname_list: varname                     { $$ = {}; $$.push_back($1); }
+            | varname ',' varname_list       { $$ = $3; $$.push_back($1); }
+;
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = factory.create<TernaryNode>($1, $3, $5); }
