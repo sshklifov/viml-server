@@ -15,7 +15,11 @@
     code(ENDTRY, 157) \
     code(FINALLY, 170) \
     code(CATCH, 66) \
-    code(LET, 2)
+    code(LET, 240) \
+    code(UNLET, 495) \
+    code(CONST, 110) \
+    code(LOCKVAR, 265) \
+    code(UNLOCKVAR, 496) \
 
 
 #define DEFINE_COMMAND(name, val) const int name = val;

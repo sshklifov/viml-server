@@ -1,6 +1,6 @@
 #pragma once
 
 #include <ExLexer.hpp>
-#include <EvalNode.hpp>
+#include <EvalCommand.hpp>
 
-EvalNode* parse(const ExLexem& lexem, EvalFactory& factory);
+EvalCommand* parse(const ExLexem& lexem, EvalFactory& factory);

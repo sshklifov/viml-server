@@ -74,9 +74,12 @@ void eval::parser::error(const EvalLocation& l, const std::string& msg) {
     exit(5);
 }
 
-EvalNode* parse(const ExLexem& lexem, EvalFactory& factory) {
+EvalCommand* parse(const ExLexem& lexem, EvalFactory& factory) {
     EvalState state(lexem);
-    eval::parser parser(&state, factory);
-    int res = parser.parse();
-    return nullptr;
+    EvalCommand* result = nullptr;
+    eval::parser parser(&state, factory, result);
+    if (!parser.parse()) {
+        return nullptr;
+    }
+    return result;
 }

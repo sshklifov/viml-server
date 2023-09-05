@@ -16,6 +16,7 @@
 #include "Diagnostics.hpp"
 #include "TextDocument.hpp"
 #include <SyntaxTree.hpp>
+#include <Eval.hpp>
 
 struct Arguments {
 	FILE* redirOut;
@@ -213,6 +214,19 @@ void stdinFunction() {
 #endif
 }
 
+int test() {
+    SyntaxTree ast;
+    std::vector<Diagnostic> digs;
+    RootBlock* root = ast.build(TEST_FILE, digs);
+    if (!root) {
+        return -1;
+    }
+    Block* letBlock = root->body[0];
+    EvalFactory factory;
+    EvalCommand* result = parse(letBlock->lexem, factory);
+    return 0;
+}
+
 error_t argsParser(int key, char *arg, argp_state *state) {
 	Arguments* user = (Arguments*)(state->input);
 	switch (key) {
@@ -240,23 +254,7 @@ error_t argsParser(int key, char *arg, argp_state *state) {
 	}
 }
 
-void alternateMain() {
-    SyntaxTree ast;
-    std::vector<Diagnostic> digs;
-    RootBlock* root = ast.build("/home/shs1sf/viml-server/test.txt", digs);
-    if (!root) {
-        // Report error idk
-    }
-    for (const Diagnostic& dig : digs) {
-        printf("%s\n", dig.message);
-    }
-
-    exit(0);
-}
-
-int main(int argc, char** argv) {
-    alternateMain();
-
+int otherMain(int argc, char** argv) {
 	const char* argsDoc = ""; // < No args
 	const char* doc = "Vim LSP";
 
@@ -288,4 +286,9 @@ int main(int argc, char** argv) {
 	}
 
 	return 0;
+}
+
+int main(int argc, char** argv) {
+    test();
+    return 0;
 }

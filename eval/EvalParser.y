@@ -37,7 +37,6 @@
 %token <int> ARROW
 %token <std::string> VA_ID SID_ID AUTOLOAD_ID OPTION_ID REGISTER_ID ENV_ID ID
 
-%type <EvalNode*> input
 %type <std::vector<std::string>> id_list id_list_or_empty
 %type <std::vector<EvalNode*>> expr1_list expr1_list_or_empty
 %type <std::vector<DictNode::Pair>> expr1_pairs expr1_pairs_or_empty
@@ -51,13 +50,16 @@
     LOCKVAR "lockvar"
     UNLOCKVAR "unlockvar"
 
-%type <void*> let unlet const lockvar unlockvar
+%type <EvalCommand*> let unlet const lockvar unlockvar
 %type <std::string> varname
-%type <std::vector<std::string>> varname_list
+%type <std::vector<std::string>> varname_list varname_multiple
+
+%type <EvalCommand*> input command
 
 %code requires {
     #include "EvalNode.hpp"
     #include "EvalLocation.hpp"
+    #include "EvalCommand.hpp"
     struct EvalState;
 }
 
@@ -68,6 +70,7 @@
 %language "c++"
 %param { EvalState* state }
 %parse-param { EvalFactory& factory }
+%parse-param { EvalCommand*& result }
 
 %define api.value.type variant
 %define api.prefix {eval}
@@ -83,63 +86,67 @@
 %}
 
 %%
-input: let  { $$ = nullptr; }
-     | unlet { $$ = nullptr; }
-     | const { $$ = nullptr; }
-     | lockvar { $$ = nullptr; }
-     | unlockvar { $$ = nullptr; }
-     | expr1 { $$ = nullptr; }
+input: command { $$ = $1; result = $$; }
+
+command: let
+     | unlet
+     | const
+     | lockvar
+     | unlockvar
 
 // TODO remove .. from tokens pls! (and others)
 // TODO additional checking!
-let: LET varname '=' expr1                                { $$ = nullptr; }
-   | LET varname '[' ':' ']' '=' expr1                    { $$ = nullptr; }
-   | LET varname '[' expr1 ']' '=' expr1                  { $$ = nullptr; }
-   | LET varname '[' ':' expr1 ']' '=' expr1              { $$ = nullptr; }
-   | LET varname '[' expr1 ':' expr1 ']' '=' expr1        { $$ = nullptr; }
-   | LET varname '+' '=' expr1                            { $$ = nullptr; }
-   | LET varname '-' '=' expr1                            { $$ = nullptr; }
-   | LET varname '*' '=' expr1                            { $$ = nullptr; }
-   | LET varname '/' '=' expr1                            { $$ = nullptr; }
-   | LET varname '%' '=' expr1                            { $$ = nullptr; }
-   | LET varname '.' '=' expr1                            { $$ = nullptr; }
-   | LET varname '.' '.' '=' expr1                        { $$ = nullptr; }
-   | LET '[' varname_list ']' '=' expr1                   { $$ = nullptr; }
-   | LET '[' varname_list ']' '.' '=' expr1               { $$ = nullptr; }
-   | LET '[' varname_list ']' '+' '=' expr1               { $$ = nullptr; }
-   | LET '[' varname_list ']' '-' '=' expr1               { $$ = nullptr; }
-   | LET '[' varname_list ';' varname ']' '=' expr1       { $$ = nullptr; }
-   | LET '[' varname_list ';' varname ']' '.' '=' expr1   { $$ = nullptr; }
-   | LET '[' varname_list ';' varname ']' '+' '=' expr1   { $$ = nullptr; }
-   | LET '[' varname_list ';' varname ']' '-' '=' expr1   { $$ = nullptr; }
-   | LET                                                  { $$ = nullptr; }
-   | LET varname_list                                     { $$ = nullptr; }
+let: LET varname '=' expr1                                { $$ = new LetVar($2, $4); }
+   | LET varname '[' expr1 ']' '=' expr1                  { $$ = new LetElement($2, $4, $7); }
+   | LET varname '[' ':' ']' '=' expr1                    { $$ = new LetRange($2, nullptr, nullptr, $7); }
+   | LET varname '[' ':' expr1 ']' '=' expr1              { $$ = new LetRange($2, nullptr, $5, $8); }
+   | LET varname '[' expr1 ':' expr1 ']' '=' expr1        { $$ = new LetRange($2, $4, $6, $9); }
+   | LET varname '+' '=' expr1                            { $$ = new LetVar($2, $5, LetOp::PLUS); }
+   | LET varname '-' '=' expr1                            { $$ = new LetVar($2, $5, LetOp::MINUS); }
+   | LET varname '*' '=' expr1                            { $$ = new LetVar($2, $5, LetOp::MULT); }
+   | LET varname '/' '=' expr1                            { $$ = new LetVar($2, $5, LetOp::DIV); }
+   | LET varname '%' '=' expr1                            { $$ = new LetVar($2, $5, LetOp::MOD); }
+   | LET varname '.' '=' expr1                            { $$ = new LetVar($2, $5, LetOp::DOT); }
+   | LET varname '.' '.' '=' expr1                        { $$ = new LetVar($2, $6, LetOp::DOT2); }
+   | LET '[' varname_list ']' '=' expr1                   { $$ = new LetUnpack($3, $6); }
+   | LET '[' varname_list ']' '.' '=' expr1               { $$ = new LetUnpack($3, $7, LetOp::DOT); }
+   | LET '[' varname_list ']' '+' '=' expr1               { $$ = new LetUnpack($3, $7, LetOp::PLUS); }
+   | LET '[' varname_list ']' '-' '=' expr1               { $$ = new LetUnpack($3, $7, LetOp::MINUS); }
+   | LET '[' varname_list ';' varname ']' '=' expr1       { $$ = new LetRemainder($3, $5, $8); }
+   | LET '[' varname_list ';' varname ']' '+' '=' expr1   { $$ = new LetRemainder($3, $5, $9, LetOp::PLUS); }
+   | LET '[' varname_list ';' varname ']' '-' '=' expr1   { $$ = new LetRemainder($3, $5, $9, LetOp::MINUS); }
+   | LET '[' varname_list ';' varname ']' '.' '=' expr1   { $$ = new LetRemainder($3, $5, $9, LetOp::DOT); }
+   | LET                                                  { $$ = new LetPrint(); }
+   | LET varname_multiple                                 { $$ = new LetPrint($2); }
 ;
 
-unlet: UNLET varname_list                                 { $$ = nullptr; }
+unlet: UNLET varname_list                                 { $$ = new Unlet($2); }
 ;
 
-const: CONST varname '=' expr1                            { $$ = nullptr; }
-     | CONST '[' varname_list ']' '=' expr1               { $$ = nullptr; }
-     | CONST '[' varname_list ';' varname ']' '=' expr1   { $$ = nullptr; }
-     | CONST                                              { $$ = nullptr; }
-     | CONST varname                                      { $$ = nullptr; }
+const: CONST varname '=' expr1                            { $$ = new ConstVar($2, $4); }
+     | CONST '[' varname_list ']' '=' expr1               { $$ = new ConstUnpack($3, $6); }
+     | CONST '[' varname_list ';' varname ']' '=' expr1   { $$ = new ConstRemainder($3, $5, $8); }
+     | CONST                                              { $$ = new LetPrint(); }
+     | CONST varname_multiple                             { $$ = new LetPrint($2); }
 ;
 
-lockvar: LOCKVAR varname                                  { $$ = nullptr; }
-       | LOCKVAR NUMBER varname                           { $$ = nullptr; }
+lockvar: LOCKVAR varname_multiple                         { $$ = new LockVar($2); }
+       | LOCKVAR NUMBER varname_multiple                  { $$ = new LockVar($3, $2); }
 ;
 
-unlockvar: UNLOCKVAR varname                                  { $$ = nullptr; }
-         | UNLOCKVAR NUMBER varname                           { $$ = nullptr; }
+unlockvar: UNLOCKVAR varname_multiple                         { $$ = new UnlockVar($2); }
+         | UNLOCKVAR NUMBER varname_multiple                  { $$ = new UnlockVar($3, $2); }
 ;
 
 varname: VA_ID | SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID
 ;
 
-varname_list: varname                     { $$ = {}; $$.push_back($1); }
+varname_list: varname                        { $$ = {}; $$.push_back($1); }
             | varname ',' varname_list       { $$ = $3; $$.push_back($1); }
 ;
+
+varname_multiple: varname                    { $$ = {}; $$.push_back($1); }
+                | varname varname_multiple   { $$ = {}; $$.push_back($1); }
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = factory.create<TernaryNode>($1, $3, $5); }

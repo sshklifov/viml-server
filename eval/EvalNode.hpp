@@ -12,7 +12,7 @@ struct EvalNode {
 };
 
 struct EvalFactory {
-    EvalFactory() : topLevel(nullptr) {}
+    EvalFactory() = default;
     EvalFactory(const EvalFactory&) = delete;
     EvalFactory(EvalFactory&&) = delete;
 
@@ -31,15 +31,8 @@ struct EvalFactory {
         return res;
     }
 
-    void setTopLevel(EvalNode* node) {
-        topLevel = node;
-    }
-
-    EvalNode* getTopLevel() { return topLevel; }
-
 private:
     std::vector<EvalNode*> allocatedNodes;
-    EvalNode* topLevel;
 };
 
 struct TernaryNode : public EvalNode {

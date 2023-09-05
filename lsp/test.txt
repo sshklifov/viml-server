@@ -1,5 +1,4 @@
-5@@
-!!
+let oldname = expand("%:p")
 function! Rename(arg)
   if a:arg == ""
     echo "Did not rename file"
