@@ -57,16 +57,16 @@
 
 %code requires {
     #include "EvalNode.hpp"
-    #include "Location.hpp"
-    struct LexerState;
+    #include "EvalLocation.hpp"
+    struct EvalState;
 }
 
 %code provides {
-    int evallex(eval::parser::value_type* v, eval::parser::location_type* l, LexerState* state);
+    int evallex(eval::parser::value_type* v, eval::parser::location_type* l, EvalState* state);
 }
 
 %language "c++"
-%param { LexerState* state }
+%param { EvalState* state }
 %parse-param { EvalFactory& factory }
 
 %define api.value.type variant
@@ -77,7 +77,7 @@
 %define parse.trace
 
 %locations
-%define api.location.type {Location}
+%define api.location.type {EvalLocation}
 
 %{
 %}
