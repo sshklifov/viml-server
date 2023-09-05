@@ -23,7 +23,7 @@ function(run_bison_generator bison_file bison_cpp)
     add_custom_command(OUTPUT ${bison_cpp} ${bison_hpp}
         MAIN_DEPENDENCY ${bison_file}
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-        COMMAND ${BISON_EXECUTABLE} -Werror -Wcounterexamples --header=${bison_hpp} -o ${bison_cpp} ${bison_file})
+        COMMAND ${BISON_EXECUTABLE} -l -Werror -Wcounterexamples --header=${bison_hpp} -o ${bison_cpp} ${bison_file})
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endfunction()
 

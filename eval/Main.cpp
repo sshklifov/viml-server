@@ -1,26 +1,47 @@
 #include "EvalLexer.hpp"
 #include "EvalParser.hpp"
 #include "EvalNode.hpp"
+#include <ExConstants.hpp>
+#include <ExLexer.hpp>
 
+struct LexerState {
+    LexerState(const ExLexem& lexem) : lexem(lexem), yycol(0) {
+        yybuffer = eval_scan_bytes(lexem.qargs.begin, lexem.qargs.length());
+    }
+    
+    // TODO more
 
-/* GroupBlock* root; */
+    ~LexerState() {
+        eval_delete_buffer(yybuffer);
+    }
 
-void eval::parser::error(const Location& l, const std::string& msg) {
-    fprintf(stderr, "Erorr (%d-%d): %s\n", l.begin, l.end, msg.c_str());
-    exit(5);
-}
+    const ExLexem& lexem;
+    int yycol;
+    YY_BUFFER_STATE yybuffer;
+};
 
-// TODO initial-action?
-int evalcol = 0;
-
-int evallex(eval::parser::value_type* v, eval::parser::location_type* l, const EvalFactory& factory) {
+int evallex(eval::parser::value_type* v, eval::parser::location_type* l, LexerState* state) {
     using kind_type = eval::parser::token::token_kind_type;
+
+    if (state->yycol == 0) {
+        switch (state->lexem.exDictIdx) {
+            case LET:
+                l->begin = state->lexem.nameOffset;
+                l->end = state->lexem.qargsOffset;
+                state->yycol = l->end;
+                v->build<int>(kind_type::LET);
+                return kind_type::LET;
+
+            default:
+                return kind_type::EVALerror;
+        }
+    }
 
     while (true) {
         int t = evallex();
-        l->begin = evalcol;
+        l->begin = state->yycol;
         l->end = l->begin + evalget_leng();
-        evalcol = l->end;
+        state->yycol = l->end;
 
         switch (t) {
         case kind_type::NUMBER:
@@ -44,11 +65,14 @@ int evallex(eval::parser::value_type* v, eval::parser::location_type* l, const E
 
         default:
             v->build<int>(t);
-            l->begin = evalcol;
-            l->end = l->begin + evalget_leng();
             return t;
         }
     }
+}
+
+void eval::parser::error(const Location& l, const std::string& msg) {
+    fprintf(stderr, "Erorr (%d-%d): %s\n", l.begin, l.end, msg.c_str());
+    exit(5);
 }
 
 void debug() {
@@ -65,22 +89,32 @@ void debug() {
     while (kt != token_kind_type::EVALEOF && kt != token_kind_type::EVALerror);
 }
 
-int main (int argc, char** argv) {
-    YY_BUFFER_STATE buf = eval_scan_string("3+123");
-    const bool lexdbg = false;
-    if (lexdbg) {
-        debug();
-    } else {
-        EvalFactory factory;
-        eval::parser parser(factory);
-        parser.set_debug_level(1);
-        int res = parser();
-        printf("Result code: %d\n", res);
-        EvalNode* node = factory.getTopLevel();
-        std::string str = node->toString();
-        printf("Result string: %s\n", str.c_str());
-    }
+// void EvalResult* res = parse(ExLexem, EvalFactory)
+// void EvalResult* res = factory.parse(ExLexem)
 
-    eval_delete_buffer(buf);
-    return 0;
+void* parse(const ExLexem& lexem, EvalFactory& factory) {
+    LexerState state(lexem);
+    eval::parser parser(&state, factory);
+    int res = parser.parse();
+    EvalNode* node = factory.getTopLevel();
+    return node;
+    /* std::string str = node->toString(); */
+    /* printf("Result string: %s\n", str.c_str()); */
 }
+
+int main() {
+
+}
+
+/* int main (int argc, char** argv) { */
+/*     YY_BUFFER_STATE buf = eval_scan_string("3+123"); */
+/*     const bool lexdbg = false; */
+/*     if (lexdbg) { */
+/*         debug(); */
+/*     } else { */
+/*         printf("Result code: %d\n", res); */
+/*     } */
+
+/*     eval_delete_buffer(buf); */
+/*     return 0; */
+/* } */

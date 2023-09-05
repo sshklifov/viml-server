@@ -48,22 +48,26 @@
     LET "let"
     UNLET "unlet"
     CONST "const"
+    LOCKVAR "lockvar"
+    UNLOCKVAR "unlockvar"
 
-%type <void*> let unlet const
+%type <void*> let unlet const lockvar unlockvar
 %type <std::string> varname
 %type <std::vector<std::string>> varname_list
 
 %code requires {
     #include "EvalNode.hpp"
     #include "Location.hpp"
+    struct LexerState;
 }
 
 %code provides {
-    int evallex(eval::parser::value_type* v, eval::parser::location_type* l, const EvalFactory& factory);
+    int evallex(eval::parser::value_type* v, eval::parser::location_type* l, LexerState* state);
 }
 
 %language "c++"
-%param { EvalFactory& factory }
+%param { LexerState* state }
+%parse-param { EvalFactory& factory }
 
 %define api.value.type variant
 %define api.prefix {eval}
@@ -82,6 +86,8 @@
 input: let  { $$ = nullptr; }
      | unlet { $$ = nullptr; }
      | const { $$ = nullptr; }
+     | lockvar { $$ = nullptr; }
+     | unlockvar { $$ = nullptr; }
      | expr1 { $$ = nullptr; }
 
 // TODO remove .. from tokens pls! (and others)
@@ -118,6 +124,15 @@ const: CONST varname '=' expr1                            { $$ = nullptr; }
      | CONST '[' varname_list ';' varname ']' '=' expr1   { $$ = nullptr; }
      | CONST                                              { $$ = nullptr; }
      | CONST varname                                      { $$ = nullptr; }
+;
+
+lockvar: LOCKVAR varname                                  { $$ = nullptr; }
+       | LOCKVAR NUMBER varname                           { $$ = nullptr; }
+;
+
+unlockvar: UNLOCKVAR varname                                  { $$ = nullptr; }
+         | UNLOCKVAR NUMBER varname                           { $$ = nullptr; }
+;
 
 varname: VA_ID | SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID
 ;
