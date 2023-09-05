@@ -46,21 +46,25 @@
 
 %code requires {
     #include "EvalNode.hpp"
+    #include "Location.hpp"
 }
 
 %code provides {
-    int evallex(eval::parser::value_type* p, const EvalFactory& factory);
+    int evallex(eval::parser::value_type* v, eval::parser::location_type* l, const EvalFactory& factory);
 }
 
 %language "c++"
 %param { EvalFactory& factory }
 
 %define api.value.type variant
-// TODO %define api.pure full
-%define parse.error detailed
 %define api.prefix {eval}
 %define api.value.automove
+
+%define parse.error detailed
 %define parse.trace
+
+%locations
+%define api.location.type {Location}
 
 %{
 %}

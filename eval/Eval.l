@@ -1,8 +1,6 @@
 %option noyywrap
 %option prefix="eval"
 
-space [ \t]
-
 str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
 quote_loop [ -~]{-}[\\']
@@ -197,10 +195,6 @@ blob "0z"[0-9a-fA-F.]+
 
 {id} {
     return eval::parser::token::ID;
-}
-
-{space} {
-    // IGNORE
 }
 
 "\n" {

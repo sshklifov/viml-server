@@ -5,33 +5,49 @@
 
 /* GroupBlock* root; */
 
-void eval::parser::error(const std::string& msg) {
-    fprintf(stderr, "Erorr: %s\n", msg.c_str());
+void eval::parser::error(const Location& l, const std::string& msg) {
+    fprintf(stderr, "Erorr (%d-%d): %s\n", l.begin, l.end, msg.c_str());
     exit(5);
 }
 
-int evallex(eval::parser::value_type* p, const EvalFactory& factory) {
+// TODO initial-action?
+int evalcol = 0;
+
+int evallex(eval::parser::value_type* v, eval::parser::location_type* l, const EvalFactory& factory) {
     using kind_type = eval::parser::token::token_kind_type;
 
-    int t = evallex();
-    switch (t) {
-    case kind_type::NUMBER:
-    case kind_type::FLOAT:
-    case kind_type::BLOB:
-    case kind_type::STR:
-    case kind_type::VA_ID:
-    case kind_type::SID_ID:
-    case kind_type::AUTOLOAD_ID:
-    case kind_type::OPTION_ID:
-    case kind_type::REGISTER_ID:
-    case kind_type::ENV_ID:
-    case kind_type::ID:
-        p->build<std::string>(evalget_text());
-        return t;
+    while (true) {
+        int t = evallex();
+        l->begin = evalcol;
+        l->end = l->begin + evalget_leng();
+        evalcol = l->end;
 
-    default:
-        p->build<int>(t);
-        return t;
+        switch (t) {
+        case kind_type::NUMBER:
+        case kind_type::FLOAT:
+        case kind_type::BLOB:
+        case kind_type::STR:
+        case kind_type::VA_ID:
+        case kind_type::SID_ID:
+        case kind_type::AUTOLOAD_ID:
+        case kind_type::OPTION_ID:
+        case kind_type::REGISTER_ID:
+        case kind_type::ENV_ID:
+        case kind_type::ID:
+            v->build<std::string>(evalget_text());
+            return t;
+
+        case ' ':
+        case '\t':
+            // Loop again
+            break;
+
+        default:
+            v->build<int>(t);
+            l->begin = evalcol;
+            l->end = l->begin + evalget_leng();
+            return t;
+        }
     }
 }
 

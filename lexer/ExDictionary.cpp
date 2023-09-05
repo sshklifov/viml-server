@@ -179,6 +179,7 @@ int ExDictionary::partialSearch(const StringView& key, int& maxMatched) const {
 }
 
 ExDictionary::Entry ExDictionary::getEntry(int dictIdx) const {
+    assert(dictIdx >= 0);
     if (!isLoaded()) {
         assert(false);
         return Entry{};
