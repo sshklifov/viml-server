@@ -22,6 +22,13 @@ struct ContinuationStorage {
         len = 0;
     }
 
+    void deinit() {
+        delete[] buf;
+        maxlen = 0;
+        buf = nullptr;
+        len = 0;
+    }
+
     char* buf;
     int len;
     int maxlen;
@@ -47,7 +54,7 @@ struct Continuation {
             memcpy(writePtr, lineNoBackslash.begin, n);
 
             int entryLen = lineNoBackslash.length();
-            locMap.locations.push_back(LocationMap::Location(line, col, entryLen));
+            locMap.addEntry(line, col, entryLen);
 
             writePtr += n;
             availableStorage -= n;
@@ -86,21 +93,23 @@ private:
 
 /// Internal helper for parsing program line by line
 struct Program {
-    Program() = default;
-
-    Program(const StringView& p) {
-        set(p);
+    void set(const char* s) {
+        set(StringView(s));
     }
 
     void set(const StringView& p) {
         program = p;
+        if (p.empty()) {
+            line = p;
+            lineCounter = -1;
+        } else {
+            // Kinda hachy whoops
+            line.begin = NULL;
+            line.end = program.begin;
+            pop();
+            lineCounter = 0;
+        }
 
-        // Kinda hachy whoops
-        line.begin = NULL;
-        line.end = program.begin;
-        pop();
-
-        lineCounter = 0;
     }
 
     bool empty() const { return line.empty(); }
@@ -138,9 +147,9 @@ struct ExLexer {
     ExLexer();
     ~ExLexer();
 
-    bool loadFile(const char* filename);
     bool isLoaded() const;
-    bool unloadFile();
+    bool reloadFromFile(const char* filename);
+    bool reloadFromString(const char* str);
 
     int lex(ExLexem& res);
 
@@ -151,6 +160,10 @@ struct ExLexer {
     bool getQargsEndLoc(const ExLexem& lexem, int& line, int& col) const;
 
     const LocationMap& getLocationMap() const;
+
+private:
+    void unload();
+    void unmap();
 
 private:
     // File handles

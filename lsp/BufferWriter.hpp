@@ -51,6 +51,10 @@ struct BufferWriter {
         w.String(str);
     }
 
+    void setKey(const std::string& s) {
+        w.String(s.c_str());
+    }
+
     void setKey(bool flag) {
         w.Bool(flag);
     }
@@ -61,6 +65,7 @@ struct BufferWriter {
 
     template <typename T>
     void setKey(const T& val) {
+        static_assert(!std::is_enum<T>::value, "enum should be cast to int");
         w.Null();
         abort();
     }

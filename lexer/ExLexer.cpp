@@ -70,8 +70,8 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                     lex.exDictIdx = dictIdx;
                     lex.name = namePart;
                     lex.qargs = restPart.trimLeftSpace();
-                    lex.nameOffset = namePart.begin - line.begin;
-                    lex.qargsOffset = restPart.begin - line.begin;
+                    lex.nameOffset = lex.name.begin - line.begin;
+                    lex.qargsOffset = lex.qargs.begin - line.begin;
                 }
                 break;
             }
@@ -108,14 +108,14 @@ ExLexer::ExLexer() {
 }
 
 ExLexer::~ExLexer() {
-    unloadFile();
+    unmap();
 }
 
-bool ExLexer::loadFile(const char* filename) {
-    if (isLoaded()) {
-        return false;
-    }
+bool ExLexer::isLoaded() const {
+    return len > 0;
+}
 
+bool ExLexer::reloadFromFile(const char* filename) {
     int fd = open(filename, O_RDWR);
     if (fd < 0) {
         return false;
@@ -134,41 +134,50 @@ bool ExLexer::loadFile(const char* filename) {
         close(fd);
         return false;
     }
-
+    // Success
     const char* buffer = reinterpret_cast<const char*>(mptr);
 
-    // Success
+    if (isLoaded()) {
+        unload();
+    }
     this->mptr = mptr;
     this->len = len;
     this->fd = fd;
-    
     program.set(StringView(buffer, buffer + len));
     contStorage.init(len);
-
     return true;
 }
 
-bool ExLexer::unloadFile() {
+bool ExLexer::reloadFromString(const char* str) {
     if (isLoaded()) {
+        unload();
+    }
+    len = strlen(str);
+    program.set(StringView(str, str + len));
+    contStorage.init(len);
+    return true;
+}
+
+void ExLexer::unmap() {
+    if (mptr) {
         munmap(mptr, len);
         mptr = nullptr;
         close(fd);
         fd = -1;
-        return true;
-    } else {
-        return false;
     }
 }
 
-bool ExLexer::isLoaded() const {
-    return mptr != nullptr;
+void ExLexer::unload() {
+    program.set("");
+    contStorage.deinit();
+    locationMap.clearEntries();
+    unmap();
 }
 
 int ExLexer::lex(ExLexem& res) {
     assert(isLoaded());
-
-    if (program.empty()) {
-        return EOF;
+    if (!isLoaded()) {
+        return false;
     }
 
     LocationMap::Key locationKey;
@@ -176,6 +185,11 @@ int ExLexer::lex(ExLexem& res) {
 
     int ignore = false;
     do {
+        if (program.empty()) {
+            unmap();
+            return EOF;
+        }
+
         Continuation cont(contStorage, locationMap);
         cont.add(program.top(), program.lineNumber(), 0);
         program.pop();

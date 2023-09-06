@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ValueReader.hpp"
 #include "BufferWriter.hpp"
 
 struct Position {
@@ -29,6 +30,18 @@ struct Range {
 	 */
     Position end;
 };
+
+template<>
+inline void ValueReader::read(Position& pos) {
+    readMember("line", pos.line);
+    readMember("character", pos.character);
+}
+
+template<>
+inline void ValueReader::read(Range& range) {
+    readMember("start", range.start);
+    readMember("end", range.end);
+}
 
 template<>
 inline void BufferWriter::setKey(const Position& pos) {

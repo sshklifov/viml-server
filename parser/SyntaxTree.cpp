@@ -16,21 +16,35 @@ static Diagnostic error(const ExLexer& creator, const ExLexem& lexem, const char
     return res;
 }
 
-bool SyntaxTree::isBuild() const {
+bool SyntaxTree::isLoaded() const {
+    // At least RootBlock will be created
     return !blockFac.blocks.empty();
 }
 
-RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) {
-    if (isBuild()) {
-        assert(false);
-        return nullptr;
+void SyntaxTree::reloadFromFile(const char* file, std::vector<Diagnostic>& errors) {
+    if (!lexer.reloadFromFile(file)) {
+        return;
     }
+    reloadStorage();
+    loadImpl(errors);
+}
 
-    if (!lexer.loadFile(file)) {
-        return nullptr;
+void SyntaxTree::reloadFromString(const char* str, std::vector<Diagnostic>& errors) {
+    if (!lexer.reloadFromString(str)) {
+        return;
     }
+    reloadStorage();
+    loadImpl(errors);
+}
 
-    RootBlock* root = blockFac.create<RootBlock>();
+void SyntaxTree::reloadStorage() {
+    blockFac.clear();
+    evalFac.clear();
+    root = nullptr;
+}
+
+void SyntaxTree::loadImpl(std::vector<Diagnostic>& errors) {
+    root = blockFac.create<RootBlock>();
     std::stack<Block*> blocks;
     blocks.push(root); //< Guarantees that stack is never empty
 
@@ -222,8 +236,6 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
         }
     }
 
-    lexer.unloadFile();
-
     // Parse qargs of blocks
 
     struct RunEvalParse {
@@ -239,6 +251,4 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
     } runEvalParse(*this, errors);
 
     root->enumerate(runEvalParse);
-
-    return root;
 }

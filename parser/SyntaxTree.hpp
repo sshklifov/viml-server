@@ -12,9 +12,14 @@ struct BlockFactory {
     BlockFactory(BlockFactory&&) = delete;
 
     ~BlockFactory() {
+        clear();
+    }
+
+    void clear() {
         for (Block* block : blocks) {
             delete block;
         }
+        blocks.clear();
     }
 
     template <typename T, typename ... Args>
@@ -34,11 +39,17 @@ struct SyntaxTree {
     SyntaxTree(const SyntaxTree&) = delete;
     SyntaxTree(SyntaxTree&&) = delete;
 
-    RootBlock* build(const char* file, std::vector<Diagnostic>& errors);
+    void reloadFromFile(const char* file, std::vector<Diagnostic>& errors);
+    void reloadFromString(const char* str, std::vector<Diagnostic>& errors);
+    bool isLoaded() const;
+private:
+    void reloadStorage();
+    void loadImpl(std::vector<Diagnostic>& errors);
 
-    bool isBuild() const;
-
+public:
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
     BlockFactory blockFac; //< Holds memory for the created blocks (main ast)
-    EvalFactory evalFac; //< Holds memory for the block qargs (second level ast)
+    EvalFactory evalFac; //< Holds memory for command qargs (second level ast)
+
+    RootBlock* root;
 };

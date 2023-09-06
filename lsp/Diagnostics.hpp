@@ -62,7 +62,7 @@ inline void BufferWriter::setKey(const Diagnostic& dig) {
     add("range", dig.range);
     add("range", dig.range);
     add("severity", dig.severity);
-    add("message", dig.message.c_str());
+    add("message", dig.message);
 }
 
 template <>

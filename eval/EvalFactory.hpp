@@ -10,9 +10,14 @@ struct EvalFactory {
     EvalFactory(EvalFactory&&) = delete;
 
     ~EvalFactory() {
+        clear();
+    }
+
+    void clear() {
         for (EvalBase* obj : objs) {
             delete obj;
         }
+        objs.clear();
     }
 
     template <typename T, typename ... Args>

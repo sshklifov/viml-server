@@ -3,6 +3,8 @@
 #include <vector>
 
 struct LocationMap {
+    friend struct Continuation;
+
     struct Key {
         Key() = default;
         Key(int begin, int end) : entryBegin(begin), entryEnd(end) {}
@@ -20,6 +22,14 @@ struct LocationMap {
         int entryLen;
     };
 
+    void addEntry(int line, int col, int entryLen) {
+        locations.push_back(Location(line, col, entryLen));
+    }
+
+    void clearEntries() {
+        locations.clear();
+    }
+
     bool resolve(const Key& key, int strOffset, int& line, int& col) const {
         int strBegin = 0;
         for (int i = key.entryBegin; i < key.entryEnd; ++i) {
@@ -27,9 +37,6 @@ struct LocationMap {
             if (strOffset >= strBegin && strOffset < strEnd) {
                 line = locations[i].line;
                 col = locations[i].col + (strOffset - strBegin);
-                // Convert to 1-based indices
-                ++line;
-                ++col;
                 return true;
             }
             strBegin = strEnd;
@@ -37,5 +44,6 @@ struct LocationMap {
         return false;
     }
 
+private:
     std::vector<Location> locations;
 };
