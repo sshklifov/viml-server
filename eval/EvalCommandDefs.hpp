@@ -1,12 +1,11 @@
 #pragma once
 
-#include "EvalFactory.hpp"
-#include <ExConstants.hpp>
+#include "EvalCommand.hpp"
+#include "EvalExpr.hpp"
 
 enum class LetOp { NONE, PLUS, MINUS, MULT, DIV, MOD, DOT, DOT2};
 
 struct LetCommand : public EvalCommand {
-    int getId() override { return LET; }
 };
 
 struct LetVar : public LetCommand {
@@ -66,13 +65,10 @@ struct LetPrint : public LetCommand {
 struct Unlet : public EvalCommand {
     Unlet(std::vector<std::string> ids) : ids(std::move(ids)) {}
 
-    int getId() override { return UNLET; }
-
     std::vector<std::string> ids;
 };
 
 struct ConstCommand : public EvalCommand {
-    int getId() override { return CONST; }
 };
 
 struct ConstVar : public ConstCommand {
@@ -105,8 +101,6 @@ struct LockVar : public EvalCommand {
     LockVar(std::vector<std::string> ids, std::string depth) :
         ids(std::move(ids)), depth(std::move(depth)) {}
 
-    int getId() override { return LOCKVAR; }
-
     std::vector<std::string> ids;
     std::string depth;
 };
@@ -116,14 +110,11 @@ struct UnlockVar : public EvalCommand {
     UnlockVar(std::vector<std::string> ids, std::string depth) :
         ids(std::move(ids)), depth(std::move(depth)) {}
 
-    int getId() override { return UNLOCKVAR; }
-
     std::vector<std::string> ids;
     std::string depth;
 };
 
 struct FunctionCommand : public EvalCommand {
-    int getId() override { return FUNCTION; }
 };
 
 struct FunctionPrint : public FunctionCommand {

@@ -1,8 +1,9 @@
 #pragma once
 
-#include <ExLexer.hpp>
-#include <EvalFactory.hpp>
+#include <vector>
 
-EvalCommand* evalParse(const ExLexem& lexem, EvalFactory& factory);
+struct Block;
+struct SyntaxTree;
+struct Diagnostic;
 
-bool evalParseSupported(const ExLexem& lexem);
+bool evalParseBlock(Block& block, SyntaxTree& root, std::vector<Diagnostic>& digs);

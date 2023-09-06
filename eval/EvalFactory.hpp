@@ -1,19 +1,8 @@
 #pragma once
 
-#include <string>
+#include "EvalBase.hpp"
+
 #include <vector>
-
-struct EvalBase {
-    virtual ~EvalBase() {}
-};
-
-struct EvalExpr : public EvalBase {
-    virtual std::string toString() = 0;
-};
-
-struct EvalCommand : public EvalBase {
-    virtual int getId() = 0;
-};
 
 struct EvalFactory {
     EvalFactory() = default;

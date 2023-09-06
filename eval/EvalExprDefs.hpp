@@ -1,6 +1,8 @@
 #pragma once
 
-#include <EvalFactory.hpp>
+#include <EvalExpr.hpp>
+
+#include <vector>
 
 struct TernaryNode : public EvalExpr {
     TernaryNode(EvalExpr* cond, EvalExpr* left, EvalExpr* right) : cond(cond), left(left), right(right) {}

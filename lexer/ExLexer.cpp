@@ -207,38 +207,34 @@ int ExLexer::lex(ExLexem& res) {
     return buildExLexem(programLine, locationKey, res);
 }
 
-bool ExLexer::resolveLoc(const ExLexem& lexem, int off, int& line, int& col) const {
-    bool ok = locationMap.resolve(lexem.locationKey, off, line, col);
-    // Convert to 1-based indexing
-    if (ok) {
-        ++line;
-        ++col;
-    }
-    return ok;
+bool ExLexer::getLoc(const ExLexem& lexem, int off, int& line, int& col) const {
+    return locationMap.resolve(lexem.locationKey, off, line, col);
 }
 
-bool ExLexer::resolveNameLoc(const ExLexem& lexem, int& line, int& col) const {
-    return resolveLoc(lexem, lexem.nameOffset, line, col);
+bool ExLexer::getNameLoc(const ExLexem& lexem, int& line, int& col) const {
+    return getLoc(lexem, lexem.nameOffset, line, col);
 }
 
-bool ExLexer::resolveNameEndLoc(const ExLexem& lexem, int& line, int& col) const {
+bool ExLexer::getNameEndLoc(const ExLexem& lexem, int& line, int& col) const {
     int offset = lexem.nameOffset;
     if (lexem.name.length() > 1) {
         offset += lexem.name.length() - 1;
     }
-    return resolveLoc(lexem, offset, line, col);
+    return getLoc(lexem, offset, line, col);
 }
 
-bool ExLexer::resolveQargsLoc(const ExLexem& lexem, int& line, int& col) const {
-    return resolveLoc(lexem, lexem.qargsOffset, line, col);
+bool ExLexer::getQargsLoc(const ExLexem& lexem, int& line, int& col) const {
+    return getLoc(lexem, lexem.qargsOffset, line, col);
 }
 
-bool ExLexer::resolveQargsEndLoc(const ExLexem& lexem, int& line, int& col) const {
+bool ExLexer::getQargsEndLoc(const ExLexem& lexem, int& line, int& col) const {
     int offset = lexem.qargsOffset;
     if (lexem.qargs.length() > 1) {
         offset += lexem.qargs.length() - 1;
     }
-    return resolveLoc(lexem, offset, line, col);
+    return getLoc(lexem, offset, line, col);
 }
+
+const LocationMap& ExLexer::getLocationMap() const { return locationMap; }
 
 // TODO carriage returns

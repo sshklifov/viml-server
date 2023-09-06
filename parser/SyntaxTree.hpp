@@ -1,5 +1,6 @@
 #include <Blocks.hpp>
 #include <Diagnostics.hpp>
+#include <EvalFactory.hpp>
 
 #include <type_traits>
 #include <stack>
@@ -37,8 +38,7 @@ struct SyntaxTree {
 
     bool isBuild() const;
 
-private:
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
-    BlockFactory blockFac; //< Holds memory for the created blocks
-    EvalFactory evalFac; //< Holds memory for parsed blocks TODO wtf comment
+    BlockFactory blockFac; //< Holds memory for the created blocks (main ast)
+    EvalFactory evalFac; //< Holds memory for the block qargs (second level ast)
 };

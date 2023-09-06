@@ -1,43 +1,9 @@
 #pragma once
 
-#include <StringView.hpp>
-#include <vector>
+#include "LocationMap.hpp"
+#include "ExLexem.hpp"
 
-struct LocationMap {
-    struct Key {
-        Key() = default;
-        Key(int begin, int end) : entryBegin(begin), entryEnd(end) {}
-
-        int entryBegin;
-        int entryEnd;
-    };
-
-    struct Location {
-        Location() = default;
-        Location(int line, int col, int entryLen) : line(line), col(col), entryLen(entryLen) {}
-
-        int line;
-        int col;
-        int entryLen;
-    };
-
-    bool resolve(const Key& key, int strOffset, int& line, int& col) const {
-        int strBegin = 0;
-        for (int i = key.entryBegin; i < key.entryEnd; ++i) {
-            int strEnd = strBegin + locations[i].entryLen;
-            if (strOffset >= strBegin && strOffset < strEnd) {
-                line = locations[i].line;
-                col = locations[i].col + (strOffset - strBegin);
-                return true;
-            }
-            strBegin = strEnd;
-        }
-        return false;
-    }
-
-    std::vector<Location> locations;
-};
-
+/// Internal storage class for ExLexer
 struct ContinuationStorage {
     ContinuationStorage() {
         maxlen = 0;
@@ -118,6 +84,7 @@ private:
     int locationBegin;
 };
 
+/// Internal helper for parsing program line by line
 struct Program {
     Program() = default;
 
@@ -167,19 +134,6 @@ private:
     int lineCounter;
 };
 
-struct ExLexem {
-    int exDictIdx;
-    StringView name;
-    StringView qargs;
-
-    LocationMap::Key locationKey;
-    int nameOffset;
-    int qargsOffset;
-
-    bool bang;
-    int range;
-};
-
 struct ExLexer {
     ExLexer();
     ~ExLexer();
@@ -190,11 +144,13 @@ struct ExLexer {
 
     int lex(ExLexem& res);
 
-    bool resolveLoc(const ExLexem& lexem, int off, int& line, int& col) const;
-    bool resolveNameLoc(const ExLexem& lexem, int& line, int& col) const;
-    bool resolveNameEndLoc(const ExLexem& lexem, int& line, int& col) const;
-    bool resolveQargsLoc(const ExLexem& lexem, int& line, int& col) const;
-    bool resolveQargsEndLoc(const ExLexem& lexem, int& line, int& col) const;
+    bool getLoc(const ExLexem& lexem, int off, int& line, int& col) const;
+    bool getNameLoc(const ExLexem& lexem, int& line, int& col) const;
+    bool getNameEndLoc(const ExLexem& lexem, int& line, int& col) const;
+    bool getQargsLoc(const ExLexem& lexem, int& line, int& col) const;
+    bool getQargsEndLoc(const ExLexem& lexem, int& line, int& col) const;
+
+    const LocationMap& getLocationMap() const;
 
 private:
     // File handles

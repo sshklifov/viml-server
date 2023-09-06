@@ -63,18 +63,32 @@
     #include "EvalFactory.hpp"
     #include "EvalExprDefs.hpp"
     #include "EvalCommandDefs.hpp"
-    #include "EvalLocation.hpp"
-    struct EvalState;
+
+    // Used for evallex method. Both definitions can be found in the main file.
+    struct EvalLexState;
+
+    struct Location {
+        int begin, end;
+    };
 }
 
 %code provides {
-    int evallex(eval::parser::value_type* v, eval::parser::location_type* l, EvalState* state);
+    int evallex(eval::parser::value_type* v, eval::parser::location_type* l, EvalLexState& lexState);
+}
+
+%code {
+    std::ostream& operator<<(std::ostream& o, const eval::parser::location_type& l) {
+        assert(false);
+        return o;
+    }
 }
 
 %language "c++"
-%param { EvalState* state }
-%parse-param { EvalFactory& f }
-%parse-param { EvalCommand*& result }
+
+%lex-param {EvalLexState& lexState}
+%parse-param {EvalLexState& lexState}
+%parse-param {EvalFactory& f}
+%parse-param {EvalCommand*& result}
 
 %define api.value.type variant
 %define api.prefix {eval}
@@ -84,7 +98,7 @@
 %define parse.trace
 
 %locations
-%define api.location.type {EvalLocation}
+%define api.location.type {Location}
 
 %{
 %}

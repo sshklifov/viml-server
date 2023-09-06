@@ -24,7 +24,6 @@
 
 #define DEFINE_COMMAND(name, val) const int name = val;
 
-const int ROOT = -1;
 FOR_EACH_COMMAND(DEFINE_COMMAND)
 
 #undef DEFINE_COMMAND

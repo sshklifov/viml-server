@@ -2,6 +2,7 @@
 
 #include <ExConstants.hpp>
 #include <ExLexer.hpp>
+#include <Eval.hpp>
 
 static Diagnostic error(const ExLexer& creator, const ExLexem& lexem, const char* msg) {
     Diagnostic res;
@@ -9,8 +10,8 @@ static Diagnostic error(const ExLexer& creator, const ExLexem& lexem, const char
     res.message = msg;
 
     int nameStartOffset = lexem.nameOffset;
-    creator.resolveNameLoc(lexem, res.range.start.line, res.range.start.character);
-    creator.resolveNameEndLoc(lexem, res.range.end.line, res.range.end.character);
+    creator.getNameLoc(lexem, res.range.start.line, res.range.start.character);
+    creator.getNameEndLoc(lexem, res.range.end.line, res.range.end.character);
 
     return res;
 }
@@ -223,6 +224,21 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
 
     lexer.unloadFile();
 
-    root->parseRecursive(evalFac);
+    // Parse qargs of blocks
+
+    struct RunEvalParse {
+        RunEvalParse(SyntaxTree& ast, std::vector<Diagnostic>& digs) : ast(ast), digs(digs) {}
+
+        void operator()(Block* block) {
+            evalParseBlock(*block, ast, digs);
+        }
+
+    private:
+        SyntaxTree& ast;
+        std::vector<Diagnostic>& digs;
+    } runEvalParse(*this, errors);
+
+    root->enumerate(runEvalParse);
+
     return root;
 }

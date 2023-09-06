@@ -3,33 +3,30 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <functional>
 
 #include <ExLexer.hpp>
 #include <ExConstants.hpp>
 
-#include <Eval.hpp>
+#include <EvalCommand.hpp>
 
 struct Block {
-    Block(const ExLexem& lexem) : lexem(lexem), evalCmd(nullptr) {}
+    // TODO needed? enum EnumResult {STOP, CONTINUE};
+    using EnumCallback = std::function<void(Block*)>;
 
+    Block(const ExLexem& lexem) : lexem(lexem), evalCmd(nullptr) {}
     virtual ~Block() {}
 
-    void parse(EvalFactory& factory) {
-        if (evalParseSupported(lexem)) {
-            evalCmd = evalParse(lexem, factory);
-        }
-    }
-
-    virtual void parseRecursive(EvalFactory& factory) {
-        parse(factory);
+    virtual void enumerate(EnumCallback cb) {
+        cb(this);
         for (Block* block : body) {
-            block->parseRecursive(factory);
+            cb(block);
         }
     }
 
     virtual int getId() { return lexem.exDictIdx; }
 
-    virtual std::string toString() { return bodyToString(); }
+    virtual std::string toString() = 0;
 
     std::string bodyToString() {
         std::string result;
@@ -52,19 +49,20 @@ struct Block {
         body.push_back(child);
     }
 
-    EvalCommand* evalCmd;
     ExLexem lexem;
+    EvalCommand* evalCmd;
+
     std::vector<Block*> body;
 };
 
 struct RootBlock : Block {
     RootBlock() : Block(ExLexem()) {}
 
-    static const int id = ROOT;
-
-    virtual int getId() {
-        return id;
+    int getId() override {
+        return -1;
     }
+
+    std::string toString() override { return bodyToString(); }
 };
 
 struct ExBlock : Block {
@@ -83,10 +81,10 @@ struct ExBlock : Block {
 struct IfBlock : public Block {
     IfBlock(const ExLexem& lexem) : Block(lexem), elseBlock(nullptr) {}
 
-    void parseRecursive(EvalFactory& factory) override {
-        Block::parseRecursive(factory);
+    void enumerate(EnumCallback cb) override {
+        Block::enumerate(cb);
         if (elseBlock) {
-            elseBlock->parseRecursive(factory);
+            elseBlock->enumerate(cb);
         }
     }
 
@@ -160,13 +158,13 @@ struct FunctionBlock : public Block {
 struct TryBlock : public Block {
     TryBlock(const ExLexem& lexem) : Block(lexem), finally(nullptr) {}
 
-    virtual void parseRecursive(EvalFactory& factory) override {
-        Block::parseRecursive(factory);
+    void enumerate(EnumCallback cb) override {
+        Block::enumerate(cb);
         for (Block* catchBlock : catchBlocks) {
-            catchBlock->parseRecursive(factory);
+            catchBlock->enumerate(cb);
         }
         if (finally) {
-            finally->parseRecursive(factory);
+            finally->enumerate(cb);
         }
     }
 

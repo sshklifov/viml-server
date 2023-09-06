@@ -36,7 +36,7 @@ struct Diagnostic {
 
     } severity;
 
-    const char* message;
+    std::string message;
 };
 
 struct PublishDiagnosticsParams {
@@ -62,7 +62,7 @@ inline void BufferWriter::setKey(const Diagnostic& dig) {
     add("range", dig.range);
     add("range", dig.range);
     add("severity", dig.severity);
-    add("message", dig.message);
+    add("message", dig.message.c_str());
 }
 
 template <>
