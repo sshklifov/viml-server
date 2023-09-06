@@ -1,42 +1,9 @@
 #pragma once
 
-#include <string>
-#include <vector>
-#include <unordered_map>
+#include <EvalFactory.hpp>
 
-#include <cassert>
-
-struct EvalNode {
-    virtual ~EvalNode() {}
-    virtual std::string toString() = 0;
-};
-
-struct EvalFactory {
-    EvalFactory() = default;
-    EvalFactory(const EvalFactory&) = delete;
-    EvalFactory(EvalFactory&&) = delete;
-
-    ~EvalFactory() {
-        for (EvalNode* node : allocatedNodes) {
-            delete node;
-        }
-    }
-
-    template <typename T, typename ... Args>
-    T* create(Args&&... args) {
-        static_assert(std::is_base_of<EvalNode, T>::value, "Bad template argument");
-
-        T* res = new T(std::forward<Args>(args)...);
-        allocatedNodes.push_back(res);
-        return res;
-    }
-
-private:
-    std::vector<EvalNode*> allocatedNodes;
-};
-
-struct TernaryNode : public EvalNode {
-    TernaryNode(EvalNode* cond, EvalNode* left, EvalNode* right) : cond(cond), left(left), right(right) {}
+struct TernaryNode : public EvalExpr {
+    TernaryNode(EvalExpr* cond, EvalExpr* left, EvalExpr* right) : cond(cond), left(left), right(right) {}
 
     std::string toString() override {
         std::string res;
@@ -49,15 +16,15 @@ struct TernaryNode : public EvalNode {
     }
 
 private:
-    EvalNode* cond;
-    EvalNode* left;
-    EvalNode* right;
+    EvalExpr* cond;
+    EvalExpr* left;
+    EvalExpr* right;
 };
 
-struct LogicOpNode : public EvalNode {
+struct LogicOpNode : public EvalExpr {
     enum Type {AND, OR};
 
-    LogicOpNode(EvalNode* lhs, EvalNode* rhs, Type op) : lhs(lhs), rhs(rhs), op(op) {}
+    LogicOpNode(EvalExpr* lhs, EvalExpr* rhs, Type op) : lhs(lhs), rhs(rhs), op(op) {}
 
     std::string toString() override {
         std::string res;
@@ -70,13 +37,13 @@ struct LogicOpNode : public EvalNode {
     }
 
 private:
-    EvalNode* lhs;
-    EvalNode* rhs;
+    EvalExpr* lhs;
+    EvalExpr* rhs;
     Type op;
 };
 
-struct InfixOpNode : public EvalNode {
-    InfixOpNode(EvalNode* lhs, EvalNode* rhs, const char* op) : lhs(lhs), rhs(rhs), op(op) {}
+struct InfixOpNode : public EvalExpr {
+    InfixOpNode(EvalExpr* lhs, EvalExpr* rhs, const char* op) : lhs(lhs), rhs(rhs), op(op) {}
 
     std::string toString() override {
         std::string res;
@@ -89,13 +56,13 @@ struct InfixOpNode : public EvalNode {
     }
 
 private:
-    EvalNode* lhs;
-    EvalNode* rhs;
+    EvalExpr* lhs;
+    EvalExpr* rhs;
     const char* op;
 };
 
-struct PrefixOpNode : public EvalNode {
-    PrefixOpNode(EvalNode* val, const char* op) : val(val), op(op) {}
+struct PrefixOpNode : public EvalExpr {
+    PrefixOpNode(EvalExpr* val, const char* op) : val(val), op(op) {}
 
     std::string toString() override {
         std::string res;
@@ -105,12 +72,12 @@ struct PrefixOpNode : public EvalNode {
     }
 
 private:
-    EvalNode* val;
+    EvalExpr* val;
     const char* op;
 };
 
-struct IndexNode : public EvalNode {
-    IndexNode(EvalNode* what, EvalNode* index) : what(what), index(index) {}
+struct IndexNode : public EvalExpr {
+    IndexNode(EvalExpr* what, EvalExpr* index) : what(what), index(index) {}
 
     std::string toString() override {
         std::string res;
@@ -122,12 +89,12 @@ struct IndexNode : public EvalNode {
     }
 
 private:
-    EvalNode* what;
-    EvalNode* index;
+    EvalExpr* what;
+    EvalExpr* index;
 };
 
-struct IndexRangeNode : public EvalNode {
-    IndexRangeNode(EvalNode* what, EvalNode* from, EvalNode* to) :
+struct IndexRangeNode : public EvalExpr {
+    IndexRangeNode(EvalExpr* what, EvalExpr* from, EvalExpr* to) :
         what(what), from(from), to(to) {}
 
     std::string toString() override {
@@ -146,13 +113,13 @@ struct IndexRangeNode : public EvalNode {
     }
 
 private:
-    EvalNode* what;
-    EvalNode* from;
-    EvalNode* to;
+    EvalExpr* what;
+    EvalExpr* from;
+    EvalExpr* to;
 };
 
-struct InvokeNode : public EvalNode {
-    InvokeNode(EvalNode* fun, std::vector<EvalNode*> args) : fun(fun), args(std::move(args)) {}
+struct InvokeNode : public EvalExpr {
+    InvokeNode(EvalExpr* fun, std::vector<EvalExpr*> args) : fun(fun), args(std::move(args)) {}
 
     std::string toString() override {
         std::string res = fun->toString();
@@ -171,11 +138,11 @@ struct InvokeNode : public EvalNode {
     }
 
 private:
-    EvalNode* fun;
-    std::vector<EvalNode*> args;
+    EvalExpr* fun;
+    std::vector<EvalExpr*> args;
 };
 
-struct TokenNode : public EvalNode {
+struct TokenNode : public EvalExpr {
     enum Type {STRING, NUMBER, FLOAT, BLOB, OPTION, REGISTER, ENV, AUTOLOAD, VA, ID};
 
     TokenNode(std::string tok, Type type) : tok(std::move(tok)), type(type) {}
@@ -189,8 +156,8 @@ private:
     Type type;
 };
 
-struct ListNode : public EvalNode {
-    ListNode(std::vector<EvalNode*> elems) : elems(std::move(elems)) {}
+struct ListNode : public EvalExpr {
+    ListNode(std::vector<EvalExpr*> elems) : elems(std::move(elems)) {}
 
     std::string toString() override {
         std::string res = "[";
@@ -206,16 +173,16 @@ struct ListNode : public EvalNode {
     }
 
 private:
-    std::vector<EvalNode*> elems;
+    std::vector<EvalExpr*> elems;
 };
 
-struct DictNode : public EvalNode {
+struct DictNode : public EvalExpr {
     struct Pair {
         Pair() = default;
-        Pair(EvalNode* key, EvalNode* value) : key(key), value(value) {}
+        Pair(EvalExpr* key, EvalExpr* value) : key(key), value(value) {}
 
-        EvalNode* key;
-        EvalNode* value;
+        EvalExpr* key;
+        EvalExpr* value;
     };
 
     DictNode(std::vector<Pair> entries) : entries(std::move(entries)) {}
@@ -241,8 +208,8 @@ private:
     std::vector<Pair> entries;
 };
 
-struct NestedNode : public EvalNode {
-    NestedNode(EvalNode* expr) : expr(expr) {}
+struct NestedNode : public EvalExpr {
+    NestedNode(EvalExpr* expr) : expr(expr) {}
 
     std::string toString() override {
         std::string res = "(";
@@ -252,11 +219,11 @@ struct NestedNode : public EvalNode {
     }
 
 private:
-    EvalNode* expr;
+    EvalExpr* expr;
 };
 
-struct LambdaNode : public EvalNode {
-    LambdaNode(std::vector<std::string> args, EvalNode* body) : args(std::move(args)), body(body) {}
+struct LambdaNode : public EvalExpr {
+    LambdaNode(std::vector<std::string> args, EvalExpr* body) : args(std::move(args)), body(body) {}
 
     std::string toString() override {
         std::string res = "{";
@@ -275,5 +242,5 @@ struct LambdaNode : public EvalNode {
 
 private:
     std::vector<std::string> args;
-    EvalNode* body;
+    EvalExpr* body;
 };

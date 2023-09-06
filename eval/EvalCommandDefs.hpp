@@ -1,62 +1,58 @@
 #pragma once
 
-#include "EvalNode.hpp"
+#include "EvalFactory.hpp"
 #include <ExConstants.hpp>
 
 enum class LetOp { NONE, PLUS, MINUS, MULT, DIV, MOD, DOT, DOT2};
-
-struct EvalCommand {
-    virtual int getId() = 0;
-};
 
 struct LetCommand : public EvalCommand {
     int getId() override { return LET; }
 };
 
 struct LetVar : public LetCommand {
-    LetVar(std::string id, EvalNode* expr, LetOp op = LetOp::NONE) :
+    LetVar(std::string id, EvalExpr* expr, LetOp op = LetOp::NONE) :
         id(std::move(id)), expr(expr), op(op) {}
 
     std::string id;
-    EvalNode* expr;
+    EvalExpr* expr;
     LetOp op;
 };
 
 struct LetElement : public LetCommand {
-    LetElement(std::string id, EvalNode* elem, EvalNode* expr) :
+    LetElement(std::string id, EvalExpr* elem, EvalExpr* expr) :
         id(std::move(id)), elem(elem), expr(expr)  {}
 
     std::string id;
-    EvalNode* elem;
-    EvalNode* expr;
+    EvalExpr* elem;
+    EvalExpr* expr;
 };
 
 struct LetRange : public LetCommand {
-    LetRange(std::string id, EvalNode* from, EvalNode* to, EvalNode* expr) :
+    LetRange(std::string id, EvalExpr* from, EvalExpr* to, EvalExpr* expr) :
         id(std::move(id)), from(from), to(to), expr(expr) {}
 
     std::string id;
-    EvalNode* from;
-    EvalNode* to;
-    EvalNode* expr;
+    EvalExpr* from;
+    EvalExpr* to;
+    EvalExpr* expr;
 };
 
 struct LetUnpack : public LetCommand {
-    LetUnpack(std::vector<std::string> ids, EvalNode* expr, LetOp op = LetOp::NONE) :
+    LetUnpack(std::vector<std::string> ids, EvalExpr* expr, LetOp op = LetOp::NONE) :
         ids(std::move(ids)), expr(expr), op(op) {}
 
     std::vector<std::string> ids;
-    EvalNode* expr;
+    EvalExpr* expr;
     LetOp op;
 };
 
 struct LetRemainder : public LetCommand {
-    LetRemainder(std::vector<std::string> ids, std::string rem, EvalNode* expr, LetOp op = LetOp::NONE) :
+    LetRemainder(std::vector<std::string> ids, std::string rem, EvalExpr* expr, LetOp op = LetOp::NONE) :
         ids(std::move(ids)), rem(std::move(rem)), expr(expr), op(op) {}
 
     std::vector<std::string> ids;
     std::string rem;
-    EvalNode* expr;
+    EvalExpr* expr;
     LetOp op;
 };
 
@@ -80,28 +76,28 @@ struct ConstCommand : public EvalCommand {
 };
 
 struct ConstVar : public ConstCommand {
-    ConstVar(std::string id, EvalNode* expr) : id(std::move(id)), expr(expr) {}
+    ConstVar(std::string id, EvalExpr* expr) : id(std::move(id)), expr(expr) {}
 
     std::string id;
-    EvalNode* expr;
+    EvalExpr* expr;
 };
 
 struct ConstUnpack : public ConstCommand {
-    ConstUnpack(std::vector<std::string> ids, EvalNode* expr) :
+    ConstUnpack(std::vector<std::string> ids, EvalExpr* expr) :
         ids(std::move(ids)), expr(expr) {}
 
     std::vector<std::string> ids;
     std::string rem;
-    EvalNode* expr;
+    EvalExpr* expr;
 };
 
 struct ConstRemainder : public ConstCommand {
-    ConstRemainder(std::vector<std::string> ids, std::string rem, EvalNode* expr) :
+    ConstRemainder(std::vector<std::string> ids, std::string rem, EvalExpr* expr) :
         ids(std::move(ids)), rem(std::move(rem)), expr(expr) {}
 
     std::vector<std::string> ids;
     std::string rem;
-    EvalNode* expr;
+    EvalExpr* expr;
 };
 
 struct LockVar : public EvalCommand {
