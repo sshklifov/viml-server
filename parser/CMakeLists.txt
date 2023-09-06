@@ -1,5 +1,6 @@
 include_directories(${CMAKE_SOURCE_DIR}/lsp)
 include_directories(${CMAKE_SOURCE_DIR}/lexer)
+include_directories(${CMAKE_SOURCE_DIR}/eval) # TODO needed?
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 link_libraries(lexer)
 add_library(parser SyntaxTree.cpp)

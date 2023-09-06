@@ -11,7 +11,7 @@ struct BlockFactory {
     BlockFactory(BlockFactory&&) = delete;
 
     ~BlockFactory() {
-        for (Block* block : allocatedBlocks) {
+        for (Block* block : blocks) {
             delete block;
         }
     }
@@ -21,11 +21,11 @@ struct BlockFactory {
         static_assert(std::is_base_of<Block, T>::value, "Bad template argument");
 
         T* res = new T(std::forward<Args>(args)...);
-        allocatedBlocks.push_back(res);
+        blocks.push_back(res);
         return res;
     }
 
-    std::vector<Block*> allocatedBlocks;
+    std::vector<Block*> blocks;
 };
 
 struct SyntaxTree {
@@ -39,5 +39,6 @@ struct SyntaxTree {
 
 private:
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
-    BlockFactory factory; //< Holds memory for the created blocks
+    BlockFactory blockFac; //< Holds memory for the created blocks
+    EvalFactory evalFac; //< Holds memory for parsed blocks TODO wtf comment
 };

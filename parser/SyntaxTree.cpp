@@ -16,7 +16,7 @@ static Diagnostic error(const ExLexer& creator, const ExLexem& lexem, const char
 }
 
 bool SyntaxTree::isBuild() const {
-    return !factory.allocatedBlocks.empty();
+    return !blockFac.blocks.empty();
 }
 
 RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) {
@@ -29,7 +29,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
         return nullptr;
     }
 
-    RootBlock* root = factory.create<RootBlock>();
+    RootBlock* root = blockFac.create<RootBlock>();
     std::stack<Block*> blocks;
     blocks.push(root); //< Guarantees that stack is never empty
 
@@ -43,14 +43,14 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
         Block* newBlock = nullptr;
         switch (lexem.exDictIdx) {
         case IF:
-            newBlock = factory.create<IfBlock>(lexem);
+            newBlock = blockFac.create<IfBlock>(lexem);
             blocks.top()->addToScope(newBlock);
             blocks.push(newBlock);
             break;
 
         case ELSEIF:
             if (blocks.top()->getId() == IF) {
-                newBlock = factory.create<IfBlock>(lexem);
+                newBlock = blockFac.create<IfBlock>(lexem);
                 blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
                 blocks.top() = newBlock;
             } else if (blocks.top()->getId() == ELSE) {
@@ -64,7 +64,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
 
         case ELSE:
             if (blocks.top()->getId() == IF) {
-                newBlock = factory.create<ElseBlock>(lexem);
+                newBlock = blockFac.create<ElseBlock>(lexem);
                 blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
                 blocks.top() = newBlock;
             } else if (blocks.top()->getId() == ELSE) {
@@ -86,7 +86,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
             break;
 
         case WHILE:
-            newBlock = factory.create<WhileBlock>(lexem);
+            newBlock = blockFac.create<WhileBlock>(lexem);
             blocks.top()->addToScope(newBlock);
             blocks.push(newBlock);
             break;
@@ -104,7 +104,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
             break;
 
         case FOR:
-            newBlock = factory.create<ForBlock>(lexem);
+            newBlock = blockFac.create<ForBlock>(lexem);
             blocks.top()->addToScope(newBlock);
             blocks.push(newBlock);
             break;
@@ -122,7 +122,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
             break;
 
         case FUNCTION:
-            newBlock = factory.create<FunctionBlock>(lexem);
+            newBlock = blockFac.create<FunctionBlock>(lexem);
             blocks.top()->addToScope(newBlock);
             blocks.push(newBlock);
             break;
@@ -137,7 +137,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
             break;
 
         case TRY:
-            newBlock = factory.create<TryBlock>(lexem);
+            newBlock = blockFac.create<TryBlock>(lexem);
             blocks.top()->addToScope(newBlock);
             blocks.push(newBlock);
             break;
@@ -147,7 +147,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
                 blocks.pop(); // end catch block
             }
             if (blocks.top()->getId() == TRY) {
-                newBlock = factory.create<FinallyBlock>(lexem);
+                newBlock = blockFac.create<FinallyBlock>(lexem);
                 blocks.top()->cast<TryBlock>()->finally = newBlock;
                 blocks.push(newBlock);
             } else if (blocks.top()->getId() == FINALLY) {
@@ -164,7 +164,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
                 blocks.pop(); // end catch block
             }
             if (blocks.top()->getId() == TRY) {
-                newBlock = factory.create<CatchBlock>(lexem);
+                newBlock = blockFac.create<CatchBlock>(lexem);
                 blocks.top()->cast<TryBlock>()->catchBlocks.push_back(newBlock);
                 blocks.push(newBlock);
             } else if (blocks.top()->getId() == FINALLY) {
@@ -192,7 +192,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
             }
             // Add it anyway
             if (!lexem.name.empty()) {
-                blocks.top()->addToScope(factory.create<ExBlock>(lexem));
+                blocks.top()->addToScope(blockFac.create<ExBlock>(lexem));
             }
         }
     }
@@ -222,5 +222,7 @@ RootBlock* SyntaxTree::build(const char* file, std::vector<Diagnostic>& errors) 
     }
 
     lexer.unloadFile();
+
+    root->parseRecursive(evalFac);
     return root;
 }

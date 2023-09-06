@@ -221,9 +221,9 @@ int test() {
     if (!root) {
         return -1;
     }
-    Block* letBlock = root->body[0];
-    EvalFactory factory;
-    EvalCommand* result = parse(letBlock->lexem, factory);
+    /* Block* letBlock = root->body[0]; */
+    /* EvalFactory factory; */
+    /* EvalCommand* result = parse(letBlock->lexem, factory); */
     return 0;
 }
 

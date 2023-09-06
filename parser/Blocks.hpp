@@ -7,10 +7,25 @@
 #include <ExLexer.hpp>
 #include <ExConstants.hpp>
 
+#include <Eval.hpp>
+
 struct Block {
-    Block(const ExLexem& lexem) : lexem(lexem) {}
+    Block(const ExLexem& lexem) : lexem(lexem), evalCmd(nullptr) {}
 
     virtual ~Block() {}
+
+    void parse(EvalFactory& factory) {
+        if (evalParseSupported(lexem)) {
+            evalCmd = evalParse(lexem, factory);
+        }
+    }
+
+    virtual void parseRecursive(EvalFactory& factory) {
+        parse(factory);
+        for (Block* block : body) {
+            block->parseRecursive(factory);
+        }
+    }
 
     virtual int getId() { return lexem.exDictIdx; }
 
@@ -37,6 +52,7 @@ struct Block {
         body.push_back(child);
     }
 
+    EvalCommand* evalCmd;
     ExLexem lexem;
     std::vector<Block*> body;
 };
@@ -66,6 +82,13 @@ struct ExBlock : Block {
 
 struct IfBlock : public Block {
     IfBlock(const ExLexem& lexem) : Block(lexem), elseBlock(nullptr) {}
+
+    void parseRecursive(EvalFactory& factory) override {
+        Block::parseRecursive(factory);
+        if (elseBlock) {
+            elseBlock->parseRecursive(factory);
+        }
+    }
 
     std::string toString() override {
         std::string res = "If(" + lexem.qargs.toString() + ")\n";
@@ -136,6 +159,16 @@ struct FunctionBlock : public Block {
 
 struct TryBlock : public Block {
     TryBlock(const ExLexem& lexem) : Block(lexem), finally(nullptr) {}
+
+    virtual void parseRecursive(EvalFactory& factory) override {
+        Block::parseRecursive(factory);
+        for (Block* catchBlock : catchBlocks) {
+            catchBlock->parseRecursive(factory);
+        }
+        if (finally) {
+            finally->parseRecursive(factory);
+        }
+    }
 
     std::string toString() override {
         std::string res = "Try(" + lexem.qargs.toString() + ")\n";

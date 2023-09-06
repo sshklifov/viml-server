@@ -97,12 +97,17 @@ void eval::parser::error(const EvalLocation& l, const std::string& msg) {
     exit(5);
 }
 
-EvalCommand* parse(const ExLexem& lexem, EvalFactory& factory) {
+EvalCommand* evalParse(const ExLexem& lexem, EvalFactory& factory) {
     EvalState state(lexem);
     EvalCommand* result = nullptr;
     eval::parser parser(&state, factory, result);
-    if (!parser.parse()) {
+    if (parser.parse()) {
         return nullptr;
     }
     return result;
+}
+
+bool evalParseSupported(const ExLexem& lexem) {
+    eval::parser::token::token_kind_type tok = exDictToKindType(lexem.exDictIdx);
+    return tok != eval::parser::token::token_kind_type::EVALerror;
 }
