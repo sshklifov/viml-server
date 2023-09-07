@@ -51,7 +51,7 @@ inline void BufferWriter::setKey(const RequestId& reqId) {
     }
 }
 
-enum ErrorCode {
+enum class ErrorCode {
     // Defined by common sense.
     NoError = 0,
 
@@ -70,32 +70,32 @@ enum ErrorCode {
 };
 
 struct ResponseError {
-    ResponseError() : code(NoError) {}
+    ResponseError() : code(ErrorCode::NoError) {}
 
     ResponseError(ErrorCode code, const char* suffix = nullptr) : code(code) {
         switch (code) {
-        case ParseError:
+        case ErrorCode::ParseError:
             message = "Parse error";
             break;
-        case InvalidRequest:
+        case ErrorCode::InvalidRequest:
             message = "Invalid request";
             break;
-        case MethodNotFound:
+        case ErrorCode::MethodNotFound:
             message = "Method not found";
             break;
-        case InvalidParams:
+        case ErrorCode::InvalidParams:
             message = "Invalid parameters";
             break;
-        case InternalError:
+        case ErrorCode::InternalError:
             message = "Internal error";
             break;
-        case ServerNotInitialized:
+        case ErrorCode::ServerNotInitialized:
             message = "Server not initialized";
             break;
-        case UnknownErrorCode:
+        case ErrorCode::UnknownErrorCode:
             message = "Unknown error code";
             break;
-        case RequestCancelled:
+        case ErrorCode::RequestCancelled:
             message = "Request cancelled";
             break;
         default:
@@ -109,7 +109,7 @@ struct ResponseError {
     }
 
     operator bool() {
-        return code != NoError;
+        return code != ErrorCode::NoError;
     }
 
     ErrorCode code;
@@ -150,16 +150,18 @@ protected:
 struct RespondingServer : public EchoingServer {
     RespondingServer(const InitOptions& opt) : EchoingServer(opt) {}
 
-    void respond(const rapidjson::StringBuffer& output) {
-        int bufferSize = output.GetSize();
-        printf("Content-Length: %d\r\n\r\n", bufferSize);
-        fputs(output.GetString(), stdout);
-        fflush(stdout);
+    void respond(const RequestId& id) {
+        rapidjson::StringBuffer output;
+        rapidjson::Writer<rapidjson::StringBuffer> handle(output);
+        BufferWriter w(handle);
 
-        if (dup[1]) {
-            fprintf(dup[1], "Writing response: %s\n", output.GetString());
-            fflush(dup[1]);
+        {
+            BufferWriter::ObjectScope root = w.beginObject();
+            w.add("jsonrpc", "2.0");
+            w.add("id", id);
         }
+
+        respondStr(output);
     }
 
     template <typename T>
@@ -175,7 +177,7 @@ struct RespondingServer : public EchoingServer {
             w.add("result", res);
         }
 
-        respond(output);
+        respondStr(output);
     }
 
     template <typename T>
@@ -191,7 +193,7 @@ struct RespondingServer : public EchoingServer {
             w.add("params", resp);
         }
 
-        respond(output);
+        respondStr(output);
     }
 
     void pushShowMessage(std::string msg, ShowMessageParams::MessageType type = ShowMessageParams::Error) {
@@ -213,7 +215,20 @@ struct RespondingServer : public EchoingServer {
             w.add("error", error);
         }
 
-        respond(output);
+        respondStr(output);
+    }
+
+private:
+    void respondStr(const rapidjson::StringBuffer& output) {
+        int bufferSize = output.GetSize();
+        printf("Content-Length: %d\r\n\r\n", bufferSize);
+        fputs(output.GetString(), stdout);
+        fflush(stdout);
+
+        if (dup[1]) {
+            fprintf(dup[1], "Writing response: %s\n", output.GetString());
+            fflush(dup[1]);
+        }
     }
 };
 
@@ -225,10 +240,12 @@ struct ReceivingServer : public RespondingServer {
 
     ReceivingServer(const InitOptions& init) : RespondingServer(init) {}
 
+    virtual bool shouldExit() = 0;
+
     void stdinFunction() {
         const char* expectedMsg = "Content-Length: ";
         int charsMatched = 0;
-        while (true) {
+        while (!shouldExit()) {
             int c = getchar();
             if (c == EOF) {
                 break;
@@ -294,7 +311,7 @@ struct ReceivingServer : public RespondingServer {
                 RequestId requestId(document["id"]);
                 respondError(requestId, error);
             } else {
-                std::string message = std::to_string(error.code);
+                std::string message = std::to_string((int)error.code);
                 message += ": ";
                 message += error.message;
                 pushShowMessage(std::move(message));
@@ -304,18 +321,18 @@ struct ReceivingServer : public RespondingServer {
 
     ResponseError receiveDocumentWithError(rapidjson::Document& document) {
         if (!document.HasMember("jsonrpc")) {
-            return ResponseError(InvalidParams, "Missing jsonrpc");
+            return ResponseError(ErrorCode::InvalidParams, "Missing jsonrpc");
         }
         const char* jsonrpc = document["jsonrpc"].GetString();
         if (strcmp(jsonrpc, "2.0") != 0) {
-            return ResponseError(InvalidParams, "Bad jsonrpc version");
+            return ResponseError(ErrorCode::InvalidParams, "Bad jsonrpc version");
         }
 
         if (!document.HasMember("method")) {
-            return ResponseError(InvalidParams, "Missing method");
+            return ResponseError(ErrorCode::InvalidParams, "Missing method");
         }
         const char* methodStr = document["method"].GetString();
-        ResponseError error = receiveMethod(methodStr);
+        ResponseError error = acceptMethod(methodStr);
         if (error) {
             return error;
         }
@@ -324,7 +341,7 @@ struct ReceivingServer : public RespondingServer {
         if (notification) {
             NotifMap::iterator it = notifs.find(methodStr);
             if (it == notifs.end()) {
-                return ResponseError(MethodNotFound, methodStr);
+                return ResponseError(ErrorCode::MethodNotFound, methodStr);
             }
             NotifHandler handler = it->second;
             if (document.HasMember("params")) {
@@ -332,12 +349,12 @@ struct ReceivingServer : public RespondingServer {
             } else {
                 (this->*handler)(rapidjson::Value());
             }
-            return NoError;
+            return ErrorCode::NoError;
         } else {
             RequestId requestId(document["id"]);
             MethodMap::iterator it = methods.find(methodStr);
             if (it == methods.end()) {
-                return ResponseError(MethodNotFound, methodStr);
+                return ResponseError(ErrorCode::MethodNotFound, methodStr);
             }
             MethodHandler handler = it->second;
             if (document.HasMember("params")) {
@@ -345,11 +362,11 @@ struct ReceivingServer : public RespondingServer {
             } else {
                 (this->*handler)(requestId, rapidjson::Value());
             }
-            return NoError;
+            return ErrorCode::NoError;
         }
     }
 
-    virtual ResponseError receiveMethod(const char* methodStr) { return NoError; }
+    virtual ResponseError acceptMethod(const char* methodStr) { return ErrorCode::NoError; }
 
 protected:
     MethodMap methods;
@@ -358,26 +375,59 @@ protected:
 
 struct Server : public ReceivingServer {
     Server(const InitOptions& opt) : ReceivingServer(opt) {
-        didInitialize = false;
+        state = NOT_INITIALIZED;
 
         methods["initialize"] = static_cast<MethodHandler>(&Server::initialize);
+        methods["shutdown"] = static_cast<MethodHandler>(&Server::shutdown);
+
         notifs["initialized"] = static_cast<NotifHandler>(&Server::initialized);
         notifs["textDocument/didOpen"] = static_cast<NotifHandler>(&Server::didOpen);
         notifs["textDocument/didChange"] = static_cast<NotifHandler>(&Server::didChange);
+        notifs["exit"] = static_cast<NotifHandler>(&Server::exit);
     }
 
-    ResponseError receiveMethod(const char* methodStr) override {
-        if (didInitialize || strcmp(methodStr, "initialize") == 0) {
-            return NoError;
+    bool shouldExit() override { return state == EXIT; }
+
+    ResponseError acceptMethod(const char* methodStr) override {
+        switch (state) {
+        case NOT_INITIALIZED:
+            if (strcmp(methodStr, "initialize") == 0) {
+                return ErrorCode::NoError;
+            } else {
+                return ErrorCode::ServerNotInitialized;
+            }
+
+        case INITIALIZED:
+            return ErrorCode::NoError;
+
+        case SHUTDOWN:
+            if (strcmp(methodStr, "exit") == 0) {
+                return ErrorCode::NoError;
+            } else {
+                return ErrorCode::InvalidRequest;;
+            }
+
+        case EXIT:
+            assert(false); //< Not possible, after exit no messages will be read
+            return ErrorCode::InternalError;
         }
-        return ServerNotInitialized;
+    }
+
+    void initialize(const RequestId& id, const rapidjson::Value& obj) {
+        state = INITIALIZED;
+        respondResult(id, InitializeResult());
     }
 
     void initialized(const rapidjson::Value& obj) {}
 
-    void initialize(const RequestId& id, const rapidjson::Value& obj) {
-        didInitialize = true;
-        respondResult(id, InitializeResult());
+    // TODO lambda, why is this needing obj?!
+    void shutdown(const RequestId& id, const rapidjson::Value& obj) {
+        state = SHUTDOWN;
+        respond(id);
+    }
+
+    void exit(const rapidjson::Value& obj) {
+        state = EXIT;
     }
 
     void didOpen(const rapidjson::Value& obj) {
@@ -415,7 +465,8 @@ struct Server : public ReceivingServer {
     }
 
 private:
-    bool didInitialize;
+    enum State {NOT_INITIALIZED, INITIALIZED, SHUTDOWN, EXIT} state;
+
     SyntaxTree ast;
 };
 
@@ -462,7 +513,6 @@ int otherMain(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-    /* abort(); */
     otherMain(argc, argv);
     return 0;
 }
