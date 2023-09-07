@@ -7,26 +7,24 @@
 
 struct ValueReader {
     struct MemberScope {
-        MemberScope(ValueReader& r, const char* name) : storedReader(r) {
-            rapidjson::Value::MemberIterator it = r.val.FindMember(name);
-            if (it != r.val.MemberEnd()) {
-                storedVal = std::move(r.val);
-                r.val = std::move(it->value);
+        MemberScope(ValueReader& r, const char* name) : reader(r), origVal(r.val) {
+            rapidjson::Value::ConstMemberIterator it = r.val->FindMember(name);
+            if (it != r.val->MemberEnd()) {
+                r.val = &it->value;
             } else {
-                storedVal = std::move(r.val);
-                r.val.SetNull();
+                assert(false);
             }
         }
 
         ~MemberScope() {
-            storedReader.val = std::move(storedVal);
+            reader.val = origVal;
         }
 
-        ValueReader& storedReader;
-        rapidjson::Value storedVal;
+        ValueReader& reader;
+        const rapidjson::Value* origVal;
     };
 
-    ValueReader(rapidjson::Value val) : val(std::move(val)) {}
+    ValueReader(const rapidjson::Value& val) : val(&val) {}
 
     MemberScope beginMember(const char* name) {
         return MemberScope(*this, name);
@@ -34,8 +32,8 @@ struct ValueReader {
 
     template <typename T>
     void read(T& res) {
-        if (val.Is<T>()) {
-            res = val.Get<T>();
+        if (val->Is<T>()) {
+            res = val->Get<T>();
         }
     }
 
@@ -49,10 +47,10 @@ struct ValueReader {
     void readMember(const char* name, std::vector<T>& res) {
         MemberScope scope = beginMember(name);
 
-        res.resize(val.Size());
-        rapidjson::Value arr = std::move(val);
-        for (int i = 0; i < val.Size(); ++i) {
-            val = arr[i];
+        res.resize(val->Size());
+        const rapidjson::Value* oldVal = val;
+        for (int i = 0; i < val->Size(); ++i) {
+            val = &oldVal[i];
             read(res[i]);
         }
     }
@@ -60,11 +58,11 @@ struct ValueReader {
     template <typename T>
     void readMember(const char* name, std::optional<T>& res) {
         MemberScope scope = beginMember(name);
-        if (!val.IsNull()) {
+        if (!val->IsNull()) {
             read(res.value());
         }
     }
 
 private:
-    rapidjson::Value val;
+    const rapidjson::Value* val;
 };

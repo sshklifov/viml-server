@@ -320,9 +320,6 @@ struct ReceivingServer : public RespondingServer {
             return error;
         }
 
-        // TODO why move in object writer, not likey
-        // TODO not likey setKey naming....
-
         bool notification = !document.HasMember("id");
         if (notification) {
             NotifMap::iterator it = notifs.find(methodStr);
