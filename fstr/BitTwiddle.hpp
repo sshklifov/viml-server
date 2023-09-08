@@ -10,3 +10,5 @@ unsigned logOfTen(unsigned x);
 
 // Do not call with x = 0!
 unsigned prevPowerOfTen(unsigned x);
+
+unsigned powerTen(unsigned x);

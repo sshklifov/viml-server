@@ -1,16 +1,9 @@
 #pragma once
 
-#include "FStrUtil.hpp"
+#include <type_traits>
+#include <cassert>
 
-template <typename... Ints>
-int sum() {
-    return 0;
-}
-
-template <typename... Ints>
-int sum(int first, Ints... rest) {
-    return first + sum(rest...);
-}
+struct StringView;
 
 struct FStr {
     FStr();
@@ -24,9 +17,19 @@ struct FStr {
     char operator[](int i) const;
     char& operator[](int i);
 
+    void append(int d);
+    void append(unsigned u);
     void append(char c);
     void append(const char* s);
+    void append(const char* s, int n);
     void append(const FStr& other);
+    void append(const StringView& other);
+
+    // TODO fix in lsp the same way problem with enums ty
+    template <typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = true>
+    void append(T en) {
+        append((int)en);
+    }
 
     FStr& operator=(char c);
     FStr& operator=(const char* s);
@@ -35,53 +38,34 @@ struct FStr {
     FStr& operator+=(const char* s);
     FStr& operator+=(const FStr& other);
 
-    template <typename... Types>
-    void appendf(const char* fmt, const Types&... args) {
-        int fmtLen = charsNeeded(fmt, args...);
-        int totalLen = len + fmtLen;
-        allocAtLeast(totalLen + 1); //< For terminating null
-        fNoCheck(fmt, args...);
-    }
+    void replace(int begin, int end, const char* s);
 
     const char* str() const;
 
     int length() const;
 
+    template <typename T, typename... Types>
+    void appendf(const char* fmt, const T& head, const Types&... tail) {
+        int len = 0;
+        while (fmt[len]) {
+            if (fmt[len] == '{' && fmt[len + 1] == '}') {
+                append(fmt, len);
+                append(head);
+                return appendf(fmt + len + 2, tail...);
+            }
+            ++len;
+        }
+        assert(false && "Too many arguments");
+        s[len] = '\0';
+        return;
+    }
+
+    void appendf(const char* fmt) {
+        append(fmt);
+    }
+
 private:
     void allocAtLeast(int n);
-
-    template <typename T, typename... Types>
-    void fNoCheck(const char* fmt, const T& head, const Types&... tail) {
-        if (fmt[0] == '\0') {
-            assert(false && "Too many arguments");
-            s[len] = '\0';
-            return;
-        }
-        if (fmt[0] == '{' && fmt[1] == '}') {
-            appendNoCheck(head);
-            return fNoCheck(fmt + 2, tail...);
-        } else {
-            appendNoCheck(fmt[0]);
-            return fNoCheck(fmt + 1, head, tail...);
-        }
-    }
-
-    void fNoCheck(const char* fmt) {
-        appendNoCheck(fmt);
-        assert(len < allocLen);
-        s[len] = '\0';
-    }
-
-    template <typename T>
-    void appendNoCheck(const T& what) {
-        len += FStrUtil::appendNoCheck(s + len, what);
-        assert(len <= allocLen);
-    }
-
-    template <typename... Types>
-    static int charsNeeded(const Types&... args) {
-        return sum(FStrUtil::charsNeeded(args)...);
-    }
 
     char* s;
     int len;

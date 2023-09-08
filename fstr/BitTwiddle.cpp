@@ -61,3 +61,8 @@ unsigned prevPowerOfTen(unsigned x) {
     unsigned t = logOfTen(x);
     return tablePowTen[t];
 }
+
+unsigned powerTen(unsigned x) {
+    assert(x <= 9);
+    return tablePowTen[x];
+}
