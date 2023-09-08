@@ -80,7 +80,7 @@ int evallex(eval::parser::value_type* v, eval::parser::location_type* l, EvalLex
         case kind_type::REGISTER_ID:
         case kind_type::ENV_ID:
         case kind_type::ID:
-            v->build<std::string>(evalget_text());
+            v->build<FStr>(evalget_text());
             return t;
 
         case ' ':
@@ -116,7 +116,7 @@ public:
         digs->resize(digs->size() + 1);
         Diagnostic& error = digs->back();
         error.severity = Diagnostic::Error;
-        error.message = msg;
+        error.message = msg.c_str();
         locMap->resolve(locKey, l.begin, error.range.start.line, error.range.start.character);
         locMap->resolve(locKey, l.end - 1, error.range.end.line, error.range.end.character);
     }

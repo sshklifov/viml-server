@@ -2,7 +2,6 @@
 
 #include <EvalExpr.hpp>
 
-#include <string>
 #include <vector>
 
 struct TernaryNode : public EvalExpr {
@@ -133,14 +132,14 @@ private:
 struct TokenNode : public EvalExpr {
     enum Type {STRING, NUMBER, FLOAT, BLOB, OPTION, REGISTER, ENV, AUTOLOAD, VA, ID};
 
-    TokenNode(std::string tok, Type type) : tok(std::move(tok)), type(type) {}
+    TokenNode(FStr tok, Type type) : tok(std::move(tok)), type(type) {}
 
     void appendStr(FStr& res) override {
-        res += tok.c_str();
+        res += tok;
     }
 
 private:
-    std::string tok;
+    FStr tok;
     Type type;
 };
 
@@ -208,15 +207,15 @@ private:
 };
 
 struct LambdaNode : public EvalExpr {
-    LambdaNode(std::vector<std::string> args, EvalExpr* body) : args(std::move(args)), body(body) {}
+    LambdaNode(std::vector<FStr> args, EvalExpr* body) : args(std::move(args)), body(body) {}
 
     void appendStr(FStr& res) override {
         res += "{";
         if (!args.empty()) {
-            res += args[0].c_str();
+            res += args[0];
             for (int i = 1; i < args.size(); ++i) {
                 res += ", ";
-                res += args[i].c_str();
+                res += args[i];
             }
             res += " ";
         }
@@ -225,6 +224,6 @@ struct LambdaNode : public EvalExpr {
     }
 
 private:
-    std::vector<std::string> args;
+    std::vector<FStr> args;
     EvalExpr* body;
 };

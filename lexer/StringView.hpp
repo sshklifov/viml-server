@@ -1,7 +1,5 @@
 #pragma once
 
-#include <string> // For toString method
-
 #include <cstring>
 #include <cassert>
 
@@ -10,12 +8,6 @@ struct StringView {
     explicit StringView(const char* s) : begin(s), end(s + strlen(begin)) {}
     StringView(const char* begin, const char* end) : begin(begin), end(end) {}
     StringView(const char* s, int n) : begin(s), end(s + n) {}
-
-    // Utility
-
-    std::string toString() const {
-        return std::string(begin, length());
-    }
 
     // Access
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <FStr.hpp>
+
 #include "BufferWriter.hpp"
 #include "Range.hpp"
 
@@ -36,7 +38,7 @@ struct Diagnostic {
 
     } severity;
 
-    std::string message;
+    FStr message;
 };
 
 struct PublishDiagnosticsParams {

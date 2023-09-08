@@ -4,7 +4,6 @@
 
 #include <functional>
 #include <memory>
-#include <string>
 #include <vector>
 #include <unordered_map>
 
@@ -26,7 +25,7 @@ struct RequestId {
 
     RequestId(const rapidjson::Value& v) { read(v); }
     RequestId(int id) : type(INT), intValue(id) {}
-    RequestId(std::string s) : type(STR), strValue(std::move(s)) {}
+    RequestId(FStr s) : type(STR), strValue(std::move(s)) {}
 
     void read(const rapidjson::Value& v) {
         if (v.IsString()) {
@@ -40,7 +39,7 @@ struct RequestId {
 
     Type type;
     int intValue;
-    std::string strValue;
+    FStr strValue;
 };
 
 template<>
@@ -48,7 +47,7 @@ inline void BufferWriter::setKey(const RequestId& reqId) {
     if (reqId.type == RequestId::INT) {
         w.Int(reqId.intValue);
     } else {
-        w.String(reqId.strValue.c_str());
+        w.String(reqId.strValue.str());
     }
 }
 
@@ -114,7 +113,7 @@ struct ResponseError {
     }
 
     ErrorCode code;
-    std::string message;
+    FStr message;
 };
 
 template<>
@@ -125,14 +124,14 @@ inline void BufferWriter::setKey(const ResponseError& error) {
 }
 
 struct InitOptions {
-    std::string dupInput;
-    std::string dupOutput;
+    FStr dupInput;
+    FStr dupOutput;
 };
 
 struct EchoingServer {
     EchoingServer(const InitOptions& opt) {
-        dup[0] = fopen(opt.dupInput.c_str(), "w");
-        dup[1] = fopen(opt.dupOutput.c_str(), "w");
+        dup[0] = fopen(opt.dupInput.str(), "w");
+        dup[1] = fopen(opt.dupOutput.str(), "w");
     }
 
     ~EchoingServer() {
@@ -236,8 +235,8 @@ private:
 struct ReceivingServer : public RespondingServer {
     using MethodHandler = void(ReceivingServer::*)(const RequestId&, const rapidjson::Value&);
     using NotifHandler = void(ReceivingServer::*)(const rapidjson::Value&);
-    using MethodMap = std::unordered_map<std::string, MethodHandler>;
-    using NotifMap = std::unordered_map<std::string, NotifHandler>;
+    using MethodMap = std::unordered_map<const char*, MethodHandler>;
+    using NotifMap = std::unordered_map<const char*, NotifHandler>;
 
     ReceivingServer(const InitOptions& init) : RespondingServer(init) {}
 
@@ -311,7 +310,7 @@ struct ReceivingServer : public RespondingServer {
                 respondError(requestId, error);
             } else {
                 FStr message;
-                message.appendf("{}: {}", error.code, error.message.c_str());
+                message.appendf("{}: {}", error.code, error.message);
                 pushShowMessage(std::move(message));
             }
         }

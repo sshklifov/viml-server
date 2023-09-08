@@ -29,7 +29,7 @@ struct ShowMessageParams {
     /**
      * The actual message.
      */
-    std::string message;
+    FStr message;
 };
 
 template <>

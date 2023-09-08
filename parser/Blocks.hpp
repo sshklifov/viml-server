@@ -142,7 +142,6 @@ struct FunctionBlock : public Block {
     }
 
     static const int id = FUNCTION;
-    std::string expr1;
 };
 
 struct TryBlock : public Block {

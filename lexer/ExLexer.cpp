@@ -5,13 +5,8 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
-#include <cstddef>
-#include <cstdio>
 #include <cassert>
 #include <cctype>
-
-#include <string>
-#include <stdexcept>
 
 #include "Command.hpp"
 #include "ExDictionary.hpp"

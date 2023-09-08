@@ -33,11 +33,11 @@
 
 %token CONCAT ".."
 
-%token <std::string> NUMBER FLOAT BLOB STR
+%token <FStr> NUMBER FLOAT BLOB STR
 %token <int> ARROW
-%token <std::string> VA_ID SID_ID AUTOLOAD_ID OPTION_ID REGISTER_ID ENV_ID ID
+%token <FStr> VA_ID SID_ID AUTOLOAD_ID OPTION_ID REGISTER_ID ENV_ID ID
 
-%type <std::vector<std::string>> id_list id_list_or_empty
+%type <std::vector<FStr>> id_list id_list_or_empty
 %type <std::vector<EvalExpr*>> expr1_list expr1_list_or_empty
 %type <std::vector<DictNode::Pair>> expr1_pairs expr1_pairs_or_empty
 
@@ -52,14 +52,15 @@
     FUNCTION "function"
 
 %type <EvalCommand*> let unlet const lockvar unlockvar
-%type <std::string> varname
-%type <std::vector<std::string>> varname_list varname_multiple
+%type <FStr> varname
+%type <std::vector<FStr>> varname_list varname_multiple
 
 %type <EvalCommand*> function
 
 %type <EvalCommand*> input command
 
 %code requires {
+    #include <FStr.hpp>
     #include "EvalFactory.hpp"
     #include "EvalExprDefs.hpp"
     #include "EvalCommandDefs.hpp"

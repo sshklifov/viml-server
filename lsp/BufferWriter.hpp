@@ -2,7 +2,7 @@
 
 #include <rapidjson/writer.h>
 
-#include <string>
+#include <FStr.hpp>
 #include <vector>
 
 struct BufferWriter {
@@ -51,8 +51,8 @@ struct BufferWriter {
         w.String(str);
     }
 
-    void setKey(const std::string& s) {
-        w.String(s.c_str());
+    void setKey(const FStr& fstr) {
+        w.String(fstr.str());
     }
 
     void setKey(bool flag) {

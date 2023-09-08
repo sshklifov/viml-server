@@ -8,3 +8,4 @@ clang
 -Ilexer
 -Ilsp
 -Ieval
+-Ifstr

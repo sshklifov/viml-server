@@ -1,5 +1,6 @@
 #pragma once
 
+#include <FStr.hpp>
 #include <StringView.hpp>
 
 #include <vector>
@@ -19,7 +20,7 @@ struct ExDictionary {
     void unload();
     bool isLoaded() const;
 
-    int search(const char* cmd) const;
+    int search(const FStr& cmd) const;
     int search(const StringView& cmd) const;
 
     int partialSearch(const char* cmd, int& numMatched) const;

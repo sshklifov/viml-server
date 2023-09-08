@@ -1,7 +1,6 @@
 #pragma once
 
 #include "FStrUtil.hpp"
-/* #include <cstring> */
 
 template <typename... Ints>
 int sum() {
@@ -15,19 +14,29 @@ int sum(int first, Ints... rest) {
 
 struct FStr {
     FStr();
-    FStr(const FStr& rhs) = delete;
+    FStr(const char* s);
+    FStr(const FStr& rhs);
     FStr(FStr&& rhs);
 
+    FStr& operator=(const FStr& rhs);
     FStr& operator=(FStr&& rhs);
+
+    char operator[](int i) const;
+    char& operator[](int i);
 
     void append(char c);
     void append(const char* s);
+    void append(const FStr& other);
+
+    FStr& operator=(char c);
+    FStr& operator=(const char* s);
 
     FStr& operator+=(char c);
     FStr& operator+=(const char* s);
+    FStr& operator+=(const FStr& other);
 
     template <typename... Types>
-    void appendf(const char* fmt, Types... args) {
+    void appendf(const char* fmt, const Types&... args) {
         int fmtLen = charsNeeded(fmt, args...);
         int totalLen = len + fmtLen;
         allocAtLeast(totalLen + 1); //< For terminating null
@@ -42,7 +51,7 @@ private:
     void allocAtLeast(int n);
 
     template <typename T, typename... Types>
-    void fNoCheck(const char* fmt, T head, Types... tail) {
+    void fNoCheck(const char* fmt, const T& head, const Types&... tail) {
         if (fmt[0] == '\0') {
             assert(false && "Too many arguments");
             s[len] = '\0';
@@ -64,13 +73,13 @@ private:
     }
 
     template <typename T>
-    void appendNoCheck(T what) {
+    void appendNoCheck(const T& what) {
         len += FStrUtil::appendNoCheck(s + len, what);
         assert(len <= allocLen);
     }
 
     template <typename... Types>
-    static int charsNeeded(Types... args) {
+    static int charsNeeded(const Types&... args) {
         return sum(FStrUtil::charsNeeded(args)...);
     }
 

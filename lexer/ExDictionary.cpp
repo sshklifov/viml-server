@@ -113,8 +113,8 @@ int ExDictionary::firstReqMatch(const StringView& key, int lo, int hi) const {
     return -1;
 }
 
-int ExDictionary::search(const char* key) const {
-    return search(StringView(key));
+int ExDictionary::search(const FStr& key) const {
+    return search(StringView(key.str(), key.length()));
 }
 
 int ExDictionary::search(const StringView& key) const {
