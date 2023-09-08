@@ -83,6 +83,13 @@ struct DidChangeTextDocumentParams {
 	std::vector<TextDocumentContentChangeEvent> contentChanges;
 };
 
+struct DidCloseParams {
+    /**
+     * The document that was closed.
+     */
+    const char* textDocument;
+};
+
 template<>
 inline void ValueReader::read(DidOpenTextDocumentParams& params) {
 	MemberScope paramsScope = beginMember("params");
@@ -110,4 +117,10 @@ inline void ValueReader::read(DidChangeTextDocumentParams& params) {
 	MemberScope paramsScope = beginMember("params");
 	readMember("textDocument", params.textDocument);
 	readMember("contentChanges", params.contentChanges);
+}
+
+template<>
+inline void ValueReader::read(DidCloseParams& params) {
+	MemberScope paramsScope = beginMember("params");
+	readMember("textDocument", params.textDocument);
 }

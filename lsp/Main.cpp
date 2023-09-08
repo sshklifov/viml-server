@@ -383,6 +383,7 @@ struct Server : public ReceivingServer {
         notifs["initialized"] = static_cast<NotifHandler>(&Server::initialized);
         notifs["textDocument/didOpen"] = static_cast<NotifHandler>(&Server::didOpen);
         notifs["textDocument/didChange"] = static_cast<NotifHandler>(&Server::didChange);
+        notifs["textDocument/didClose"] = static_cast<NotifHandler>(&Server::didClose);
         notifs["exit"] = static_cast<NotifHandler>(&Server::exit);
     }
 
@@ -407,8 +408,8 @@ struct Server : public ReceivingServer {
                 return ErrorCode::InvalidRequest;;
             }
 
-        case EXIT:
-            assert(false); //< Not possible, after exit no messages will be read
+        default:
+            assert(false);
             return ErrorCode::InternalError;
         }
     }
@@ -432,7 +433,7 @@ struct Server : public ReceivingServer {
 
     void didOpen(const rapidjson::Value& obj) {
 #if 0
-        ValueReader reader(std::move(obj));
+        ValueReader reader(obj);
         DidOpenTextDocumentParams didOpenParams;
         reader.read(didOpenParams);
 
@@ -449,7 +450,7 @@ struct Server : public ReceivingServer {
 
     void didChange(const rapidjson::Value& obj) {
 #if 0
-        ValueReader reader(std::move(obj));
+        ValueReader reader(obj);
         DidChangeTextDocumentParams didChangeParams;
         reader.read(didChangeParams);
 
@@ -462,6 +463,13 @@ struct Server : public ReceivingServer {
         diagnosticsParams.diagnostics = std::move(errors);
         pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
 #endif
+    }
+
+    void didClose(const rapidjson::Value& obj) {
+        ValueReader reader(obj);
+        DidCloseParams didCloseParams;
+        reader.read(didCloseParams);
+        // TODO
     }
 
 private:

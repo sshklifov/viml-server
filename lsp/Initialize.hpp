@@ -54,19 +54,19 @@ struct ServerCapabilities {
 	 * Completion options.
 	 */
 	struct CompletionOptions {
-		bool workDoneProgress = true;
+		bool workDoneProgress = false;
 	} completionProvider;
 
 	/**
 	 * The server provides hover support.
 	 */
-	bool hoverProvider = true;
+	bool hoverProvider = false;
 
 	/**
 	 * The server provides signature help support.
 	 */
 	struct SignatureHelpOptions {
-		bool workDoneProgress = true;
+		bool workDoneProgress = false;
 	} signatureHelpProvider;
 
 	/**
@@ -74,155 +74,155 @@ struct ServerCapabilities {
 	 *
 	 * @since 3.14.0
 	 */
-	bool declarationProvider = true;
+	bool declarationProvider = false;
 
 	/**
 	 * The server provides goto definition support.
 	 */
-	bool definitionProvider = true;
+	bool definitionProvider = false;
 
 	/**
 	 * The server provides goto type definition support.
 	 *
 	 * @since 3.6.0
 	 */
-	bool typeDefinitionProvider = true;
+	bool typeDefinitionProvider = false;
 
 	/**
 	 * The server provides goto implementation support.
 	 *
 	 * @since 3.6.0
 	 */
-	bool implementationProvider = true;
+	bool implementationProvider = false;
 
 	/**
 	 * The server provides find references support.
 	 */
-	bool referencesProvider = true;
+	bool referencesProvider = false;
 
 	/**
 	 * The server provides document highlight support.
 	 */
-	bool documentHighlightProvider = true;
+	bool documentHighlightProvider = false;
 
 	/**
 	 * The server provides document symbol support.
 	 */
-	bool documentSymbolProvider = true;
+	bool documentSymbolProvider = false;
 
 	/**
 	 * The server provides code actions. The `CodeActionOptions` return type is
 	 * only valid if the client signals code action literal support via the
 	 * property `textDocument.codeAction.codeActionLiteralSupport`.
 	 */
-	bool codeActionProvider = true;
+	bool codeActionProvider = false;
 
 	/**
 	 * The server provides code lens.
 	 */
-	bool codeLensProvider = true;
+	bool codeLensProvider = false;
 
 	/**
 	 * The server provides document link support.
 	 */
-	bool documentLinkProvider = true;
+	bool documentLinkProvider = false;
 
 	/**
 	 * The server provides color provider support.
 	 *
 	 * @since 3.6.0
 	 */
-	bool colorProvider = true;
+	bool colorProvider = false;
 
 	/**
 	 * The server provides document formatting.
 	 */
-	bool documentFormattingProvider = true;
+	bool documentFormattingProvider = false;
 
 	/**
 	 * The server provides document range formatting.
 	 */
-	bool documentRangeFormattingProvider = true;
+	bool documentRangeFormattingProvider = false;
 
 	/**
 	 * The server provides document formatting on typing.
 	 */
-    bool documentOnTypeFormattingProvider = true;
+    bool documentOnTypeFormattingProvider = false;
 
 	/**
 	 * The server provides rename support. RenameOptions may only be
 	 * specified if the client states that it supports
 	 * `prepareSupport` in its initial `initialize` request.
 	 */
-    bool renameProvider = true;
+    bool renameProvider = false;
 
 	/**
 	 * The server provides folding provider support.
 	 *
 	 * @since 3.10.0
 	 */
-	bool foldingRangeProvider = true;
+	bool foldingRangeProvider = false;
 
 	/**
 	 * The server provides execute command support.
 	 */
-	bool executeCommandProvider = true;
+	bool executeCommandProvider = false;
 
 	/**
 	 * The server provides selection range support.
 	 *
 	 * @since 3.15.0
 	 */
-	bool selectionRangeProvider = true;
+	bool selectionRangeProvider = false;
 
 	/**
 	 * The server provides linked editing range support.
 	 *
 	 * @since 3.16.0
 	 */
-	bool linkedEditingRangeProvider = true;
+	bool linkedEditingRangeProvider = false;
 
 	/**
 	 * The server provides call hierarchy support.
 	 *
 	 * @since 3.16.0
 	 */
-	bool callHierarchyProvider = true;
+	bool callHierarchyProvider = false;
 
 	/**
 	 * The server provides semantic tokens support.
 	 *
 	 * @since 3.16.0
 	 */
-	bool semanticTokensProvider = true;
+	bool semanticTokensProvider = false;
 
 	/**
 	 * Whether server provides moniker support.
 	 *
 	 * @since 3.16.0
 	 */
-	bool monikerProvider = true;
+	bool monikerProvider = false;
 
 	/**
 	 * The server provides type hierarchy support.
 	 *
 	 * @since 3.17.0
 	 */
-	bool typeHierarchyProvider = true;
+	bool typeHierarchyProvider = false;
 
 	/**
 	 * The server provides inline values.
 	 *
 	 * @since 3.17.0
 	 */
-	bool inlineValueProvider = true;
+	bool inlineValueProvider = false;
 
 	/**
 	 * The server provides inlay hints.
 	 *
 	 * @since 3.17.0
 	 */
-	bool inlayHintProvider = true;
+	bool inlayHintProvider = false;
 
 	/**
 	 * The server has support for pull model diagnostics.
@@ -230,13 +230,13 @@ struct ServerCapabilities {
 	 * @since 3.17.0
 	 */
 	struct DiagnosticOptions {
-		bool workDoneProgress = true;
+		bool workDoneProgress = false;
 	} diagnosticProvider;
 
 	/**
 	 * The server provides workspace symbol support.
 	 */
-	bool workspaceSymbolProvider = true;
+	bool workspaceSymbolProvider = false;
 
 	/**
 	 * Workspace specific server capabilities
@@ -248,7 +248,7 @@ struct ServerCapabilities {
 		 * @since 3.6.0
 		 */
 		struct WorkspaceFoldersServerCapabilities {
-			bool supported = true;
+			bool supported = false;
 		} workspaceFolders;
 
 	} workspace;
