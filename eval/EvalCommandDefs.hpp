@@ -3,6 +3,9 @@
 #include "EvalCommand.hpp"
 #include "EvalExpr.hpp"
 
+#include <string>
+#include <vector>
+
 enum class LetOp { NONE, PLUS, MINUS, MULT, DIV, MOD, DOT, DOT2};
 
 struct LetCommand : public EvalCommand {

@@ -20,7 +20,11 @@ struct FStr {
 
     FStr& operator=(FStr&& rhs);
 
+    void append(char c);
     void append(const char* s);
+
+    FStr& operator+=(char c);
+    FStr& operator+=(const char* s);
 
     template <typename... Types>
     void appendf(const char* fmt, Types... args) {

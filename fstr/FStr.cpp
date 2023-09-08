@@ -22,10 +22,25 @@ FStr& FStr::operator=(FStr&& rhs) {
     return *this;
 }
 
+void FStr::append(char c) {
+    allocAtLeast(len + 1);
+    appendNoCheck(c);
+}
+
 void FStr::append(const char* s) {
     int reqLen = len + strlen(s);
     allocAtLeast(reqLen);
     appendNoCheck(s);
+}
+
+FStr& FStr::operator+=(char c) {
+    append(c);
+    return *this;
+}
+
+FStr& FStr::operator+=(const char* s) {
+    append(s);
+    return *this;
 }
 
 const char* FStr::str() const { return s; }

@@ -1,13 +1,12 @@
 #pragma once
 
-#include <string>
+#include <FStr.hpp>
+
 #include <vector>
-#include <stdexcept>
 #include <functional>
 
 #include <ExLexer.hpp>
 #include <ExConstants.hpp>
-
 #include <EvalCommand.hpp>
 
 struct Block {
@@ -26,14 +25,12 @@ struct Block {
 
     virtual int getId() { return lexem.exDictIdx; }
 
-    virtual std::string toString() = 0;
+    virtual void appendStr(FStr& res) = 0;
 
-    std::string bodyToString() {
-        std::string result;
+    void appendBodyStr(FStr& res) {
         for (Block* child : body) {
-            result += child->toString();
+            child->appendStr(res);
         }
-        return result;
     }
 
     template <typename T>
@@ -62,19 +59,18 @@ struct RootBlock : Block {
         return -1;
     }
 
-    std::string toString() override { return bodyToString(); }
+    void appendStr(FStr& s) override { appendBodyStr(s); }
 };
 
 struct ExBlock : Block {
     ExBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    std::string toString() override {
-        std::string res = "Ex(" + lexem.name.toString();
+    void appendStr(FStr& res) override {
+        res.appendf("Ex({}", lexem.name);
         if (!lexem.qargs.empty()) {
-            res += (", " + lexem.qargs.toString());
+            res.appendf(", {}", lexem.qargs);
         }
-        res += ")\n";
-        return res;
+        res.append(")\n");
     }
 };
 
@@ -88,16 +84,13 @@ struct IfBlock : public Block {
         }
     }
 
-    std::string toString() override {
-        std::string res = "If(" + lexem.qargs.toString() + ")\n";
-        res += bodyToString();
-
+    void appendStr(FStr& res) override {
+        res.appendf("If({})\n", lexem.qargs);
+        appendBodyStr(res);
         if (elseBlock) {
-            res += "Else()\n";
-            res += elseBlock->bodyToString();
+            elseBlock->appendStr(res);
         }
-        res += "Endif()\n";
-        return res;
+        res.append("Endif()\n");
     }
 
     static const int id = IF;
@@ -107,9 +100,9 @@ struct IfBlock : public Block {
 struct ElseBlock : public Block {
     ElseBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    std::string toString() override {
-        assert(false);
-        return "";
+    void appendStr(FStr& res) override {
+        res.append("Else()\n");
+        appendBodyStr(res);
     }
 
     static const int id = ELSE;
@@ -118,11 +111,10 @@ struct ElseBlock : public Block {
 struct WhileBlock : public Block {
     WhileBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    std::string toString() override {
-        std::string res = "While(" + lexem.qargs.toString() + ")\n";
-        res += bodyToString();
-        res += "Endwhile()\n";
-        return res;
+    void appendStr(FStr& res) override {
+        res.appendf("While({})\n", lexem.qargs);
+        appendBodyStr(res);
+        res.append("Endwhile()\n");
     }
 
     static const int id = WHILE;
@@ -131,11 +123,10 @@ struct WhileBlock : public Block {
 struct ForBlock : public Block {
     ForBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    std::string toString() override {
-        std::string res = "For(" + lexem.qargs.toString() + ")\n";
-        res += bodyToString();
-        res += "Endfor()\n";
-        return res;
+    void appendStr(FStr& res) override {
+        res.appendf("For({})\n", lexem.qargs);
+        appendBodyStr(res);
+        res.append("Endfor()\n");
     }
 
     static const int id = FOR;
@@ -144,11 +135,10 @@ struct ForBlock : public Block {
 struct FunctionBlock : public Block {
     FunctionBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    std::string toString() override {
-        std::string res = "Function(" + lexem.qargs.toString() + ")\n";
-        res += bodyToString();
-        res += "Endfunction()\n";
-        return res;
+    void appendStr(FStr& res) override {
+        res.appendf("Function({})\n", lexem.qargs);
+        appendBodyStr(res);
+        res.append("Endfunction()\n");
     }
 
     static const int id = FUNCTION;
@@ -168,22 +158,18 @@ struct TryBlock : public Block {
         }
     }
 
-    std::string toString() override {
-        std::string res = "Try(" + lexem.qargs.toString() + ")\n";
-        res += bodyToString();
+    void appendStr(FStr& res) override {
+        res.appendf("Try({})\n", lexem.qargs);
+        appendBodyStr(res);
 
         for (Block* block : catchBlocks) {
-            res += ("Catch(" + block->lexem.qargs.toString() + ")\n");
-            res += block->bodyToString();
+            block->appendStr(res);
         }
-
         if (finally) {
-            res += "Finally()\n";
-            res += finally->bodyToString();
+            finally->appendStr(res);
         }
 
-        res += "EndTry()\n";
-        return res;
+        res.append("EndTry()\n");
     }
 
     static const int id = TRY;
@@ -194,9 +180,9 @@ struct TryBlock : public Block {
 struct CatchBlock : public Block {
     CatchBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    std::string toString() override {
-        assert(false);
-        return "";
+    void appendStr(FStr& res) override {
+        res.appendf("Catch({})\n", lexem.qargs);
+        appendBodyStr(res);
     }
 
     static const int id = CATCH;
@@ -205,9 +191,9 @@ struct CatchBlock : public Block {
 struct FinallyBlock : public Block {
     FinallyBlock(const ExLexem& lexem) : Block(lexem) {}
 
-    std::string toString() override {
-        assert(false);
-        return "";
+    void appendStr(FStr& res) override {
+        res.appendf("Finally()\n");
+        appendBodyStr(res);
     }
 
     static const int id = FINALLY;

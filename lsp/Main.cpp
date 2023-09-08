@@ -19,6 +19,7 @@
 #include "Window.hpp"
 #include <SyntaxTree.hpp>
 #include <Eval.hpp>
+#include <FStr.hpp>
 
 struct RequestId {
     enum Type {INT, STR};
@@ -196,10 +197,10 @@ struct RespondingServer : public EchoingServer {
         respondStr(output);
     }
 
-    void pushShowMessage(std::string msg, ShowMessageParams::MessageType type = ShowMessageParams::Error) {
+    void pushShowMessage(FStr msg, ShowMessageParams::MessageType type = ShowMessageParams::Error) {
         ShowMessageParams params;
         params.type = type;
-        params.message = std::move(msg);
+        params.message = msg.str(); // TODO!
         pushNotification("window/showMessage", params);
     }
 
@@ -302,8 +303,6 @@ struct ReceivingServer : public RespondingServer {
         }
     }
 
-    // TODO string format library... WTF c++
-
     void receiveDocument(rapidjson::Document& document) {
         ResponseError error = receiveDocumentWithError(document);
         if (error) {
@@ -311,9 +310,8 @@ struct ReceivingServer : public RespondingServer {
                 RequestId requestId(document["id"]);
                 respondError(requestId, error);
             } else {
-                std::string message = std::to_string((int)error.code);
-                message += ": ";
-                message += error.message;
+                FStr message;
+                message.appendf("{}: {}", error.code, error.message.c_str());
                 pushShowMessage(std::move(message));
             }
         }

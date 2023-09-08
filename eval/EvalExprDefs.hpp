@@ -2,19 +2,18 @@
 
 #include <EvalExpr.hpp>
 
+#include <string>
 #include <vector>
 
 struct TernaryNode : public EvalExpr {
     TernaryNode(EvalExpr* cond, EvalExpr* left, EvalExpr* right) : cond(cond), left(left), right(right) {}
 
-    std::string toString() override {
-        std::string res;
-        res += cond->toString();
+    void appendStr(FStr& res) override {
+        cond->appendStr(res);
         res += " ? ";
-        res += left->toString();
+        left->appendStr(res);
         res += " : ";
-        res += right->toString();
-        return res;
+        right->appendStr(res);
     }
 
 private:
@@ -28,14 +27,14 @@ struct LogicOpNode : public EvalExpr {
 
     LogicOpNode(EvalExpr* lhs, EvalExpr* rhs, Type op) : lhs(lhs), rhs(rhs), op(op) {}
 
-    std::string toString() override {
-        std::string res;
-        res += lhs->toString();
-        res += ' ';
-        res += (op==AND ? "&&" : "||");
-        res += ' ';
-        res += rhs->toString();
-        return res;
+    void appendStr(FStr& res) override {
+        lhs->appendStr(res);
+        if (op == AND) {
+            res += " && ";
+        } else {
+            res += " || ";
+        }
+        rhs->appendStr(res);
     }
 
 private:
@@ -47,14 +46,10 @@ private:
 struct InfixOpNode : public EvalExpr {
     InfixOpNode(EvalExpr* lhs, EvalExpr* rhs, const char* op) : lhs(lhs), rhs(rhs), op(op) {}
 
-    std::string toString() override {
-        std::string res;
-        res += lhs->toString();
-        res += ' ';
-        res += op;
-        res += ' ';
-        res += rhs->toString();
-        return res;
+    void appendStr(FStr& res) override {
+        lhs->appendStr(res);
+        res.appendf(" {} ", op);
+        rhs->appendStr(res);
     }
 
 private:
@@ -66,11 +61,9 @@ private:
 struct PrefixOpNode : public EvalExpr {
     PrefixOpNode(EvalExpr* val, const char* op) : val(val), op(op) {}
 
-    std::string toString() override {
-        std::string res;
+    void appendStr(FStr& res) override {
         res += op;
-        res += val->toString();
-        return res;
+        val->appendStr(res);
     }
 
 private:
@@ -81,13 +74,11 @@ private:
 struct IndexNode : public EvalExpr {
     IndexNode(EvalExpr* what, EvalExpr* index) : what(what), index(index) {}
 
-    std::string toString() override {
-        std::string res;
-        res += what->toString();
-        res += "[";
-        res += index->toString();
-        res += "]";
-        return res;
+    void appendStr(FStr& res) override {
+        what->appendStr(res);
+        res += '[';
+        index->appendStr(res);
+        res += ']';
     }
 
 private:
@@ -99,19 +90,17 @@ struct IndexRangeNode : public EvalExpr {
     IndexRangeNode(EvalExpr* what, EvalExpr* from, EvalExpr* to) :
         what(what), from(from), to(to) {}
 
-    std::string toString() override {
-        std::string res;
-        res += what->toString();
-        res += "[";
+    void appendStr(FStr& res) override {
+        what->appendStr(res);
+        res += '[';
         if (from) {
-            res += from->toString();
+            from->appendStr(res);
         }
-        res += ":";
+        res += ':';
         if (to) {
-            res += to->toString();
+            to->appendStr(res);
         }
-        res += "]";
-        return res;
+        res += ']';
     }
 
 private:
@@ -123,20 +112,17 @@ private:
 struct InvokeNode : public EvalExpr {
     InvokeNode(EvalExpr* fun, std::vector<EvalExpr*> args) : fun(fun), args(std::move(args)) {}
 
-    std::string toString() override {
-        std::string res = fun->toString();
-
-        res += "(";
+    void appendStr(FStr& res) override {
+        fun->appendStr(res);
+        res += '(';
         if (!args.empty()) {
-            res += args[0]->toString();
+            args[0]->appendStr(res);
             for (int i = 1; i < args.size(); ++i) {
                 res += ", ";
-                res += args[i]->toString();
+                args[i]->appendStr(res);
             }
         }
         res += ")";
-
-        return res;
     }
 
 private:
@@ -149,8 +135,8 @@ struct TokenNode : public EvalExpr {
 
     TokenNode(std::string tok, Type type) : tok(std::move(tok)), type(type) {}
 
-    std::string toString() override {
-        return tok;
+    void appendStr(FStr& res) override {
+        res += tok.c_str();
     }
 
 private:
@@ -161,17 +147,16 @@ private:
 struct ListNode : public EvalExpr {
     ListNode(std::vector<EvalExpr*> elems) : elems(std::move(elems)) {}
 
-    std::string toString() override {
-        std::string res = "[";
+    void appendStr(FStr& res) override {
+        res += "[";
         if (!elems.empty()) {
-            res += elems[0]->toString();
+            elems[0]->appendStr(res);
             for (int i = 1; i < elems.size(); ++i) {
                 res += ", ";
-                res += elems[i]->toString();
+                elems[i]->appendStr(res);
             }
         }
         res += "]";
-        return res;
     }
 
 private:
@@ -189,21 +174,20 @@ struct DictNode : public EvalExpr {
 
     DictNode(std::vector<Pair> entries) : entries(std::move(entries)) {}
 
-    std::string toString() override {
-        std::string res = "{";
+    void appendStr(FStr& res) override {
+        res += "{";
         if (!entries.empty()) {
-            res += entries[0].key->toString();
-                res += ": ";
-            res += entries[0].value->toString();
+            entries[0].key->appendStr(res);
+            res += ": ";
+            entries[0].value->appendStr(res);
             for (int i = 1; i < entries.size(); ++i) {
                 res += ", ";
-                res += entries[i].key->toString();
+                entries[i].key->appendStr(res);
                 res += ": ";
-                res += entries[i].value->toString();
+                entries[i].value->appendStr(res);
             }
         }
         res += "}";
-        return res;
     }
 
 private:
@@ -213,11 +197,10 @@ private:
 struct NestedNode : public EvalExpr {
     NestedNode(EvalExpr* expr) : expr(expr) {}
 
-    std::string toString() override {
-        std::string res = "(";
-        res += expr->toString();
+    void appendStr(FStr& res) override {
+        res += "(";
+        expr->appendStr(res);
         res += ")";
-        return res;
     }
 
 private:
@@ -227,19 +210,18 @@ private:
 struct LambdaNode : public EvalExpr {
     LambdaNode(std::vector<std::string> args, EvalExpr* body) : args(std::move(args)), body(body) {}
 
-    std::string toString() override {
-        std::string res = "{";
+    void appendStr(FStr& res) override {
+        res += "{";
         if (!args.empty()) {
-            res += args[0];
+            res += args[0].c_str();
             for (int i = 1; i < args.size(); ++i) {
                 res += ", ";
-                res += args[i];
+                res += args[i].c_str();
             }
             res += " ";
         }
         res += "-> ";
-        res += body->toString();
-        return res;
+        body->appendStr(res);
     }
 
 private:

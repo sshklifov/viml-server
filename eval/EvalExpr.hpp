@@ -1,9 +1,8 @@
 #pragma once
 
+#include <FStr.hpp>
 #include "EvalBase.hpp"
 
-#include <string>
-
 struct EvalExpr : public EvalBase {
-    virtual std::string toString() = 0;
+    virtual void appendStr(FStr& res) = 0;
 };
