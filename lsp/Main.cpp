@@ -23,25 +23,32 @@
 #include "DocumentMap.hpp"
 
 struct RequestId {
-    enum Type {INT, STR};
+    enum Type {UNDEF, INT, STR};
 
+    RequestId() : type(UNDEF) {}
     RequestId(int id) : type(INT), intValue(id) {}
     RequestId(FStr s) : type(STR), strValue(std::move(s)) {}
-    RequestId(const rapidjson::Value& v) {
+
+    void write(BufferWriter& wr) const {
+        assert(type != UNDEF);
+        if (type == RequestId::INT) {
+            wr.writeMember("type", intValue);
+        } else if (type == RequestId::STR) {
+            wr.writeMember("type", strValue);
+        }
+    }
+
+    void read(const ValueReader& rd) {
+        read(rd.getValue());
+    }
+
+    void read(const rapidjson::Value& v) {
         if (v.IsString()) {
             type = STR;
             strValue = v.GetString();
         } else {
             type = INT;
             intValue = v.GetInt();
-        }
-    }
-
-    void write(BufferWriter& wr) const {
-        if (type == RequestId::INT) {
-            wr.writeMember("type", intValue);
-        } else {
-            wr.writeMember("type", strValue);
         }
     }
 
@@ -111,7 +118,7 @@ struct ResponseError {
 
     
     void write(BufferWriter& wr) const {
-        BufferWriter::ObjectScope scope = wr.beginObject();
+        BufferWriter::ScopedObject scope = wr.beginScopedObject();
         wr.writeMember("code", code);
         wr.writeMember("message", message);
     }
@@ -157,7 +164,7 @@ struct RespondingServer : public EchoingServer {
         BufferWriter w(handle);
 
         {
-            BufferWriter::ObjectScope root = w.beginObject();
+            BufferWriter::ScopedObject root = w.beginScopedObject();
             w.writeMember("jsonrpc", "2.0");
             w.writeMember("id", id);
         }
@@ -172,7 +179,7 @@ struct RespondingServer : public EchoingServer {
         BufferWriter w(handle);
 
         {
-            BufferWriter::ObjectScope root = w.beginObject();
+            BufferWriter::ScopedObject root = w.beginScopedObject();
             w.writeMember("jsonrpc", "2.0");
             w.writeMember("id", id);
             w.writeMember("result", res);
@@ -188,7 +195,7 @@ struct RespondingServer : public EchoingServer {
         BufferWriter w(handle);
 
         {
-            BufferWriter::ObjectScope root = w.beginObject();
+            BufferWriter::ScopedObject root = w.beginScopedObject();
             w.writeMember("jsonrpc", "2.0");
             w.writeMember("method", method);
             w.writeMember("params", resp);
@@ -200,7 +207,7 @@ struct RespondingServer : public EchoingServer {
     void pushShowMessage(FStr msg, ShowMessageParams::MessageType type = ShowMessageParams::Error) {
         ShowMessageParams params;
         params.type = type;
-        params.message = msg.str(); // TODO!
+        params.message = std::move(msg);
         pushNotification("window/showMessage", params);
     }
 
@@ -216,12 +223,11 @@ struct RespondingServer : public EchoingServer {
         rapidjson::Writer<rapidjson::StringBuffer> handle(output);
         BufferWriter w(handle);
 
-        {
-            BufferWriter::ObjectScope root = w.beginObject();
-            w.writeMember("jsonrpc", "2.0");
-            w.writeMember("id", id);
-            w.writeMember("error", error);
-        }
+        BufferWriter::Object root = w.beginObject();
+        w.writeMember("jsonrpc", "2.0");
+        w.writeMember("id", id);
+        w.writeMember("error", error);
+        root.close();
 
         respondStr(output);
     }
@@ -241,10 +247,8 @@ private:
 };
 
 struct ReceivingServer : public RespondingServer {
-    using MethodHandler = void(ReceivingServer::*)(const RequestId&, const rapidjson::Value&);
-    using NotifHandler = void(ReceivingServer::*)(const rapidjson::Value&);
+    using MethodHandler = std::function<void(RespondingServer*, const rapidjson::Document&)>;
     using MethodMap = std::unordered_map<const char*, MethodHandler>;
-    using NotifMap = std::unordered_map<const char*, NotifHandler>;
 
     ReceivingServer(const InitOptions& init) : RespondingServer(init) {}
 
@@ -314,88 +318,144 @@ struct ReceivingServer : public RespondingServer {
         ResponseError error = receiveDocumentWithError(document);
         if (error) {
             if (document.HasMember("id")) {
-                RequestId requestId = document["id"];
-                respondError(requestId, error);
+                RequestId id;
+                id.read(document["id"]);
+                respondError(id, error);
             } else {
-                assert(false && "TODO");
-                /* FStr message; */
-                /* message.appendf("{}: {}", error.code, error.message); */
-                /* pushShowMessage(std::move(message)); */
+                pushLogMessage(error.message);
             }
         }
     }
 
     ResponseError receiveDocumentWithError(rapidjson::Document& document) {
         if (!document.HasMember("jsonrpc")) {
-            return ResponseError(ErrorCode::InvalidParams, "Missing jsonrpc");
+            return ErrorCode::InvalidParams;
         }
         const char* jsonrpc = document["jsonrpc"].GetString();
         if (strcmp(jsonrpc, "2.0") != 0) {
-            return ResponseError(ErrorCode::InvalidParams, "Bad jsonrpc version");
+            return ErrorCode::InvalidParams;
         }
 
         if (!document.HasMember("method")) {
-            return ResponseError(ErrorCode::InvalidParams, "Missing method");
+            return ErrorCode::InvalidParams;
         }
         const char* methodStr = document["method"].GetString();
-        ResponseError error = acceptMethod(methodStr);
+        ResponseError error = preInvokeMethod(methodStr);
         if (error) {
             return error;
         }
 
-        bool notification = !document.HasMember("id");
-        if (notification) {
-            NotifMap::iterator it = notifs.find(methodStr);
-            if (it == notifs.end()) {
-                return ResponseError(ErrorCode::MethodNotFound, methodStr);
-            }
-            NotifHandler handler = it->second;
-            if (document.HasMember("params")) {
-                (this->*handler)(document);
-            } else {
-                (this->*handler)(rapidjson::Value());
-            }
-            return ErrorCode::NoError;
-        } else {
-            RequestId requestId(document["id"]);
-            MethodMap::iterator it = methods.find(methodStr);
-            if (it == methods.end()) {
-                return ResponseError(ErrorCode::MethodNotFound, methodStr);
-            }
-            MethodHandler handler = it->second;
-            if (document.HasMember("params")) {
-                (this->*handler)(requestId, document);
-            } else {
-                (this->*handler)(requestId, rapidjson::Value());
-            }
-            return ErrorCode::NoError;
+        MethodMap::iterator it = methods.find(methodStr);
+        if (it == methods.end()) {
+            return ErrorCode::MethodNotFound;
         }
+        MethodHandler handler = it->second;
+        handler(this, document);
+        return ErrorCode::NoError;
     }
 
-    virtual ResponseError acceptMethod(const char* methodStr) { return ErrorCode::NoError; }
+    virtual ResponseError preInvokeMethod(const char* methodStr) { return ErrorCode::NoError; }
 
 protected:
     MethodMap methods;
-    NotifMap notifs;
 };
 
 struct Server : public ReceivingServer {
+    using MethodNoParams = void (Server::*)(const RequestId&);
+
+    template <typename T>
+    using MethodWithParams = void (Server::*)(const RequestId&, const T&);
+
+    using NotifNoParams = void (Server::*)();
+
+    template <typename T>
+    using NotifWithParams = void (Server::*)(const T&);
+
     Server(const InitOptions& opt) : ReceivingServer(opt) {
         state = NOT_INITIALIZED;
 
-        methods["initialize"] = static_cast<MethodHandler>(&Server::initialize);
-        methods["shutdown"] = static_cast<MethodHandler>(&Server::shutdown);
+        registerMethod("initialize", &Server::initialize);
+        registerMethod("shuwdown", &Server::shutdown);
 
-        notifs["initialized"] = static_cast<NotifHandler>(&Server::initialized);
-        notifs["textDocument/didOpen"] = static_cast<NotifHandler>(&Server::didOpen);
-        notifs["textDocument/didChange"] = static_cast<NotifHandler>(&Server::didChange);
-        notifs["textDocument/didClose"] = static_cast<NotifHandler>(&Server::didClose);
-        notifs["exit"] = static_cast<NotifHandler>(&Server::exit);
+        registerNotification("initialized", &Server::initialized);
+        registerNotification("textDocument/didOpen", &Server::didOpen);
+        registerNotification("textDocument/didChange", &Server::didChange);
+        registerNotification("textDocument/didClose", &Server::didClose);
+        registerNotification("exit", &Server::exit);
+    }
+
+    template <typename T>
+    void registerMethod(const char* method, MethodWithParams<T> handler) {
+        struct InvokeWrapper {
+            InvokeWrapper(MethodWithParams<T> handler) : handler(handler) {}
+
+            void operator()(RespondingServer* self, const rapidjson::Document& doc) {
+                RequestId id;
+                T params;
+
+                ValueReader reader(doc);
+                reader.readMember("params", params);
+                reader.readMember("id", id);
+                (static_cast<Server*>(self)->*handler)(id, params);
+            }
+
+            MethodWithParams<T> handler;
+        };
+        methods[method] = InvokeWrapper(handler);
+    }
+
+    void registerMethod(const char* method, MethodNoParams handler) {
+        struct InvokeWrapper {
+            InvokeWrapper(MethodNoParams handler) : handler(handler) {}
+
+            void operator()(RespondingServer* self, const rapidjson::Document& doc) {
+                RequestId id;
+
+                ValueReader reader(doc);
+                reader.readMember("id", id);
+
+                (static_cast<Server*>(self)->*handler)(id);
+            }
+
+            MethodNoParams handler;
+        };
+        methods[method] = InvokeWrapper(handler);
+    }
+
+    template <typename T>
+    void registerNotification(const char* method, NotifWithParams<T> handler) {
+        struct InvokeWrapper {
+            InvokeWrapper(NotifWithParams<T> handler) : handler(handler) {}
+
+            void operator()(RespondingServer* self, const rapidjson::Document& doc) {
+                ValueReader reader(doc);
+                T params;
+                reader.readMember("params", params);
+
+                (static_cast<Server*>(self)->*handler)(params);
+            }
+
+            NotifWithParams<T> handler;
+        };
+        methods[method] = InvokeWrapper(handler);
+    }
+
+    void registerNotification(const char* method, NotifNoParams handler) {
+        struct InvokeWrapper {
+            InvokeWrapper(NotifNoParams handler) : handler(handler) {}
+
+            void operator()(RespondingServer* self, const rapidjson::Document& doc) {
+                (static_cast<Server*>(self)->*handler)();
+            }
+
+            NotifNoParams handler;
+        };
+        methods[method] = InvokeWrapper(handler);
     }
 
     bool shouldExit() override { return state == EXIT; }
 
-    ResponseError acceptMethod(const char* methodStr) override {
+    ResponseError preInvokeMethod(const char* methodStr) override {
         switch (state) {
         case NOT_INITIALIZED:
             if (strcmp(methodStr, "initialize") == 0) {
@@ -420,72 +480,37 @@ struct Server : public ReceivingServer {
         }
     }
 
-    void initialize(const RequestId& id, const rapidjson::Value& obj) {
+    void initialize(const RequestId& id) {
         state = INITIALIZED;
         respondResult(id, InitializeResult());
     }
 
-    void initialized(const rapidjson::Value& obj) {}
+    void initialized() {}
 
-    // TODO lambda, why is this needing obj?!
-    void shutdown(const RequestId& id, const rapidjson::Value& obj) {
+    void shutdown(const RequestId& id) {
         state = SHUTDOWN;
         respond(id);
     }
 
-    void exit(const rapidjson::Value& obj) {
+    void exit() {
         state = EXIT;
     }
 
-    void didOpen(const rapidjson::Value& obj) {
-        ValueReader reader(obj);
-        DidOpenTextDocumentParams didOpenParams;
-        reader.readMember("params", didOpenParams);
-        if (!docs.open(didOpenParams)) {
-            pushShowMessage("Document already opened");
-        }
-#if 0
-        const char* source = didOpenParams.textDocument.text;
-        std::vector<Diagnostic> errors;
-        ast.reloadFromString(source, errors);
-        PublishDiagnosticsParams diagnosticsParams;
-        diagnosticsParams.uri = didOpenParams.textDocument.uri;
-        diagnosticsParams.diagnostics = std::move(errors);
-        pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
-#endif
+    void didOpen(const DidOpenTextDocumentParams& didOpenParams) {
+        WorkingDocument* doc = docs.open(didOpenParams);
     }
 
-    void didChange(const rapidjson::Value& obj) {
-        ValueReader reader(obj);
-        DidChangeTextDocumentParams didChangeParams;
-        reader.readMember("params", didChangeParams);
-        if (!docs.change(didChangeParams)) {
-            pushShowMessage("Document not opened");
+    void didChange(const DidChangeTextDocumentParams& didChangeParams) {
+        WorkingDocument* doc = docs.change(didChangeParams);
+        if (!doc) {
+            pushLogMessage("Document not opened");
         }
-#if 0
-        ValueReader reader(obj);
-        DidChangeTextDocumentParams didChangeParams;
-        reader.read(didChangeParams);
-
-        const char* source = didChangeParams.contentChanges[0].text;
-        std::vector<Diagnostic> errors;
-        ast.reloadFromString(source, errors);
-
-        PublishDiagnosticsParams diagnosticsParams;
-        diagnosticsParams.uri = didChangeParams.textDocument.uri;
-        diagnosticsParams.diagnostics = std::move(errors);
-        pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
-#endif
     }
 
-    void didClose(const rapidjson::Value& obj) {
-        ValueReader reader(obj);
-        DidCloseParams didCloseParams;
-        reader.readMember("params", didCloseParams);
+    void didClose(const DidCloseParams& didCloseParams) {
         if (!docs.close(didCloseParams)) {
-            pushShowMessage("Document already opened");
+            pushLogMessage("Document not opened");
         }
-        // TODO
     }
 
 private:
@@ -543,9 +568,9 @@ int main(int argc, char** argv) {
 }
 
 int test() {
-    SyntaxTree ast;
-    std::vector<Diagnostic> digs;
-    ast.reloadFromFile(TEST_FILE, digs);
+    /* SyntaxTree ast; */
+    /* std::vector<Diagnostic> digs; */
+    /* ast.reloadFromFile(TEST_FILE, digs); */
     /* Block* letBlock = root->body[0]; */
     /* EvalFactory factory; */
     /* EvalCommand* result = parse(letBlock->lexem, factory); */

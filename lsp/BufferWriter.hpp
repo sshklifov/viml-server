@@ -6,28 +6,36 @@
 #include <vector>
 
 struct BufferWriter {
-    struct ObjectScope {
-        ObjectScope(rapidjson::Writer<rapidjson::StringBuffer>& w, const char* name = 0) : w(w) {
-            if (name && *name) {
-                w.Key(name);
-            }
+    struct Object {
+        Object(rapidjson::Writer<rapidjson::StringBuffer>& w, const char* name) : w(w) {
+            w.Key(name);
             w.StartObject();
         }
 
-        ~ObjectScope() {
+        void close() {
             w.EndObject();
         }
 
-        ObjectScope(const ObjectScope&) = delete;
-        ObjectScope(ObjectScope&&) = delete;
+        Object(const Object&) = delete;
+        Object(Object&&) = delete;
 
     private:
         rapidjson::Writer<rapidjson::StringBuffer>& w;
     };
 
+    struct ScopedObject : private Object {
+        ScopedObject(rapidjson::Writer<rapidjson::StringBuffer>& w, const char* name) : Object(w, name) {}
+
+        ~ScopedObject() {
+            close();
+        }
+    };
+
     BufferWriter(rapidjson::Writer<rapidjson::StringBuffer>& w) : w(w) {}
 
-    ObjectScope beginObject(const char* name = nullptr) { return ObjectScope(w, name); }
+    ScopedObject beginScopedObject(const char* name = "") { return ScopedObject(w, name); }
+
+    Object beginObject(const char* name = "") { return Object(w, name); }
 
     template <typename T>
     BufferWriter& writeMember(const char* name, const T& fwd) {

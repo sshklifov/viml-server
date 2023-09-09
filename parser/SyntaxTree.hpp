@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Blocks.hpp>
 #include <Diagnostics.hpp>
 #include <EvalFactory.hpp>
@@ -39,12 +41,10 @@ struct SyntaxTree {
     SyntaxTree(const SyntaxTree&) = delete;
     SyntaxTree(SyntaxTree&&) = delete;
 
-    void reloadFromFile(const char* file, std::vector<Diagnostic>& errors);
-    void reloadFromString(const char* str, std::vector<Diagnostic>& errors);
+    void reload(const char* str, std::vector<Diagnostic>& errors);
     bool isLoaded() const;
 private:
     void reloadStorage();
-    void loadImpl(std::vector<Diagnostic>& errors);
 
 public:
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations

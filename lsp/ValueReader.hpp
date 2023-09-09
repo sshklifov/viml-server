@@ -25,7 +25,9 @@ struct ValueReader {
         const rapidjson::Value* origVal;
     };
 
-    ValueReader(const rapidjson::Value& val) : val(&val) {}
+    explicit ValueReader(const rapidjson::Value& val) : val(&val) {}
+
+    const rapidjson::Value&  getValue() const { return *val; }
 
     template <typename T>
     void readMember(const char* name, T& res) {

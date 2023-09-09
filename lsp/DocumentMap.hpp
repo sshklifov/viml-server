@@ -1,6 +1,8 @@
 #pragma once
 
 #include <TextDocument.hpp>
+#include <SyntaxTree.hpp>
+
 #include <unordered_map>
 
 struct WorkingDocument {
@@ -8,6 +10,7 @@ struct WorkingDocument {
         version = textDoc.version;
         uri = textDoc.uri;
         content = textDoc.text;
+        ast.reload(content.str(), diagnostics);
     }
 
     void change(const DidChangeTextDocumentParams& params) {
@@ -19,32 +22,40 @@ struct WorkingDocument {
                 content = event.text;
             }
         }
+        diagnostics.clear();
+        ast.reload(content.str(), diagnostics);
         version = params.textDocument.version;
         assert(uri == params.textDocument.uri);
     }
 
-private:
+    SyntaxTree ast;
+    std::vector<Diagnostic> diagnostics;
+
     int version;
     FStr uri;
     FStr content;
 };
 
 struct DocumentMap {
+    using Iterator = std::unordered_map<const char*, WorkingDocument>::iterator;
 
-    bool open(const DidOpenTextDocumentParams& params) {
-        using Iterator = std::unordered_map<const char*, WorkingDocument>::iterator;
+    WorkingDocument* open(const DidOpenTextDocumentParams& params) {
         std::pair<Iterator, bool> res = docs.emplace(params.textDocument.uri.str(), params.textDocument);
-        return res.second;
+        if (res.second) {
+            docs.erase(res.first);
+            // Try again after erasing conficting entry
+            res = docs.emplace(params.textDocument.uri.str(), params.textDocument);
+        }
+        return &res.first->second;
     }
 
-    bool change(const DidChangeTextDocumentParams& params) {
-        using Iterator = std::unordered_map<const char*, WorkingDocument>::iterator;
+    WorkingDocument* change(const DidChangeTextDocumentParams& params) {
         Iterator it = docs.find(params.textDocument.uri.str());
         if (it != docs.end()) {
             it->second.change(params);
-            return true;
+            return &it->second;
         } else {
-            return false;
+            return nullptr;
         }
     }
 

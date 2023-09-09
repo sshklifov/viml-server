@@ -8,7 +8,7 @@
 struct Diagnostic {
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ObjectScope scoped = wr.beginObject();
+        BufferWriter::ScopedObject scoped = wr.beginScopedObject();
         wr.writeMember("range", range);
         wr.writeMember("severity", severity);
         wr.writeMember("message", message);
@@ -52,7 +52,7 @@ struct Diagnostic {
 struct PublishDiagnosticsParams {
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ObjectScope scoped = wr.beginObject();
+        BufferWriter::ScopedObject scoped = wr.beginScopedObject();
         wr.writeMember("uri", uri);
         wr.writeMember("diagnostics", diagnostics);
     }

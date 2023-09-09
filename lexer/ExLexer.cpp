@@ -96,152 +96,49 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
     return 0; // TODO
 }
 
-ExLexer::ExLexer() {
-    mptr = nullptr;
-    len = 0;
-    fd = -1;
-}
-
-ExLexer::~ExLexer() {
-    unmap();
-}
-
-bool ExLexer::isLoaded() const {
-    return len > 0;
-}
-
-bool ExLexer::reloadFromFile(const char* filename) {
-    int fd = open(filename, O_RDWR);
-    if (fd < 0) {
-        return false;
-    }
-
-    struct stat statbuf;
-    int s = fstat(fd, &statbuf);
-    if (s != 0) {
-        close(fd);
-        return false;
-    }
-
-    size_t len =  statbuf.st_size;
-    void* mptr = mmap(NULL, len, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (!mptr) {
-        close(fd);
-        return false;
-    }
-    // Success
-    const char* buffer = reinterpret_cast<const char*>(mptr);
-
-    if (isLoaded()) {
-        unload();
-    }
-    this->mptr = mptr;
-    this->len = len;
-    this->fd = fd;
-    program.set(StringView(buffer, buffer + len));
-    contStorage.init(len);
-    return true;
-}
-
-bool ExLexer::reloadFromString(const char* str) {
-    if (isLoaded()) {
-        unload();
-    }
-    len = strlen(str);
-    program.set(StringView(str, str + len));
-    contStorage.init(len);
-    return true;
-}
-
-void ExLexer::unmap() {
-    if (mptr) {
-        munmap(mptr, len);
-        mptr = nullptr;
-        close(fd);
-        fd = -1;
-    }
-}
-
-void ExLexer::unload() {
-    program.set("");
-    contStorage.deinit();
+bool ExLexer::reload(const char* str) {
+    int n = strlen(str);
+    program.set(str, n);
+    contStorage.realloc(n);
     locationMap.clearEntries();
-    unmap();
+    return true;
 }
 
 int ExLexer::lex(ExLexem& res) {
-    assert(isLoaded());
-    if (!isLoaded()) {
-        return false;
-    }
-
-    LocationMap::Key locationKey;
-    StringView programLine;
-
-    int ignore = false;
-    do {
-        if (program.empty()) {
-            unmap();
-            return EOF;
-        }
-
+    while (!program.empty()) {
         Continuation cont(contStorage, locationMap);
         cont.add(program.top(), program.lineNumber(), 0);
         program.pop();
 
-        while (true) {
-            const char* colBegin = program.top().begin;
-            StringView workLine = program.top().trimLeftSpace();
-            int codeCont = workLine.beginsWith('\\');
-            int commentCont = workLine.beginsWith("\"\\ ");
+        while (!program.empty()) {
+            const char* lineBegin = program.top().begin;
+            StringView contLine = program.top().trimLeftSpace();
+            int codeCont = contLine.beginsWith('\\');
+            int commentCont = contLine.beginsWith("\"\\ ");
             if (!codeCont && !commentCont) {
                 break;
             }
             if (codeCont) {
-                workLine = workLine.popLeft(); // Remove continuation character
-                int colOffset = workLine.begin - colBegin;
-                cont.add(workLine, program.lineNumber(), colOffset);
+                contLine = contLine.popLeft(); // Remove continuation character
+                int colOffset = contLine.begin - lineBegin;
+                cont.add(contLine, program.lineNumber(), colOffset);
             }
             program.pop();
         }
 
-        programLine = cont.finish(locationKey);
+        LocationMap::Key locationKey;
+        StringView joinedLine = cont.finish(locationKey);
+
         // Check if line is a comment or empty
-        StringView workLine = programLine.trimLeftSpace();
+        StringView tmpLine = joinedLine.trimLeftSpace();
         // Must include a line feed character (at least)
-        assert(workLine.length() >= 1);
-        ignore = (workLine.left() == '"' || workLine.left() == '\n');
-    } while (ignore);
-
-    return buildExLexem(programLine, locationKey, res);
-}
-
-bool ExLexer::getLoc(const ExLexem& lexem, int off, int& line, int& col) const {
-    return locationMap.resolve(lexem.locationKey, off, line, col);
-}
-
-bool ExLexer::getNameLoc(const ExLexem& lexem, int& line, int& col) const {
-    return getLoc(lexem, lexem.nameOffset, line, col);
-}
-
-bool ExLexer::getNameEndLoc(const ExLexem& lexem, int& line, int& col) const {
-    int offset = lexem.nameOffset;
-    if (lexem.name.length() > 1) {
-        offset += lexem.name.length() - 1;
+        assert(tmpLine.length() >= 1);
+        bool ignore = (tmpLine.left() == '"' || tmpLine.left() == '\n');
+        if (!ignore) {
+            return buildExLexem(joinedLine, locationKey, res);
+        }
     }
-    return getLoc(lexem, offset, line, col);
-}
-
-bool ExLexer::getQargsLoc(const ExLexem& lexem, int& line, int& col) const {
-    return getLoc(lexem, lexem.qargsOffset, line, col);
-}
-
-bool ExLexer::getQargsEndLoc(const ExLexem& lexem, int& line, int& col) const {
-    int offset = lexem.qargsOffset;
-    if (lexem.qargs.length() > 1) {
-        offset += lexem.qargs.length() - 1;
-    }
-    return getLoc(lexem, offset, line, col);
+    return EOF;
 }
 
 const LocationMap& ExLexer::getLocationMap() const { return locationMap; }

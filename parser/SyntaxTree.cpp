@@ -5,15 +5,17 @@
 #include <Eval.hpp>
 
 static Diagnostic error(const ExLexer& creator, const ExLexem& lexem, const char* msg) {
-    Diagnostic res;
-    res.severity = Diagnostic::Error;
-    res.message = msg;
+    // TODO!!!
+    return {};
+    /* Diagnostic res; */
+    /* res.severity = Diagnostic::Error; */
+    /* res.message = msg; */
 
-    int nameStartOffset = lexem.nameOffset;
-    creator.getNameLoc(lexem, res.range.start.line, res.range.start.character);
-    creator.getNameEndLoc(lexem, res.range.end.line, res.range.end.character);
+    /* int nameStartOffset = lexem.nameOffset; */
+    /* creator.getNameLoc(lexem, res.range.start.line, res.range.start.character); */
+    /* creator.getNameEndLoc(lexem, res.range.end.line, res.range.end.character); */
 
-    return res;
+    /* return res; */
 }
 
 bool SyntaxTree::isLoaded() const {
@@ -21,29 +23,13 @@ bool SyntaxTree::isLoaded() const {
     return !blockFac.blocks.empty();
 }
 
-void SyntaxTree::reloadFromFile(const char* file, std::vector<Diagnostic>& errors) {
-    if (!lexer.reloadFromFile(file)) {
+void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
+    if (!lexer.reload(str)) {
         return;
     }
-    reloadStorage();
-    loadImpl(errors);
-}
-
-void SyntaxTree::reloadFromString(const char* str, std::vector<Diagnostic>& errors) {
-    if (!lexer.reloadFromString(str)) {
-        return;
-    }
-    reloadStorage();
-    loadImpl(errors);
-}
-
-void SyntaxTree::reloadStorage() {
     blockFac.clear();
     evalFac.clear();
-    root = nullptr;
-}
 
-void SyntaxTree::loadImpl(std::vector<Diagnostic>& errors) {
     root = blockFac.create<RootBlock>();
     std::stack<Block*> blocks;
     blocks.push(root); //< Guarantees that stack is never empty
@@ -237,7 +223,6 @@ void SyntaxTree::loadImpl(std::vector<Diagnostic>& errors) {
     }
 
     // Parse qargs of blocks
-
     struct RunEvalParse {
         RunEvalParse(SyntaxTree& ast, std::vector<Diagnostic>& digs) : ast(ast), digs(digs) {}
 

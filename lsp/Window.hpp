@@ -5,7 +5,7 @@
 struct ShowMessageParams {
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ObjectScope s = wr.beginObject();
+        BufferWriter::ScopedObject s = wr.beginScopedObject();
         wr.writeMember("message", message);
         wr.writeMember("type", type);
     }
@@ -42,7 +42,7 @@ struct ShowMessageParams {
 struct LogMessageParams {
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ObjectScope s = wr.beginObject();
+        BufferWriter::ScopedObject s = wr.beginScopedObject();
         wr.writeMember("message", message);
         wr.writeMember("type", type);
     }

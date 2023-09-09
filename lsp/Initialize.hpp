@@ -5,7 +5,7 @@
 struct ServerCapabilities {
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ObjectScope scope = wr.beginObject();
+        BufferWriter::ScopedObject scope = wr.beginScopedObject();
         wr.writeMember("positionEncoding", positionEncoding);
         wr.writeMember("textDocumentSync", textDocumentSync);
         wr.writeMember("completionProvider", completionProvider);
@@ -57,7 +57,7 @@ struct ServerCapabilities {
     struct TextDocumentSyncOptions {
         
         void write(BufferWriter& wr) const {
-            BufferWriter::ObjectScope scope = wr.beginObject();
+            BufferWriter::ScopedObject scope = wr.beginScopedObject();
             wr.writeMember("openClose", openClose);
             wr.writeMember("change", change);
         }
@@ -100,7 +100,7 @@ struct ServerCapabilities {
      */
     struct CompletionOptions {
         void write(BufferWriter& wr) const {
-            BufferWriter::ObjectScope scope = wr.beginObject();
+            BufferWriter::ScopedObject scope = wr.beginScopedObject();
             wr.writeMember("workDoneProgress", workDoneProgress);
         }
         bool workDoneProgress = false;
@@ -116,7 +116,7 @@ struct ServerCapabilities {
      */
     struct SignatureHelpOptions {
         void write(BufferWriter& wr) const {
-            BufferWriter::ObjectScope scope = wr.beginObject();
+            BufferWriter::ScopedObject scope = wr.beginScopedObject();
             wr.writeMember("workDoneProgress", workDoneProgress);
         }
         bool workDoneProgress = false;
@@ -284,7 +284,7 @@ struct ServerCapabilities {
      */
     struct DiagnosticOptions {
         void write(BufferWriter& wr) const {
-            BufferWriter::ObjectScope scope = wr.beginObject();
+            BufferWriter::ScopedObject scope = wr.beginScopedObject();
             wr.writeMember("workDoneProgress", workDoneProgress);
         }
         bool workDoneProgress = false;
@@ -301,7 +301,7 @@ struct ServerCapabilities {
     struct WorkspaceAnon {
 
         void write(BufferWriter& wr) const {
-            BufferWriter::ObjectScope scope = wr.beginObject();
+            BufferWriter::ScopedObject scope = wr.beginScopedObject();
             wr.writeMember("workspaceFolders", workspaceFolders);
         }
 
@@ -312,7 +312,7 @@ struct ServerCapabilities {
          */
         struct WorkspaceFoldersServerCapabilities {
             void write(BufferWriter& wr) const {
-                BufferWriter::ObjectScope scope = wr.beginObject();
+                BufferWriter::ScopedObject scope = wr.beginScopedObject();
                 wr.writeMember("supported", supported);
             }
             bool supported = false;
@@ -324,7 +324,7 @@ struct ServerCapabilities {
 struct InitializeResult {
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ObjectScope scope = wr.beginObject();
+        BufferWriter::ScopedObject scope = wr.beginScopedObject();
         wr.writeMember("capabilities", capabilities);
         wr.writeMember("serverInfo", serverInfo);
     }
@@ -342,7 +342,7 @@ struct InitializeResult {
     struct ServerInfoAnon {
 
         void write(BufferWriter& wr) const {
-            BufferWriter::ObjectScope scope = wr.beginObject();
+            BufferWriter::ScopedObject scope = wr.beginScopedObject();
             wr.writeMember("name", name);
             wr.writeMember("version", version);
         }

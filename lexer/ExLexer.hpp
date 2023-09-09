@@ -15,19 +15,24 @@ struct ContinuationStorage {
         delete[] buf;
     }
 
-    void init(int capacity) {
-        maxlen = capacity + 1; // Additional line feed in the end if missing.
-        delete[] buf;
-        buf = new char[capacity];
-        len = 0;
+    void realloc(int capacity) {
+        capacity += 1; //< Additional line feed in the end if missing.
+        if (maxlen < capacity) {
+            maxlen = capacity;
+            delete[] buf;
+            buf = new char[capacity];
+            len = 0;
+        }
     }
 
     void deinit() {
         delete[] buf;
-        maxlen = 0;
         buf = nullptr;
+        maxlen = 0;
         len = 0;
     }
+
+    bool isInit() const { return buf; }
 
     char* buf;
     int len;
@@ -93,84 +98,50 @@ private:
 
 /// Internal helper for parsing program line by line
 struct Program {
-    void set(const char* s) {
-        set(StringView(s));
+
+    void set(const char* s, int n) {
+        program.begin = s;
+        program.end = s + n;
+
+        splitPos = findSplitPos();
+        lineCounter = 0;
     }
 
-    void set(const StringView& p) {
-        program = p;
-        if (p.empty()) {
-            line = p;
-            lineCounter = -1;
-        } else {
-            // Kinda hachy whoops
-            line.begin = NULL;
-            line.end = program.begin;
-            pop();
-            lineCounter = 0;
-        }
-
-    }
-
-    bool empty() const { return line.empty(); }
+    bool empty() const { return program.empty(); }
     
-    void pop() {
-        if (empty()) {
-            return;
-        }
 
-        line.begin = line.end;
-        line.end = program.find(line.begin, '\n');
-        if (line.end < program.end) {
-            ++line.end; // Include the new line
-        }
-
-        // Discard EOF
-        if (line.beginsWith('\0')) {
-            line.begin = line.end;
-            return;
-        }
-        ++lineCounter;
-    }
-
-    const StringView& top() const { return line; }
+    StringView top() const { return StringView(program.begin, splitPos); }
 
     int lineNumber() const { return lineCounter; }
 
+    void pop() {
+        assert(!empty()); // TODO ok?
+        program.begin = splitPos;
+        splitPos = findSplitPos();
+        ++lineCounter;
+    }
+
 private:
-    StringView line;
+    const char* findSplitPos() {
+        const char* res = program.find('\n');
+        if (res < program.end) {
+            ++res; // Include the new line
+        }
+        return res;
+    }
+
+    const char* splitPos;
     StringView program;
     int lineCounter;
 };
 
 struct ExLexer {
-    ExLexer();
-    ~ExLexer();
 
-    bool isLoaded() const;
-    bool reloadFromFile(const char* filename);
-    bool reloadFromString(const char* str);
-
+    bool reload(const char* str);
     int lex(ExLexem& res);
-
-    bool getLoc(const ExLexem& lexem, int off, int& line, int& col) const;
-    bool getNameLoc(const ExLexem& lexem, int& line, int& col) const;
-    bool getNameEndLoc(const ExLexem& lexem, int& line, int& col) const;
-    bool getQargsLoc(const ExLexem& lexem, int& line, int& col) const;
-    bool getQargsEndLoc(const ExLexem& lexem, int& line, int& col) const;
-
     const LocationMap& getLocationMap() const;
 
 private:
-    void unload();
-    void unmap();
-
-private:
-    // File handles
-    void* mptr;
-    int len;
-    int fd;
-
     // Input program allowing to access current and next lines.
     Program program;
     // Additional storage required for line continuations
