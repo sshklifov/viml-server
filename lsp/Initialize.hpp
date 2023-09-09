@@ -5,40 +5,40 @@
 struct ServerCapabilities {
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ScopedObject scope = wr.beginScopedObject();
-        wr.writeMember("positionEncoding", positionEncoding);
-        wr.writeMember("textDocumentSync", textDocumentSync);
-        wr.writeMember("completionProvider", completionProvider);
-        wr.writeMember("hoverProvider", hoverProvider);
-        wr.writeMember("signatureHelpProvider", signatureHelpProvider);
-        wr.writeMember("declarationProvider", declarationProvider);
-        wr.writeMember("definitionProvider", definitionProvider);
-        wr.writeMember("typeDefinitionProvider", typeDefinitionProvider);
-        wr.writeMember("implementationProvider", implementationProvider);
-        wr.writeMember("referencesProvider", referencesProvider);
-        wr.writeMember("documentHighlightProvider", documentHighlightProvider);
-        wr.writeMember("documentSymbolProvider", documentSymbolProvider);
-        wr.writeMember("codeActionProvider", codeActionProvider);
-        wr.writeMember("codeLensProvider", codeLensProvider);
-        wr.writeMember("documentLinkProvider", documentLinkProvider);
-        wr.writeMember("colorProvider", colorProvider);
-        wr.writeMember("documentFormattingProvider", documentFormattingProvider);
-        wr.writeMember("documentRangeFormattingProvider", documentRangeFormattingProvider);
-        wr.writeMember("documentOnTypeFormattingProvider", documentOnTypeFormattingProvider);
-        wr.writeMember("renameProvider", renameProvider);
-        wr.writeMember("foldingRangeProvider", foldingRangeProvider);
-        wr.writeMember("executeCommandProvider", executeCommandProvider);
-        wr.writeMember("selectionRangeProvider", selectionRangeProvider);
-        wr.writeMember("linkedEditingRangeProvider", linkedEditingRangeProvider);
-        wr.writeMember("callHierarchyProvider", callHierarchyProvider);
-        wr.writeMember("semanticTokensProvider", semanticTokensProvider);
-        wr.writeMember("monikerProvider", monikerProvider);
-        wr.writeMember("typeHierarchyProvider", typeHierarchyProvider);
-        wr.writeMember("inlineValueProvider", inlineValueProvider);
-        wr.writeMember("inlayHintProvider", inlayHintProvider);
-        wr.writeMember("diagnosticProvider", diagnosticProvider);
-        wr.writeMember("workspaceSymbolProvider", workspaceSymbolProvider);
-        wr.writeMember("workspace", workspace);
+        BufferWriter::Object o = wr.beginObject();
+        o.writeMember("positionEncoding", positionEncoding);
+        o.writeMember("textDocumentSync", textDocumentSync);
+        o.writeMember("completionProvider", completionProvider);
+        o.writeMember("hoverProvider", hoverProvider);
+        o.writeMember("signatureHelpProvider", signatureHelpProvider);
+        o.writeMember("declarationProvider", declarationProvider);
+        o.writeMember("definitionProvider", definitionProvider);
+        o.writeMember("typeDefinitionProvider", typeDefinitionProvider);
+        o.writeMember("implementationProvider", implementationProvider);
+        o.writeMember("referencesProvider", referencesProvider);
+        o.writeMember("documentHighlightProvider", documentHighlightProvider);
+        o.writeMember("documentSymbolProvider", documentSymbolProvider);
+        o.writeMember("codeActionProvider", codeActionProvider);
+        o.writeMember("codeLensProvider", codeLensProvider);
+        o.writeMember("documentLinkProvider", documentLinkProvider);
+        o.writeMember("colorProvider", colorProvider);
+        o.writeMember("documentFormattingProvider", documentFormattingProvider);
+        o.writeMember("documentRangeFormattingProvider", documentRangeFormattingProvider);
+        o.writeMember("documentOnTypeFormattingProvider", documentOnTypeFormattingProvider);
+        o.writeMember("renameProvider", renameProvider);
+        o.writeMember("foldingRangeProvider", foldingRangeProvider);
+        o.writeMember("executeCommandProvider", executeCommandProvider);
+        o.writeMember("selectionRangeProvider", selectionRangeProvider);
+        o.writeMember("linkedEditingRangeProvider", linkedEditingRangeProvider);
+        o.writeMember("callHierarchyProvider", callHierarchyProvider);
+        o.writeMember("semanticTokensProvider", semanticTokensProvider);
+        o.writeMember("monikerProvider", monikerProvider);
+        o.writeMember("typeHierarchyProvider", typeHierarchyProvider);
+        o.writeMember("inlineValueProvider", inlineValueProvider);
+        o.writeMember("inlayHintProvider", inlayHintProvider);
+        o.writeMember("diagnosticProvider", diagnosticProvider);
+        o.writeMember("workspaceSymbolProvider", workspaceSymbolProvider);
+        o.writeMember("workspace", workspace);
     }
 
     /**
@@ -57,9 +57,9 @@ struct ServerCapabilities {
     struct TextDocumentSyncOptions {
         
         void write(BufferWriter& wr) const {
-            BufferWriter::ScopedObject scope = wr.beginScopedObject();
-            wr.writeMember("openClose", openClose);
-            wr.writeMember("change", change);
+            BufferWriter::Object o = wr.beginObject();
+            o.writeMember("openClose", openClose);
+            o.writeMember("change", change);
         }
 
         /**
@@ -100,8 +100,8 @@ struct ServerCapabilities {
      */
     struct CompletionOptions {
         void write(BufferWriter& wr) const {
-            BufferWriter::ScopedObject scope = wr.beginScopedObject();
-            wr.writeMember("workDoneProgress", workDoneProgress);
+            BufferWriter::Object o = wr.beginObject();
+            o.writeMember("workDoneProgress", workDoneProgress);
         }
         bool workDoneProgress = false;
     } completionProvider;
@@ -116,8 +116,8 @@ struct ServerCapabilities {
      */
     struct SignatureHelpOptions {
         void write(BufferWriter& wr) const {
-            BufferWriter::ScopedObject scope = wr.beginScopedObject();
-            wr.writeMember("workDoneProgress", workDoneProgress);
+            BufferWriter::Object o = wr.beginObject();
+            o.writeMember("workDoneProgress", workDoneProgress);
         }
         bool workDoneProgress = false;
     } signatureHelpProvider;
@@ -284,8 +284,8 @@ struct ServerCapabilities {
      */
     struct DiagnosticOptions {
         void write(BufferWriter& wr) const {
-            BufferWriter::ScopedObject scope = wr.beginScopedObject();
-            wr.writeMember("workDoneProgress", workDoneProgress);
+            BufferWriter::Object o = wr.beginObject();
+            o.writeMember("workDoneProgress", workDoneProgress);
         }
         bool workDoneProgress = false;
     } diagnosticProvider;
@@ -301,8 +301,8 @@ struct ServerCapabilities {
     struct WorkspaceAnon {
 
         void write(BufferWriter& wr) const {
-            BufferWriter::ScopedObject scope = wr.beginScopedObject();
-            wr.writeMember("workspaceFolders", workspaceFolders);
+            BufferWriter::Object o = wr.beginObject();
+            o.writeMember("workspaceFolders", workspaceFolders);
         }
 
         /**
@@ -312,8 +312,8 @@ struct ServerCapabilities {
          */
         struct WorkspaceFoldersServerCapabilities {
             void write(BufferWriter& wr) const {
-                BufferWriter::ScopedObject scope = wr.beginScopedObject();
-                wr.writeMember("supported", supported);
+                BufferWriter::Object o = wr.beginObject();
+                o.writeMember("supported", supported);
             }
             bool supported = false;
         } workspaceFolders;
@@ -324,9 +324,9 @@ struct ServerCapabilities {
 struct InitializeResult {
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ScopedObject scope = wr.beginScopedObject();
-        wr.writeMember("capabilities", capabilities);
-        wr.writeMember("serverInfo", serverInfo);
+        BufferWriter::Object o = wr.beginObject();
+        o.writeMember("capabilities", capabilities);
+        o.writeMember("serverInfo", serverInfo);
     }
 
     /**
@@ -342,9 +342,9 @@ struct InitializeResult {
     struct ServerInfoAnon {
 
         void write(BufferWriter& wr) const {
-            BufferWriter::ScopedObject scope = wr.beginScopedObject();
-            wr.writeMember("name", name);
-            wr.writeMember("version", version);
+            BufferWriter::Object o = wr.beginObject();
+            o.writeMember("name", name);
+            o.writeMember("version", version);
         }
 
         /**

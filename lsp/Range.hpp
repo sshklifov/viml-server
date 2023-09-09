@@ -11,9 +11,9 @@ struct Position {
     }
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ScopedObject s = wr.beginScopedObject();
-        wr.writeMember("line", line);
-        wr.writeMember("character", character);
+        BufferWriter::Object o = wr.beginObject();
+        o.writeMember("line", line);
+        o.writeMember("character", character);
     }
 
     /**
@@ -39,9 +39,9 @@ struct Range {
     }
 
     void write(BufferWriter& wr) const {
-        BufferWriter::ScopedObject s = wr.beginScopedObject();
-        wr.writeMember("start", start);
-        wr.writeMember("end", end);
+        BufferWriter::Object o = wr.beginObject();
+        o.writeMember("start", start);
+        o.writeMember("end", end);
     }
 
     /**

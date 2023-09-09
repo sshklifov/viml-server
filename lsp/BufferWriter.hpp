@@ -7,55 +7,52 @@
 
 struct BufferWriter {
     struct Object {
-        Object(rapidjson::Writer<rapidjson::StringBuffer>& w, const char* name) : w(w) {
-            w.Key(name);
-            w.StartObject();
+        Object(BufferWriter& parent, const char* name) : parent(parent), closed(false) {
+            if (name && *name) {
+                parent.w.Key(name);
+            }
+            parent.w.StartObject();
+        }
+
+        ~Object() {
+            if (!closed) {
+                close();
+            }
         }
 
         void close() {
-            w.EndObject();
+            parent.w.EndObject();
+            closed = true;
         }
 
+        template <typename T>
+        void writeMember(const char* name, const T& fwd) {
+            parent.w.Key(name);
+            parent.write(fwd);
+        }
+
+        template <typename T>
+        void writeMember(const char* name, const std::vector<T>& arr) {
+            parent.w.Key(name);
+            parent.w.StartArray();
+            for (int i = 0; i < arr.size(); ++i) {
+                parent.write(arr[i]);
+            }
+            parent.w.EndArray();
+        }
+
+    private:
         Object(const Object&) = delete;
         Object(Object&&) = delete;
 
-    private:
-        rapidjson::Writer<rapidjson::StringBuffer>& w;
-    };
-
-    struct ScopedObject : private Object {
-        ScopedObject(rapidjson::Writer<rapidjson::StringBuffer>& w, const char* name) : Object(w, name) {}
-
-        ~ScopedObject() {
-            close();
-        }
+        int closed;
+        BufferWriter& parent;
     };
 
     BufferWriter(rapidjson::Writer<rapidjson::StringBuffer>& w) : w(w) {}
 
-    ScopedObject beginScopedObject(const char* name = "") { return ScopedObject(w, name); }
+    Object beginObject(const char* name = "") { return Object(*this, name); }
 
-    Object beginObject(const char* name = "") { return Object(w, name); }
-
-    template <typename T>
-    BufferWriter& writeMember(const char* name, const T& fwd) {
-        w.Key(name);
-        write(fwd);
-        return (*this);
-    }
-
-    template <typename T>
-    BufferWriter& writeMember(const char* name, const std::vector<T>& arr) {
-        w.Key(name);
-        w.StartArray();
-        for (int i = 0; i < arr.size(); ++i) {
-            write(arr[i]);
-        }
-        w.EndArray();
-        return (*this);
-    }
-
-private:
     template <typename T, typename std::enable_if<std::is_class<T>::value, bool>::type = true>
     void write(const T& val) {
         val.write(*this);
@@ -64,6 +61,15 @@ private:
     template <typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = true>
     void write(T e) {
         w.Int(static_cast<int>(e));
+    }
+
+    template <typename T>
+    void write(const std::vector<T>& arr) {
+        w.StartArray();
+        for (int i = 0; i < arr.size(); ++i) {
+            write(arr[i]);
+        }
+        w.EndArray();
     }
 
     void write(int integer) {
@@ -78,5 +84,6 @@ private:
         w.String(fstr.str());
     }
 
+private:
     rapidjson::Writer<rapidjson::StringBuffer>& w;
 };

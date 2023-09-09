@@ -21,6 +21,7 @@
 #include <FStr.hpp>
 
 #include "DocumentMap.hpp"
+#include "StringMap.hpp"
 
 struct RequestId {
     enum Type {UNDEF, INT, STR};
@@ -32,9 +33,9 @@ struct RequestId {
     void write(BufferWriter& wr) const {
         assert(type != UNDEF);
         if (type == RequestId::INT) {
-            wr.writeMember("type", intValue);
+            wr.write(intValue);
         } else if (type == RequestId::STR) {
-            wr.writeMember("type", strValue);
+            wr.write(strValue);
         }
     }
 
@@ -118,9 +119,9 @@ struct ResponseError {
 
     
     void write(BufferWriter& wr) const {
-        BufferWriter::ScopedObject scope = wr.beginScopedObject();
-        wr.writeMember("code", code);
-        wr.writeMember("message", message);
+        BufferWriter::Object o = wr.beginObject();
+        o.writeMember("code", code);
+        o.writeMember("message", message);
     }
 
     operator bool() {
@@ -161,13 +162,12 @@ struct RespondingServer : public EchoingServer {
     void respond(const RequestId& id) {
         rapidjson::StringBuffer output;
         rapidjson::Writer<rapidjson::StringBuffer> handle(output);
-        BufferWriter w(handle);
 
-        {
-            BufferWriter::ScopedObject root = w.beginScopedObject();
-            w.writeMember("jsonrpc", "2.0");
-            w.writeMember("id", id);
-        }
+        BufferWriter w(handle);
+        BufferWriter::Object o = w.beginObject();
+        o.writeMember("jsonrpc", "2.0");
+        o.writeMember("id", id);
+        o.close();
 
         respondStr(output);
     }
@@ -176,14 +176,13 @@ struct RespondingServer : public EchoingServer {
     void respondResult(const RequestId& id, const T& res) {
         rapidjson::StringBuffer output;
         rapidjson::Writer<rapidjson::StringBuffer> handle(output);
-        BufferWriter w(handle);
 
-        {
-            BufferWriter::ScopedObject root = w.beginScopedObject();
-            w.writeMember("jsonrpc", "2.0");
-            w.writeMember("id", id);
-            w.writeMember("result", res);
-        }
+        BufferWriter w(handle);
+        BufferWriter::Object o = w.beginObject();
+        o.writeMember("jsonrpc", "2.0");
+        o.writeMember("id", id);
+        o.writeMember("result", res);
+        o.close();
 
         respondStr(output);
     }
@@ -192,14 +191,13 @@ struct RespondingServer : public EchoingServer {
     void pushNotification(const char* method, const T& resp) {
         rapidjson::StringBuffer output;
         rapidjson::Writer<rapidjson::StringBuffer> handle(output);
-        BufferWriter w(handle);
 
-        {
-            BufferWriter::ScopedObject root = w.beginScopedObject();
-            w.writeMember("jsonrpc", "2.0");
-            w.writeMember("method", method);
-            w.writeMember("params", resp);
-        }
+        BufferWriter w(handle);
+        BufferWriter::Object o = w.beginObject();
+        o.writeMember("jsonrpc", "2.0");
+        o.writeMember("method", method);
+        o.writeMember("params", resp);
+        o.close();
 
         respondStr(output);
     }
@@ -223,11 +221,11 @@ struct RespondingServer : public EchoingServer {
         rapidjson::Writer<rapidjson::StringBuffer> handle(output);
         BufferWriter w(handle);
 
-        BufferWriter::Object root = w.beginObject();
-        w.writeMember("jsonrpc", "2.0");
-        w.writeMember("id", id);
-        w.writeMember("error", error);
-        root.close();
+        BufferWriter::Object o = w.beginObject();
+        o.writeMember("jsonrpc", "2.0");
+        o.writeMember("id", id);
+        o.writeMember("error", error);
+        o.close();
 
         respondStr(output);
     }
@@ -248,7 +246,7 @@ private:
 
 struct ReceivingServer : public RespondingServer {
     using MethodHandler = std::function<void(RespondingServer*, const rapidjson::Document&)>;
-    using MethodMap = std::unordered_map<const char*, MethodHandler>;
+    using MethodMap = StringMap<MethodHandler>;
 
     ReceivingServer(const InitOptions& init) : RespondingServer(init) {}
 
@@ -345,11 +343,11 @@ struct ReceivingServer : public RespondingServer {
             return error;
         }
 
-        MethodMap::iterator it = methods.find(methodStr);
-        if (it == methods.end()) {
+        int pos = methods.find(methodStr);
+        if (pos < 0) {
             return ErrorCode::MethodNotFound;
         }
-        MethodHandler handler = it->second;
+        MethodHandler handler = methods[pos];
         handler(this, document);
         return ErrorCode::NoError;
     }
@@ -401,7 +399,8 @@ struct Server : public ReceivingServer {
 
             MethodWithParams<T> handler;
         };
-        methods[method] = InvokeWrapper(handler);
+        methods.emplace(method, InvokeWrapper(handler));
+        /* methods[method] = InvokeWrapper(handler); */
     }
 
     void registerMethod(const char* method, MethodNoParams handler) {
@@ -419,7 +418,7 @@ struct Server : public ReceivingServer {
 
             MethodNoParams handler;
         };
-        methods[method] = InvokeWrapper(handler);
+        methods.emplace(method, InvokeWrapper(handler));
     }
 
     template <typename T>
@@ -437,7 +436,7 @@ struct Server : public ReceivingServer {
 
             NotifWithParams<T> handler;
         };
-        methods[method] = InvokeWrapper(handler);
+        methods.emplace(method, InvokeWrapper(handler));
     }
 
     void registerNotification(const char* method, NotifNoParams handler) {
@@ -450,7 +449,7 @@ struct Server : public ReceivingServer {
 
             NotifNoParams handler;
         };
-        methods[method] = InvokeWrapper(handler);
+        methods.emplace(method, InvokeWrapper(handler));
     }
 
     bool shouldExit() override { return state == EXIT; }

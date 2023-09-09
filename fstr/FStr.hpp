@@ -1,6 +1,7 @@
 #pragma once
 
 #include <type_traits>
+#include <functional>
 #include <cassert>
 
 struct StringView;
@@ -74,4 +75,11 @@ private:
     char* s;
     int len;
     int allocLen;
+};
+
+template <>
+struct std::hash<FStr> {
+    std::size_t operator()(const FStr& fstr) {
+        return std::hash<const char*>()(fstr.str());
+    }
 };

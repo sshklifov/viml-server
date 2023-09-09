@@ -15,7 +15,7 @@ bool debugCheckExConstants() {
     for (int i = 0; i < lowercase.length(); ++i) {    \
         lowercase[i] = tolower(lowercase[i]);         \
     }                                                 \
-    values.push_back(dict.search(lowercase.str()));   \
+    values.push_back(dict.search(lowercase));   \
     assert(values.back() != -1);                      \
     okay &= (values.back() == val);                   \
 
