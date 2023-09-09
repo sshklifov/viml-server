@@ -2,6 +2,7 @@
 
 #include <rapidjson/document.h>
 
+#include <FStr.hpp>
 #include <vector>
 #include <optional>
 
@@ -26,17 +27,6 @@ struct ValueReader {
 
     ValueReader(const rapidjson::Value& val) : val(&val) {}
 
-    MemberScope beginMember(const char* name) {
-        return MemberScope(*this, name);
-    }
-
-    template <typename T>
-    void read(T& res) {
-        if (val->Is<T>()) {
-            res = val->Get<T>();
-        }
-    }
-
     template <typename T>
     void readMember(const char* name, T& res) {
         MemberScope scope = beginMember(name);
@@ -47,10 +37,10 @@ struct ValueReader {
     void readMember(const char* name, std::vector<T>& res) {
         MemberScope scope = beginMember(name);
 
-        res.resize(val->Size());
-        const rapidjson::Value* oldVal = val;
-        for (int i = 0; i < val->Size(); ++i) {
-            val = &oldVal[i];
+        const rapidjson::Value* arr = val;
+        res.resize(arr->Size());
+        for (int i = 0; i < arr->Size(); ++i) {
+            val = &arr[i];
             read(res[i]);
         }
     }
@@ -64,5 +54,26 @@ struct ValueReader {
     }
 
 private:
+    template <typename T, typename std::enable_if<std::is_class<T>::value, bool>::type = true>
+    void read(T& res) {
+        res.read(*this);
+    }
+
+    void read(int& res) {
+        res = val->GetInt();
+    }
+
+    void read(bool& res) {
+        res = val->GetBool();
+    }
+
+    void read(FStr& res) {
+        res = val->GetString();
+    }
+
+    MemberScope beginMember(const char* name) {
+        return MemberScope(*this, name);
+    }
+
     const rapidjson::Value* val;
 };

@@ -3,6 +3,13 @@
 #include "BufferWriter.hpp"
 
 struct ShowMessageParams {
+
+    void write(BufferWriter& wr) const {
+        BufferWriter::ObjectScope s = wr.beginObject();
+        wr.writeMember("message", message);
+        wr.writeMember("type", type);
+    }
+
     /**
      * The message type. See {@link MessageType}.
      */
@@ -31,10 +38,3 @@ struct ShowMessageParams {
      */
     FStr message;
 };
-
-template <>
-void BufferWriter::setKey(const ShowMessageParams& showMessage) {
-    ObjectScope s = beginObject();
-    add("message", showMessage.message);
-    add("type", (int)showMessage.type);
-}

@@ -30,46 +30,45 @@ struct BufferWriter {
     ObjectScope beginObject(const char* name = nullptr) { return ObjectScope(w, name); }
 
     template <typename T>
-    BufferWriter& add(const char* name, const T& fwd) {
+    BufferWriter& writeMember(const char* name, const T& fwd) {
         w.Key(name);
-        setKey(fwd);
+        write(fwd);
         return (*this);
     }
 
     template <typename T>
-    BufferWriter& add(const char* name, const std::vector<T>& arr) {
+    BufferWriter& writeMember(const char* name, const std::vector<T>& arr) {
         w.Key(name);
         w.StartArray();
         for (int i = 0; i < arr.size(); ++i) {
-            setKey(arr[i]);
+            write(arr[i]);
         }
         w.EndArray();
         return (*this);
     }
 
-    void setKey(const char* str) {
-        w.String(str);
+private:
+    template <typename T, typename std::enable_if<std::is_class<T>::value, bool>::type = true>
+    void write(const T& val) {
+        val.write(*this);
     }
 
-    void setKey(const FStr& fstr) {
-        w.String(fstr.str());
+    template <typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = true>
+    void write(T e) {
+        w.Int(static_cast<int>(e));
     }
 
-    void setKey(bool flag) {
-        w.Bool(flag);
-    }
-
-    void setKey(int integer) {
+    void write(int integer) {
         w.Int(integer);
     }
 
-    template <typename T>
-    void setKey(const T& val) {
-        static_assert(!std::is_enum<T>::value, "enum should be cast to int");
-        w.Null();
-        abort();
+    void write(bool flag) {
+        w.Bool(flag);
     }
 
-private:
+    void write(const FStr& fstr) {
+        w.String(fstr.str());
+    }
+
     rapidjson::Writer<rapidjson::StringBuffer>& w;
 };

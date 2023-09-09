@@ -25,7 +25,6 @@ struct FStr {
     void append(const FStr& other);
     void append(const StringView& other);
 
-    // TODO fix in lsp the same way problem with enums ty
     template <typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = true>
     void append(T en) {
         append((int)en);

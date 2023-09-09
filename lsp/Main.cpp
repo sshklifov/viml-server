@@ -23,11 +23,9 @@
 struct RequestId {
     enum Type {INT, STR};
 
-    RequestId(const rapidjson::Value& v) { read(v); }
     RequestId(int id) : type(INT), intValue(id) {}
     RequestId(FStr s) : type(STR), strValue(std::move(s)) {}
-
-    void read(const rapidjson::Value& v) {
+    RequestId(const rapidjson::Value& v) {
         if (v.IsString()) {
             type = STR;
             strValue = v.GetString();
@@ -37,19 +35,18 @@ struct RequestId {
         }
     }
 
+    void write(BufferWriter& wr) const {
+        if (type == RequestId::INT) {
+            wr.writeMember("type", intValue);
+        } else {
+            wr.writeMember("type", strValue);
+        }
+    }
+
     Type type;
     int intValue;
     FStr strValue;
 };
-
-template<>
-inline void BufferWriter::setKey(const RequestId& reqId) {
-    if (reqId.type == RequestId::INT) {
-        w.Int(reqId.intValue);
-    } else {
-        w.String(reqId.strValue.str());
-    }
-}
 
 enum class ErrorCode {
     // Defined by common sense.
@@ -73,39 +70,48 @@ struct ResponseError {
     ResponseError() : code(ErrorCode::NoError) {}
 
     ResponseError(ErrorCode code, const char* suffix = nullptr) : code(code) {
+        const char* strCode = "";
         switch (code) {
         case ErrorCode::ParseError:
-            message = "Parse error";
+            strCode = "Parse error";
             break;
         case ErrorCode::InvalidRequest:
-            message = "Invalid request";
+            strCode = "Invalid request";
             break;
         case ErrorCode::MethodNotFound:
-            message = "Method not found";
+            strCode = "Method not found";
             break;
         case ErrorCode::InvalidParams:
-            message = "Invalid parameters";
+            strCode = "Invalid parameters";
             break;
         case ErrorCode::InternalError:
-            message = "Internal error";
+            strCode = "Internal error";
             break;
         case ErrorCode::ServerNotInitialized:
-            message = "Server not initialized";
+            strCode = "Server not initialized";
             break;
         case ErrorCode::UnknownErrorCode:
-            message = "Unknown error code";
+            strCode = "Unknown error code";
             break;
         case ErrorCode::RequestCancelled:
-            message = "Request cancelled";
+            strCode = "Request cancelled";
             break;
         default:
             // No message
             return;
         }
-        if (suffix && *suffix) {
-            message += ": ";
-            message += suffix;
+        if (suffix) {
+            message.appendf("{}: {}", strCode, suffix);
+        } else {
+            message.append(strCode);
         }
+    }
+
+    
+    void write(BufferWriter& wr) const {
+        BufferWriter::ObjectScope scope = wr.beginObject();
+        wr.writeMember("code", code);
+        wr.writeMember("message", message);
     }
 
     operator bool() {
@@ -115,13 +121,6 @@ struct ResponseError {
     ErrorCode code;
     FStr message;
 };
-
-template<>
-inline void BufferWriter::setKey(const ResponseError& error) {
-    ObjectScope scope = beginObject();
-    add("code", (int)error.code);
-    add("message", error.message);
-}
 
 struct InitOptions {
     FStr dupInput;
@@ -157,8 +156,8 @@ struct RespondingServer : public EchoingServer {
 
         {
             BufferWriter::ObjectScope root = w.beginObject();
-            w.add("jsonrpc", "2.0");
-            w.add("id", id);
+            w.writeMember("jsonrpc", "2.0");
+            w.writeMember("id", id);
         }
 
         respondStr(output);
@@ -172,9 +171,9 @@ struct RespondingServer : public EchoingServer {
 
         {
             BufferWriter::ObjectScope root = w.beginObject();
-            w.add("jsonrpc", "2.0");
-            w.add("id", id);
-            w.add("result", res);
+            w.writeMember("jsonrpc", "2.0");
+            w.writeMember("id", id);
+            w.writeMember("result", res);
         }
 
         respondStr(output);
@@ -188,9 +187,9 @@ struct RespondingServer : public EchoingServer {
 
         {
             BufferWriter::ObjectScope root = w.beginObject();
-            w.add("jsonrpc", "2.0");
-            w.add("method", method);
-            w.add("params", resp);
+            w.writeMember("jsonrpc", "2.0");
+            w.writeMember("method", method);
+            w.writeMember("params", resp);
         }
 
         respondStr(output);
@@ -210,9 +209,9 @@ struct RespondingServer : public EchoingServer {
 
         {
             BufferWriter::ObjectScope root = w.beginObject();
-            w.add("jsonrpc", "2.0");
-            w.add("id", id);
-            w.add("error", error);
+            w.writeMember("jsonrpc", "2.0");
+            w.writeMember("id", id);
+            w.writeMember("error", error);
         }
 
         respondStr(output);
@@ -306,12 +305,13 @@ struct ReceivingServer : public RespondingServer {
         ResponseError error = receiveDocumentWithError(document);
         if (error) {
             if (document.HasMember("id")) {
-                RequestId requestId(document["id"]);
+                RequestId requestId = document["id"];
                 respondError(requestId, error);
             } else {
-                FStr message;
-                message.appendf("{}: {}", error.code, error.message);
-                pushShowMessage(std::move(message));
+                assert(false && "TODO");
+                /* FStr message; */
+                /* message.appendf("{}: {}", error.code, error.message); */
+                /* pushShowMessage(std::move(message)); */
             }
         }
     }
@@ -465,7 +465,7 @@ struct Server : public ReceivingServer {
     void didClose(const rapidjson::Value& obj) {
         ValueReader reader(obj);
         DidCloseParams didCloseParams;
-        reader.read(didCloseParams);
+        reader.readMember("params", didCloseParams);
         // TODO
     }
 

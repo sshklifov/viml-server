@@ -6,15 +6,23 @@
 #include "Range.hpp"
 
 struct Diagnostic {
-	/**
-	 * The range at which the message applies.
-	 */
-	Range range;
 
-	/**
-	 * The diagnostic's severity. Can be omitted. If omitted it is up to the
-	 * client to interpret diagnostics as error, warning, info or hint.
-	 */
+    void write(BufferWriter& wr) const {
+        BufferWriter::ObjectScope scoped = wr.beginObject();
+        wr.writeMember("range", range);
+        wr.writeMember("severity", severity);
+        wr.writeMember("message", message);
+    }
+
+    /**
+     * The range at which the message applies.
+     */
+    Range range;
+
+    /**
+     * The diagnostic's severity. Can be omitted. If omitted it is up to the
+     * client to interpret diagnostics as error, warning, info or hint.
+     */
     enum DiagnosticSeverity {
         /**
          * Reports an error.
@@ -42,34 +50,20 @@ struct Diagnostic {
 };
 
 struct PublishDiagnosticsParams {
-	/**
-	 * The URI for which diagnostic information is reported.
-	 */
-    const char* uri;
 
-	/**
-	 * An array of diagnostic information items.
-	 */
+    void write(BufferWriter& wr) const {
+        BufferWriter::ObjectScope scoped = wr.beginObject();
+        wr.writeMember("uri", uri);
+        wr.writeMember("diagnostics", diagnostics);
+    }
+
+    /**
+     * The URI for which diagnostic information is reported.
+     */
+    FStr uri;
+
+    /**
+     * An array of diagnostic information items.
+     */
     std::vector<Diagnostic> diagnostics;
 };
-
-template <>
-inline void BufferWriter::setKey(const Diagnostic::DiagnosticSeverity& severity) {
-    w.Int(severity);
-}
-
-template <>
-inline void BufferWriter::setKey(const Diagnostic& dig) {
-    ObjectScope scoped = beginObject();
-    add("range", dig.range);
-    add("range", dig.range);
-    add("severity", dig.severity);
-    add("message", dig.message);
-}
-
-template <>
-inline void BufferWriter::setKey(const PublishDiagnosticsParams& params) {
-    ObjectScope scoped = beginObject();
-    add("uri", params.uri);
-    add("diagnostics", params.diagnostics);
-}
