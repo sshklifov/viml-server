@@ -143,6 +143,22 @@ FStr& FStr::operator+=(const FStr& other) {
     return *this;
 }
 
+bool FStr::operator==(const char* other) {
+    return strcmp(s, other) == 0;
+}
+
+bool FStr::operator!=(const char* other) {
+    return strcmp(s, other) != 0;
+}
+
+bool FStr::operator==(const FStr& other) {
+    return *this == other.s;
+}
+
+bool FStr::operator!=(const FStr& other) {
+    return *this != other.s;
+}
+
 void FStr::replace(int begin, int end, const char* sub) {
     int oldPartLen = end - begin;
     int newPartLen = strlen(s);

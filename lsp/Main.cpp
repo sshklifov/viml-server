@@ -20,6 +20,8 @@
 #include <Eval.hpp>
 #include <FStr.hpp>
 
+#include "DocumentMap.hpp"
+
 struct RequestId {
     enum Type {INT, STR};
 
@@ -202,6 +204,13 @@ struct RespondingServer : public EchoingServer {
         pushNotification("window/showMessage", params);
     }
 
+    void pushLogMessage(FStr msg, LogMessageParams::MessageType type = LogMessageParams::Error) {
+        LogMessageParams params;
+        params.type = type;
+        params.message = msg.str();
+        pushNotification("window/logMessage", params);
+    }
+
     void respondError(const RequestId& id, const ResponseError& error) {
         rapidjson::StringBuffer output;
         rapidjson::Writer<rapidjson::StringBuffer> handle(output);
@@ -342,7 +351,7 @@ struct ReceivingServer : public RespondingServer {
             }
             NotifHandler handler = it->second;
             if (document.HasMember("params")) {
-                (this->*handler)(document["params"]);
+                (this->*handler)(document);
             } else {
                 (this->*handler)(rapidjson::Value());
             }
@@ -355,7 +364,7 @@ struct ReceivingServer : public RespondingServer {
             }
             MethodHandler handler = it->second;
             if (document.HasMember("params")) {
-                (this->*handler)(requestId, document["params"]);
+                (this->*handler)(requestId, document);
             } else {
                 (this->*handler)(requestId, rapidjson::Value());
             }
@@ -429,15 +438,16 @@ struct Server : public ReceivingServer {
     }
 
     void didOpen(const rapidjson::Value& obj) {
-#if 0
         ValueReader reader(obj);
         DidOpenTextDocumentParams didOpenParams;
-        reader.read(didOpenParams);
-
+        reader.readMember("params", didOpenParams);
+        if (!docs.open(didOpenParams)) {
+            pushShowMessage("Document already opened");
+        }
+#if 0
         const char* source = didOpenParams.textDocument.text;
         std::vector<Diagnostic> errors;
         ast.reloadFromString(source, errors);
-
         PublishDiagnosticsParams diagnosticsParams;
         diagnosticsParams.uri = didOpenParams.textDocument.uri;
         diagnosticsParams.diagnostics = std::move(errors);
@@ -446,6 +456,12 @@ struct Server : public ReceivingServer {
     }
 
     void didChange(const rapidjson::Value& obj) {
+        ValueReader reader(obj);
+        DidChangeTextDocumentParams didChangeParams;
+        reader.readMember("params", didChangeParams);
+        if (!docs.change(didChangeParams)) {
+            pushShowMessage("Document not opened");
+        }
 #if 0
         ValueReader reader(obj);
         DidChangeTextDocumentParams didChangeParams;
@@ -466,6 +482,9 @@ struct Server : public ReceivingServer {
         ValueReader reader(obj);
         DidCloseParams didCloseParams;
         reader.readMember("params", didCloseParams);
+        if (!docs.close(didCloseParams)) {
+            pushShowMessage("Document already opened");
+        }
         // TODO
     }
 
@@ -473,6 +492,7 @@ private:
     enum State {NOT_INITIALIZED, INITIALIZED, SHUTDOWN, EXIT} state;
 
     SyntaxTree ast;
+    DocumentMap docs;
 };
 
 error_t argsParser(int key, char *arg, argp_state *state) {

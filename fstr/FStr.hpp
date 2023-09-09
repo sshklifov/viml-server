@@ -37,6 +37,11 @@ struct FStr {
     FStr& operator+=(const char* s);
     FStr& operator+=(const FStr& other);
 
+    bool operator==(const char* other);
+    bool operator!=(const char* other);
+    bool operator==(const FStr& other);
+    bool operator!=(const FStr& other);
+
     void replace(int begin, int end, const char* s);
 
     const char* str() const;
