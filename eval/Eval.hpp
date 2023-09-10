@@ -6,4 +6,4 @@
 #include <Blocks.hpp>
 #include <DiagnosticReporter.hpp>
 
-EvalCommand* evalEx(const ExLexem& lexem, EvalFactory& factory, DiagnosticReporter* reporter);
+EvalCommand* evalEx(const ExLexem& lexem, EvalFactory& factory, DiagnosticReporter& reporter);

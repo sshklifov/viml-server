@@ -37,15 +37,19 @@ struct BlockFactory {
 };
 
 struct SyntaxTree {
-    SyntaxTree() = default;
+    SyntaxTree();
     SyntaxTree(const SyntaxTree&) = delete;
     SyntaxTree(SyntaxTree&&) = delete;
 
-    void reload(const char* str, DiagnosticReporter* reporter);
+    void reload(const char* str);
+
+    const Vector<Diagnostic>& diagnostics() const;
 
 public:
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
     BlockFactory blockFac; //< Holds memory for the created blocks (main ast)
     EvalFactory evalFac; //< Holds memory for command qargs (second level ast)
+
     RootBlock* root; //< AST root
+    DiagnosticReporter reporter; //< Diagnostics found during parse of AST
 };

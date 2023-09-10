@@ -123,7 +123,7 @@ bool supported(const ExLexem& lexem) {
     return tok != eval::parser::token::token_kind_type::EVALerror;
 }
 
-EvalCommand* evalEx(const ExLexem& lexem, EvalFactory& factory, DiagnosticReporter* reporter) {
+EvalCommand* evalEx(const ExLexem& lexem, EvalFactory& factory, DiagnosticReporter& reporter) {
     // Only a few ex commands have support for eval parsing. Ignore the rest (issue no warnings).
     if (!supported(lexem)) {
         return nullptr;
@@ -132,7 +132,7 @@ EvalCommand* evalEx(const ExLexem& lexem, EvalFactory& factory, DiagnosticReport
     EvalLexState lexState(lexem);
     EvalCommand* result = nullptr;
     ReportingParser parser(lexState, factory, result);
-    parser.setReporter(reporter, lexem.locationKey);
+    parser.setReporter(&reporter, lexem.locationKey);
 
     bool notOk = parser.parse();
     if (notOk) {

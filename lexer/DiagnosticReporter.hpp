@@ -12,7 +12,7 @@ struct DiagnosticReporter {
 
     void clear() { diagnostics.clear(); }
 
-    const Vector<Diagnostic>& get() { return diagnostics; }
+    const Vector<Diagnostic>& get() const { return diagnostics; }
 
     bool empty() const { return diagnostics.empty(); }
 

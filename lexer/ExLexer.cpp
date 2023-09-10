@@ -80,7 +80,7 @@ bool ExLexer::buildExLexem(StringView line, LocationMap::Key locationKey, ExLexe
     return true;
 }
 
-bool ExLexer::reload(const char* str, DiagnosticReporter* reporter) {
+bool ExLexer::reload(const char* str) {
     int n = strlen(str);
     program.set(str, n);
     contStorage.realloc(n);
@@ -125,6 +125,10 @@ bool ExLexer::lex(ExLexem& res) {
         }
     }
     return false;
+}
+
+void ExLexer::setDiagnosticReporter(DiagnosticReporter& rep) {
+    reporter = &rep;
 }
 
 const LocationMap& ExLexer::getLocationMap() const { return locationMap; }

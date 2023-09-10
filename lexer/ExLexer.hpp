@@ -137,8 +137,10 @@ private:
 };
 
 struct ExLexer {
-    bool reload(const char* str, DiagnosticReporter* reporter);
+    bool reload(const char* str);
     bool lex(ExLexem& res);
+
+    void setDiagnosticReporter(DiagnosticReporter& rep);
     const LocationMap& getLocationMap() const;
 
 private:

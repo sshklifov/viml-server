@@ -500,10 +500,10 @@ struct Server : public ReceivingServer {
         }
         WorkingDocument& doc = docs[docIdx];
 
-        if (!doc.diagnostics.empty()) {
+        if (!doc.diagnostics().empty()) {
             PublishDiagnosticsParams diagnosticsParams;
             diagnosticsParams.uri = doc.uri;
-            diagnosticsParams.diagnostics = doc.diagnostics.get();
+            diagnosticsParams.diagnostics = doc.diagnostics();
             pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
         }
     }
@@ -517,7 +517,7 @@ struct Server : public ReceivingServer {
 
         PublishDiagnosticsParams diagnosticsParams;
         diagnosticsParams.uri = doc.uri;
-        diagnosticsParams.diagnostics = doc.diagnostics.get();
+        diagnosticsParams.diagnostics = doc.diagnostics();
         pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
     }
 

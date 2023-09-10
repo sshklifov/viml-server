@@ -9,7 +9,7 @@ struct WorkingDocument {
         version = textDoc.version;
         uri = textDoc.uri;
         content = textDoc.text;
-        ast.reload(content.str(), &diagnostics);
+        ast.reload(content.str());
     }
 
     void change(const DidChangeTextDocumentParams& params) {
@@ -21,14 +21,14 @@ struct WorkingDocument {
                 content = event.text;
             }
         }
-        diagnostics.clear();
-        ast.reload(content.str(), &diagnostics);
+        ast.reload(content.str());
         version = params.textDocument.version;
         assert(uri == params.textDocument.uri);
     }
 
+    const Vector<Diagnostic>& diagnostics() const { return ast.diagnostics(); }
+
     SyntaxTree ast;
-    DiagnosticReporter diagnostics;
 
     int version;
     FStr uri;
