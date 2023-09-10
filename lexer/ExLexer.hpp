@@ -21,8 +21,8 @@ struct ContinuationStorage {
             maxlen = capacity;
             delete[] buf;
             buf = new char[capacity];
-            len = 0;
         }
+        len = 0;
     }
 
     void deinit() {

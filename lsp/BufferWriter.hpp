@@ -84,6 +84,10 @@ struct BufferWriter {
         w.String(fstr.str());
     }
 
+    void write(const char* s) {
+        w.String(s);
+    }
+
 private:
     rapidjson::Writer<rapidjson::StringBuffer>& w;
 };

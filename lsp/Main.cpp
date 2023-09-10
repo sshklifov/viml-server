@@ -400,7 +400,6 @@ struct Server : public ReceivingServer {
             MethodWithParams<T> handler;
         };
         methods.emplace(method, InvokeWrapper(handler));
-        /* methods[method] = InvokeWrapper(handler); */
     }
 
     void registerMethod(const char* method, MethodNoParams handler) {
@@ -496,14 +495,33 @@ struct Server : public ReceivingServer {
     }
 
     void didOpen(const DidOpenTextDocumentParams& didOpenParams) {
-        WorkingDocument* doc = docs.open(didOpenParams);
+        int docIdx = docs.open(didOpenParams);
+        if (docIdx < 0) {
+            pushLogMessage("textDocument/didOpen: Document already opened");
+        }
+
+        // BIG TODO
+        WorkingDocument& doc = docs[docIdx];
+        if (!doc.diagnostics.empty()) {
+            PublishDiagnosticsParams diagnosticsParams;
+            diagnosticsParams.uri = doc.uri;
+            diagnosticsParams.diagnostics = std::move(doc.diagnostics);
+            pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
+        }
     }
 
     void didChange(const DidChangeTextDocumentParams& didChangeParams) {
-        WorkingDocument* doc = docs.change(didChangeParams);
-        if (!doc) {
+        int docIdx = docs.change(didChangeParams);
+        if (docIdx < 0) {
             pushLogMessage("Document not opened");
         }
+
+        // BIG TODO
+        WorkingDocument& doc = docs[docIdx];
+        PublishDiagnosticsParams diagnosticsParams;
+        diagnosticsParams.uri = doc.uri;
+        diagnosticsParams.diagnostics = std::move(doc.diagnostics);
+        pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
     }
 
     void didClose(const DidCloseParams& didCloseParams) {

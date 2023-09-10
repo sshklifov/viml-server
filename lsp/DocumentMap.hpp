@@ -2,8 +2,7 @@
 
 #include <TextDocument.hpp>
 #include <SyntaxTree.hpp>
-
-#include <unordered_map>
+#include <StringMap.hpp>
 
 struct WorkingDocument {
     WorkingDocument(const DidOpenTextDocumentParams::TextDocumentItem& textDoc) {
@@ -39,23 +38,25 @@ struct WorkingDocument {
 struct DocumentMap {
     using Iterator = std::unordered_map<const char*, WorkingDocument>::iterator;
 
-    WorkingDocument* open(const DidOpenTextDocumentParams& params) {
-        std::pair<Iterator, bool> res = docs.emplace(params.textDocument.uri.str(), params.textDocument);
-        if (res.second) {
-            docs.erase(res.first);
-            // Try again after erasing conficting entry
-            res = docs.emplace(params.textDocument.uri.str(), params.textDocument);
+    WorkingDocument& operator[](int i) { return docs[i]; }
+
+    int open(const DidOpenTextDocumentParams& params) {
+        const char* key = params.textDocument.uri.str();
+        int pos = docs.find(key);
+        if (pos < 0) {
+            return docs.emplace(key, params.textDocument);
+        } else {
+            return -1;
         }
-        return &res.first->second;
     }
 
-    WorkingDocument* change(const DidChangeTextDocumentParams& params) {
-        Iterator it = docs.find(params.textDocument.uri.str());
-        if (it != docs.end()) {
-            it->second.change(params);
-            return &it->second;
+    int change(const DidChangeTextDocumentParams& params) {
+        int pos = docs.find(params.textDocument.uri);
+        if (pos >= 0) {
+            docs[pos].change(params);
+            return pos;
         } else {
-            return nullptr;
+            return -1;
         }
     }
 
@@ -65,5 +66,5 @@ struct DocumentMap {
     }
 
 private:
-    std::unordered_map<const char*, WorkingDocument> docs;
+    StringMap<WorkingDocument> docs;
 };

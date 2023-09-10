@@ -82,6 +82,7 @@ void FStr::append(const char* other, int n) {
     allocAtLeast(len + n);
     strncpy(s + len, other, n);
     len += n;
+    s[len] = '\0';
 }
 
 void FStr::append(int d) {
@@ -186,13 +187,12 @@ void FStr::allocAtLeast(int n) {
     if (n < allocLen) {
         return;
     }
-
     int doubleAllocLen = allocLen * 2;
-    n = (doubleAllocLen > n) ? doubleAllocLen : n;
+    allocLen = (doubleAllocLen > n) ? doubleAllocLen : n;
 
     char* old = s;
     s = new char[n];
     strncpy(s, old, len);
+    s[len] = '\0';
     delete[] old;
-    allocLen = n;
 }

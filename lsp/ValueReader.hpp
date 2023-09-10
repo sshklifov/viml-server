@@ -8,26 +8,26 @@
 
 struct ValueReader {
     struct MemberScope {
-        MemberScope(ValueReader& r, const char* name) : reader(r), origVal(r.val) {
-            rapidjson::Value::ConstMemberIterator it = r.val->FindMember(name);
-            if (it != r.val->MemberEnd()) {
-                r.val = &it->value;
+        MemberScope(ValueReader& parent, const char* name) : parent(parent), origVal(parent.val) {
+            rapidjson::Value::ConstMemberIterator it = parent.val->FindMember(name);
+            if (it != parent.val->MemberEnd()) {
+                parent.val = &it->value;
             } else {
                 assert(false);
             }
         }
 
         ~MemberScope() {
-            reader.val = origVal;
+            parent.val = origVal;
         }
 
-        ValueReader& reader;
+        ValueReader& parent;
         const rapidjson::Value* origVal;
     };
 
     explicit ValueReader(const rapidjson::Value& val) : val(&val) {}
 
-    const rapidjson::Value&  getValue() const { return *val; }
+    const rapidjson::Value& getValue() const { return *val; }
 
     template <typename T>
     void readMember(const char* name, T& res) {
@@ -39,9 +39,9 @@ struct ValueReader {
     void readMember(const char* name, std::vector<T>& res) {
         MemberScope scope = beginMember(name);
 
-        const rapidjson::Value* arr = val;
-        res.resize(arr->Size());
-        for (int i = 0; i < arr->Size(); ++i) {
+        const rapidjson::Value& arr = *val;
+        res.resize(arr.Size());
+        for (int i = 0; i < arr.Size(); ++i) {
             val = &arr[i];
             read(res[i]);
         }
@@ -49,9 +49,12 @@ struct ValueReader {
 
     template <typename T>
     void readMember(const char* name, std::optional<T>& res) {
-        MemberScope scope = beginMember(name);
-        if (!val->IsNull()) {
-            read(res.value());
+        // TODO
+        if (val->HasMember(name)) {
+            MemberScope scope = beginMember(name);
+            if (!val->IsNull()) {
+                read(res.value());
+            }
         }
     }
 
