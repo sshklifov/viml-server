@@ -10,7 +10,6 @@
 #include <EvalCommand.hpp>
 
 struct Block {
-    // TODO needed? enum EnumResult {STOP, CONTINUE};
     using EnumCallback = std::function<void(Block*)>;
 
     Block(const ExLexem& lexem) : lexem(lexem), evalCmd(nullptr) {}

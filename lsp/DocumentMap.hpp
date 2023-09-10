@@ -15,11 +15,8 @@ struct WorkingDocument {
     void change(const DidChangeTextDocumentParams& params) {
         using Event = DidChangeTextDocumentParams::TextDocumentContentChangeEvent;
         for (const Event& event : params.contentChanges) {
-            if (event.range.has_value()) {
-                assert(false && "TODO");
-            } else {
-                content = event.text;
-            }
+            assert(!event.range.has_value());
+            content = event.text;
         }
         ast.reload(content.str());
         version = params.textDocument.version;

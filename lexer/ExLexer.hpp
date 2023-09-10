@@ -116,7 +116,7 @@ struct Program {
     int lineNumber() const { return lineCounter; }
 
     void pop() {
-        assert(!empty()); // TODO ok?
+        assert(!empty());
         program.begin = splitPos;
         splitPos = findSplitPos();
         ++lineCounter;
