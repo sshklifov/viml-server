@@ -4,6 +4,9 @@
 #include "ExConstants.hpp"
 #include "ExDictionary.hpp"
 
+#include <cstdio>
+#include <cctype>
+
 bool debugCheckExConstants() {
     const ExDictionary& dict = ExDictionary::getSingleton();
     FStr lowercase;

@@ -58,7 +58,7 @@ struct DocumentMap {
     }
 
     bool close(const DidCloseParams& params) {
-        int present = docs.erase(params.textDocument.str());
+        int present = docs.erase(params.textDocument.uri.str());
         return present;
     }
 

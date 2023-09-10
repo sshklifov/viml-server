@@ -12,10 +12,9 @@ struct ValueReader {
     struct MemberScope {
         MemberScope(ValueReader& parent, const char* name) : parent(parent), origVal(parent.val) {
             rapidjson::Value::ConstMemberIterator it = parent.val->FindMember(name);
+            assert(it != parent.val->MemberEnd());
             if (it != parent.val->MemberEnd()) {
                 parent.val = &it->value;
-            } else {
-                assert(false);
             }
         }
 
@@ -25,6 +24,7 @@ struct ValueReader {
 
         ValueReader& parent;
         const rapidjson::Value* origVal;
+        bool valid;
     };
 
     explicit ValueReader(const rapidjson::Value& val) : val(&val) {}
@@ -38,25 +38,10 @@ struct ValueReader {
     }
 
     template <typename T>
-    void readMember(const char* name, Vector<T>& res) {
-        MemberScope scope = beginMember(name);
-
-        const rapidjson::Value& arr = *val;
-        res.resize(arr.Size());
-        for (int i = 0; i < arr.Size(); ++i) {
-            val = &arr[i];
-            read(res[i]);
-        }
-    }
-
-    template <typename T>
     void readMember(const char* name, std::optional<T>& res) {
-        // TODO
         if (val->HasMember(name)) {
             MemberScope scope = beginMember(name);
-            if (!val->IsNull()) {
-                read(res.value());
-            }
+            read(res.value());
         }
     }
 
@@ -67,15 +52,24 @@ private:
     }
 
     void read(int& res) {
-        res = val->GetInt();
+        assert(val->IsInt());
+        if (val->IsInt()) {
+            res = val->GetInt();
+        }
     }
 
     void read(bool& res) {
-        res = val->GetBool();
+        assert(val->IsBool());
+        if (val->IsBool()) {
+            res = val->GetBool();
+        }
     }
 
     void read(FStr& res) {
-        res = val->GetString();
+        assert(val->IsString());
+        if (val->IsString()) {
+            res = val->GetString();
+        }
     }
 
     void read(Position& pos) {
@@ -86,6 +80,21 @@ private:
     void read(Range& range) {
         readMember("start", range.start);
         readMember("end", range.end);
+    }
+
+    template <typename T>
+    void read(Vector<T>& res) {
+        if (!val->IsArray()) {
+            assert(false);
+            return;
+        }
+        const rapidjson::Value& arr = *val;
+        res.resize(arr.Size());
+        for (int i = 0; i < arr.Size(); ++i) {
+            val = &arr[i];
+            read(res[i]);
+        }
+        val = &arr;
     }
 
     MemberScope beginMember(const char* name) {

@@ -123,5 +123,16 @@ struct DidCloseParams {
     /**
      * The document that was closed.
      */
-    FStr textDocument;
+    struct TextDocumentIdentifier {
+
+        void read(ValueReader& rd) {
+            rd.readMember("uri", uri);
+        }
+
+        /**
+         * The text document's URI.
+         */
+        FStr uri;
+
+    } textDocument;
 };

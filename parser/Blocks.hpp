@@ -18,7 +18,7 @@ struct Block {
     virtual void enumerate(EnumCallback cb) {
         cb(this);
         for (Block* block : body) {
-            cb(block);
+            block->enumerate(cb);
         }
     }
 
