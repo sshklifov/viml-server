@@ -4,7 +4,7 @@
 %option pointer
 %option prefix="cmd"
 
-%x STATE_COMMAND
+space [ \t]
 
 command_special "!"|"!!"|"#"|"#!"|"&"|"*"|"<"|"="|">"|"@"|"@@"|"~"
 
@@ -25,7 +25,6 @@ enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, COMMAND, COMMAND_SPECIAL
 
 %%
 ":" {
-    BEGIN(STATE_COMMAND);
     return COMMAND_COLON;
 }
 
@@ -45,11 +44,15 @@ enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, COMMAND, COMMAND_SPECIAL
     return COMMAND_SPECIAL;
 }
 
-<*>"\n" {
-    BEGIN(INITIAL);
+{space} {
+    return cmdtext[0];
 }
 
-<*>. {
+"\n" {
+    return 0;
+}
+
+. {
     return ERROR;
 }
 %%

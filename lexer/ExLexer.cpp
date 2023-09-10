@@ -27,6 +27,7 @@ bool ExLexer::buildExLexem(StringView line, LocationMap::Key locationKey, ExLexe
     enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, COMMAND, COMMAND_SPECIAL};
     int lineOffset = 0;
     int done = false;
+    // TODO handle command colon order (must be before cmd)
     do {
         int tok = cmdlex();
         switch (tok) {
@@ -34,8 +35,13 @@ bool ExLexer::buildExLexem(StringView line, LocationMap::Key locationKey, ExLexe
                 done = true;
                 break;
 
+            case '\t':
+            case ' ':
+                // Increment line offset and break
+                break;
+
             case ERROR:
-                reporter->error(format("Unexpected token {}", tok), locationKey, lineOffset, lineOffset);
+                reporter->error(format("Unexpected token {}", *cmdget_text()), locationKey, lineOffset, lineOffset);
                 return false;
 
             case RANGE_ARG:

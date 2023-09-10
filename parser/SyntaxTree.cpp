@@ -146,6 +146,12 @@ void SyntaxTree::reload(const char* str) {
             break;
 
         case ENDTRY:
+            if (blocks.top()->getId() == FINALLY) {
+                blocks.pop();
+            }
+            if (blocks.top()->getId() == CATCH) {
+                blocks.pop();
+            }
             if (blocks.top()->getId() != TRY) {
                 reporter.error("endtry without try", lexem);
             } else {
