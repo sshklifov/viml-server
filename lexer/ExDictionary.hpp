@@ -2,8 +2,8 @@
 
 #include <FStr.hpp>
 #include <StringView.hpp>
+#include <Vector.hpp>
 
-#include <vector>
 #include <memory>
 
 struct ExDictionary {
@@ -15,6 +15,8 @@ struct ExDictionary {
         StringView req;
         StringView opt;
     };
+
+    ~ExDictionary();
 
     bool loadDict(const char* filepath);
     void unload();
@@ -37,6 +39,6 @@ private:
     void rebuild();
     bool debugCheckSorted();
    
-    std::vector<Entry> dictionary;
-    std::unique_ptr<char[]> filebuf;
+    Vector<Entry> dictionary;
+    char* filebuf;
 };

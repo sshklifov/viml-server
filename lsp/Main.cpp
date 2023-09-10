@@ -4,7 +4,6 @@
 
 #include <functional>
 #include <memory>
-#include <vector>
 #include <unordered_map>
 
 #include <cstdio>
@@ -13,7 +12,7 @@
 #include <argp.h>
 
 #include "Initialize.hpp"
-#include "Diagnostics.hpp"
+#include "PublishDiagnostics.hpp"
 #include "TextDocument.hpp"
 #include "Window.hpp"
 #include <SyntaxTree.hpp>
@@ -499,13 +498,12 @@ struct Server : public ReceivingServer {
         if (docIdx < 0) {
             pushLogMessage("textDocument/didOpen: Document already opened");
         }
-
-        // BIG TODO
         WorkingDocument& doc = docs[docIdx];
+
         if (!doc.diagnostics.empty()) {
             PublishDiagnosticsParams diagnosticsParams;
             diagnosticsParams.uri = doc.uri;
-            diagnosticsParams.diagnostics = std::move(doc.diagnostics);
+            diagnosticsParams.diagnostics = doc.diagnostics.get();
             pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
         }
     }
@@ -513,20 +511,19 @@ struct Server : public ReceivingServer {
     void didChange(const DidChangeTextDocumentParams& didChangeParams) {
         int docIdx = docs.change(didChangeParams);
         if (docIdx < 0) {
-            pushLogMessage("Document not opened");
+            pushLogMessage("textDocument/didChange: Document not opened");
         }
-
-        // BIG TODO
         WorkingDocument& doc = docs[docIdx];
+
         PublishDiagnosticsParams diagnosticsParams;
         diagnosticsParams.uri = doc.uri;
-        diagnosticsParams.diagnostics = std::move(doc.diagnostics);
+        diagnosticsParams.diagnostics = doc.diagnostics.get();
         pushNotification("textDocument/publishDiagnostics", diagnosticsParams);
     }
 
     void didClose(const DidCloseParams& didCloseParams) {
         if (!docs.close(didCloseParams)) {
-            pushLogMessage("Document not opened");
+            pushLogMessage("textDocument/didClose: Document not opened");
         }
     }
 
@@ -586,7 +583,6 @@ int main(int argc, char** argv) {
 
 int test() {
     /* SyntaxTree ast; */
-    /* std::vector<Diagnostic> digs; */
     /* ast.reloadFromFile(TEST_FILE, digs); */
     /* Block* letBlock = root->body[0]; */
     /* EvalFactory factory; */

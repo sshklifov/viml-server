@@ -4,7 +4,8 @@
 
 #include <FStr.hpp>
 #include <Range.hpp>
-#include <vector>
+#include <Vector.hpp>
+#include <Diagnostic.hpp>
 
 struct BufferWriter {
     struct Object {
@@ -32,16 +33,6 @@ struct BufferWriter {
             parent.write(fwd);
         }
 
-        template <typename T>
-        void writeMember(const char* name, const std::vector<T>& arr) {
-            parent.w.Key(name);
-            parent.w.StartArray();
-            for (int i = 0; i < arr.size(); ++i) {
-                parent.write(arr[i]);
-            }
-            parent.w.EndArray();
-        }
-
     private:
         Object(const Object&) = delete;
         Object(Object&&) = delete;
@@ -65,9 +56,9 @@ struct BufferWriter {
     }
 
     template <typename T>
-    void write(const std::vector<T>& arr) {
+    void write(const Vector<T>& arr) {
         w.StartArray();
-        for (int i = 0; i < arr.size(); ++i) {
+        for (int i = 0; i < arr.count(); ++i) {
             write(arr[i]);
         }
         w.EndArray();
@@ -90,19 +81,22 @@ struct BufferWriter {
     }
 
     void write(const Position& pos) {
-        w.StartObject();
-        w.Key("line");
-        w.Int(pos.line);
-        w.Key("character");
-        w.Int(pos.character);
+        BufferWriter::Object o = beginObject();
+        o.writeMember("line", pos.line);
+        o.writeMember("character", pos.character);
     }
 
     void write(const Range& range) {
-        w.StartObject();
-        w.Key("start");
-        write(range.start);
-        w.Key("end");
-        write(range.end);
+        BufferWriter::Object o = beginObject();
+        o.writeMember("start", range.start);
+        o.writeMember("end", range.end);
+    }
+
+    void write(const Diagnostic& d) {
+        BufferWriter::Object o = beginObject();
+        o.writeMember("range", d.range);
+        o.writeMember("severity", d.severity);
+        o.writeMember("message", d.message);
     }
 
 private:

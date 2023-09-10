@@ -11,7 +11,7 @@
 #include "Command.hpp"
 #include "ExDictionary.hpp"
 
-static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& lex) {
+bool ExLexer::buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& lex) {
     lex.exDictIdx = -1;
     lex.name.begin = lex.name.end;
     lex.qargs.begin = lex.qargs.end;
@@ -35,8 +35,8 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                 break;
 
             case ERROR:
-                // TODO error
-                break;
+                reporter->error(format("Unexpected token {}", tok), locationKey, lineOffset, lineOffset);
+                return false;
 
             case RANGE_ARG:
             case RANGE_DELIM:
@@ -48,14 +48,15 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                 int cmdNameLen = 0;
                 int dictIdx = dict.partialSearch(cmdget_text(), cmdNameLen);
                 if (dictIdx < 0) {
-                    // TODO error
+                    reporter->error("Not an editor command", locationKey);
+                    return false;
                 } else {
                     StringView namePart(line.begin + lineOffset, cmdNameLen);
                     StringView restPart(namePart.end, namePart.begin + cmdget_leng());
                     if (!restPart.empty()) {
                         if (tok != COMMAND_SPECIAL && isalpha(restPart.left())) {
-                            // TODO error
-                            break;
+                            reporter->error("Not an editor command", locationKey);
+                            return false;
                         } else if (restPart.left() == '!') {
                             ++restPart.begin;
                             lex.bang = true;
@@ -76,10 +77,10 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
     while (!done);
 
     cmd_delete_buffer(buf);
-    return 0; // TODO
+    return true;
 }
 
-bool ExLexer::reload(const char* str) {
+bool ExLexer::reload(const char* str, DiagnosticReporter* reporter) {
     int n = strlen(str);
     program.set(str, n);
     contStorage.realloc(n);
@@ -87,7 +88,7 @@ bool ExLexer::reload(const char* str) {
     return true;
 }
 
-int ExLexer::lex(ExLexem& res) {
+bool ExLexer::lex(ExLexem& res) {
     while (!program.empty()) {
         Continuation cont(contStorage, locationMap);
         cont.add(program.top(), program.lineNumber(), 0);
@@ -118,10 +119,12 @@ int ExLexer::lex(ExLexem& res) {
         assert(tmpLine.length() >= 1);
         bool ignore = (tmpLine.left() == '"' || tmpLine.left() == '\n');
         if (!ignore) {
-            return buildExLexem(joinedLine, locationKey, res);
+            if (buildExLexem(joinedLine, locationKey, res)) {
+                return true;
+            }
         }
     }
-    return EOF;
+    return false;
 }
 
 const LocationMap& ExLexer::getLocationMap() const { return locationMap; }

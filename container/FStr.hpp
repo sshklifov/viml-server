@@ -77,9 +77,9 @@ private:
     int allocLen;
 };
 
-template <>
-struct std::hash<FStr> {
-    std::size_t operator()(const FStr& fstr) {
-        return std::hash<const char*>()(fstr.str());
-    }
-};
+template <typename... Types>
+FStr format(const char* fmt, const Types&... args) {
+    FStr res;
+    res.appendf(fmt, args...);
+    return res;
+}

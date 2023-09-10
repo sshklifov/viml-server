@@ -1,8 +1,7 @@
 #pragma once
 
 #include "EvalBase.hpp"
-
-#include <vector>
+#include <Vector.hpp>
 
 struct EvalFactory {
     EvalFactory() = default;
@@ -23,10 +22,10 @@ struct EvalFactory {
     template <typename T, typename ... Args>
     T* create(Args&&... args) {
         T* res = new T(std::forward<Args>(args)...);
-        objs.push_back(res);
+        objs.emplace(res);
         return res;
     }
 
 private:
-    std::vector<EvalBase*> objs;
+    Vector<EvalBase*> objs;
 };

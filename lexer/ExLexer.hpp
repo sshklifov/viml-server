@@ -2,6 +2,7 @@
 
 #include "LocationMap.hpp"
 #include "ExLexem.hpp"
+#include "DiagnosticReporter.hpp"
 
 /// Internal storage class for ExLexer
 struct ContinuationStorage {
@@ -136,12 +137,15 @@ private:
 };
 
 struct ExLexer {
-
-    bool reload(const char* str);
-    int lex(ExLexem& res);
+    bool reload(const char* str, DiagnosticReporter* reporter);
+    bool lex(ExLexem& res);
     const LocationMap& getLocationMap() const;
 
 private:
+    bool buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& lex);
+
+    // Diagnostics are written here
+    DiagnosticReporter* reporter;
     // Input program allowing to access current and next lines.
     Program program;
     // Additional storage required for line continuations

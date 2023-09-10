@@ -4,8 +4,8 @@
 
 #include <FStr.hpp>
 #include <Range.hpp>
+#include <Vector.hpp>
 
-#include <vector>
 #include <optional>
 
 struct ValueReader {
@@ -38,7 +38,7 @@ struct ValueReader {
     }
 
     template <typename T>
-    void readMember(const char* name, std::vector<T>& res) {
+    void readMember(const char* name, Vector<T>& res) {
         MemberScope scope = beginMember(name);
 
         const rapidjson::Value& arr = *val;

@@ -4,27 +4,8 @@
 #include <ExLexer.hpp>
 #include <Eval.hpp>
 
-static Diagnostic error(const ExLexer& creator, const ExLexem& lexem, const char* msg) {
-    // TODO!!!
-    return {};
-    /* Diagnostic res; */
-    /* res.severity = Diagnostic::Error; */
-    /* res.message = msg; */
-
-    /* int nameStartOffset = lexem.nameOffset; */
-    /* creator.getNameLoc(lexem, res.range.start.line, res.range.start.character); */
-    /* creator.getNameEndLoc(lexem, res.range.end.line, res.range.end.character); */
-
-    /* return res; */
-}
-
-bool SyntaxTree::isLoaded() const {
-    // At least RootBlock will be created
-    return !blockFac.blocks.empty();
-}
-
-void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
-    if (!lexer.reload(str)) {
+void SyntaxTree::reload(const char* str, DiagnosticReporter* reporter) {
+    if (!lexer.reload(str, reporter)) {
         return;
     }
     blockFac.clear();
@@ -35,12 +16,7 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
     blocks.push(root); //< Guarantees that stack is never empty
 
     ExLexem lexem;
-    int errorSym = 0;
-    while ((errorSym=lexer.lex(lexem)) != EOF) {
-        if (errorSym) {
-            const char* msg = "trailing characters";
-            // TODO report
-        }
+    while (lexer.lex(lexem)) {
         Block* newBlock = nullptr;
         switch (lexem.exDictIdx) {
         case IF:
@@ -55,11 +31,9 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
                 blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
                 blocks.top() = newBlock;
             } else if (blocks.top()->getId() == ELSE) {
-                const char* msg = "elseif after else";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("elseif after else", lexem);
             } else {
-                const char* msg = "elseif without if";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("elseif without if", lexem);
             }
             break;
 
@@ -69,18 +43,15 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
                 blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
                 blocks.top() = newBlock;
             } else if (blocks.top()->getId() == ELSE) {
-                const char* msg = "multiple else";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("multiple else", lexem);
             } else {
-                const char* msg = "else without if";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("else without if", lexem);
             }
             break;
 
         case ENDIF:
             if (blocks.top()->getId() != IF && blocks.top()->getId() != ELSE) {
-                const char* msg = "endif without if";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("endif without if", lexem);
             } else {
                 blocks.pop();
             }
@@ -96,11 +67,9 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
             if (blocks.top()->getId() == WHILE) {
                 blocks.pop();
             } else if (blocks.top()->getId() == FOR) {
-                const char* msg = "using endwhile with for";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("using endwhile with for", lexem);
             } else {
-                const char* msg = "endwhile without while";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("endwhile without while", lexem);
             }
             break;
 
@@ -114,11 +83,9 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
             if (blocks.top()->getId() == FOR) {
                 blocks.pop();
             } else if (blocks.top()->getId() == WHILE) {
-                const char* msg = "using endfor with while";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("using endfor with while", lexem);
             } else {
-                const char* msg = "endfor without for";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("endfor without for", lexem);
             }
             break;
 
@@ -130,8 +97,7 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
 
         case ENDFUNCTION:
             if (blocks.top()->getId() != FUNCTION) {
-                const char* msg = "endfunction not inside a function";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("endfunction not inside a function", lexem);
             } else {
                 blocks.pop();
             }
@@ -152,11 +118,9 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
                 blocks.top()->cast<TryBlock>()->finally = newBlock;
                 blocks.push(newBlock);
             } else if (blocks.top()->getId() == FINALLY) {
-                const char* msg = "multiple finally";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("multiple finally", lexem);
             } else if (blocks.top()->getId() == FINALLY) {
-                const char* msg = "finally without try";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("finally without try", lexem);
             }
             break;
 
@@ -169,32 +133,22 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
                 blocks.top()->cast<TryBlock>()->catchBlocks.push_back(newBlock);
                 blocks.push(newBlock);
             } else if (blocks.top()->getId() == FINALLY) {
-                const char* msg = "catch after finally";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("catch after finally", lexem);
             } else {
-                const char* msg = "catch without try";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("catch without try", lexem);
             }
             break;
 
         case ENDTRY:
             if (blocks.top()->getId() != TRY) {
-                const char* msg = "endtry without try";
-                errors.push_back(error(lexer, lexem, msg));
+                reporter->error("endtry without try", lexem);
             } else {
                 blocks.pop();
             }
             break;
 
         default:
-            if (lexem.exDictIdx < 0) { // TODO handle in lexer?
-                const char* msg = "not an editor command";
-                errors.push_back(error(lexer, lexem, msg));
-            }
-            // Add it anyway
-            if (!lexem.name.empty()) {
-                blocks.top()->addToScope(blockFac.create<ExBlock>(lexem));
-            }
+            blocks.top()->addToScope(blockFac.create<ExBlock>(lexem));
         }
     }
 
@@ -202,38 +156,35 @@ void SyntaxTree::reload(const char* str, std::vector<Diagnostic>& errors) {
         Block* block = blocks.top();
         int id = block->getId();
         blocks.pop();
-
-        const char* msg = nullptr;
         if (id == IF || id == ELSEIF || id == ELSE) {
-            msg = "missing endif";
+            reporter->error("missing endif", block->lexem);
         } else if (id == WHILE) {
-            msg = "missing endwhile";
+            reporter->error("missing endwhile", block->lexem);
         } else if (id == FOR) {
-            msg = "missing endfor";
+            reporter->error("missing endfor", block->lexem);
         } else if (id == FUNCTION) {
-            msg = "missing endfunction";
+            reporter->error("missing endfunction", block->lexem);
         } else if (id == TRY || id == FINALLY || id == CATCH) {
-            msg = "missing endtry";
-        }
-
-        assert(msg);
-        if (msg) {
-            errors.push_back(error(lexer, block->lexem, msg));
+            reporter->error("missing endtry", block->lexem);
+        } else {
+            assert(false);
         }
     }
 
     // Parse qargs of blocks
     struct RunEvalParse {
-        RunEvalParse(SyntaxTree& ast, std::vector<Diagnostic>& digs) : ast(ast), digs(digs) {}
+        RunEvalParse(EvalFactory& factory, DiagnosticReporter* reporter) :
+            factory(factory), reporter(reporter) {}
 
         void operator()(Block* block) {
-            evalParseBlock(*block, ast, digs);
+            block->evalCmd = evalEx(block->lexem, factory, reporter);
         }
 
     private:
-        SyntaxTree& ast;
-        std::vector<Diagnostic>& digs;
-    } runEvalParse(*this, errors);
+        EvalFactory& factory;
+        DiagnosticReporter* reporter;
+    };
 
-    root->enumerate(runEvalParse);
+    RunEvalParse runner(evalFac, reporter);
+    root->enumerate(runner);
 }

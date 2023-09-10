@@ -1,9 +1,9 @@
 #pragma once
 
-#include <vector>
+#include "EvalFactory.hpp"
+#include "EvalCommand.hpp"
 
-struct Block;
-struct SyntaxTree;
-struct Diagnostic;
+#include <Blocks.hpp>
+#include <DiagnosticReporter.hpp>
 
-bool evalParseBlock(Block& block, SyntaxTree& root, std::vector<Diagnostic>& digs);
+EvalCommand* evalEx(const ExLexem& lexem, EvalFactory& factory, DiagnosticReporter* reporter);

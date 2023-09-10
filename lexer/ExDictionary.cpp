@@ -13,6 +13,9 @@
 
 #include <algorithm>
 
+ExDictionary::~ExDictionary() {
+    delete[] filebuf;
+}
 
 const ExDictionary& ExDictionary::getSingleton() {
     static ExDictionary res;
@@ -42,22 +45,25 @@ bool ExDictionary::loadDict(const char* filepath) {
     }
 
     size_t len =  statbuf.st_size;
-    std::unique_ptr<char[]> buf(new char[len + 1]);
-    s = read(fd, buf.get(), len);
+    char* buf = new char[len + 1];
+    s = read(fd, buf, len);
     buf[len] = '\0';
     close(fd);
 
     if (s != len) {
+        delete[] buf;
         return false;
     } else {
-        filebuf.swap(buf);
+        delete[] filebuf;
+        filebuf = buf;
         rebuild();
         return true;
     }
 }
 
 void ExDictionary::unload() {
-    filebuf.reset(nullptr);
+    delete[] filebuf;
+    filebuf = nullptr;
     dictionary.clear();
 }
 
@@ -141,7 +147,7 @@ int ExDictionary::partialSearch(const StringView& key, int& maxMatched) const {
     int resultIdx = -1;
 
     int lo = 0;
-    int hi = dictionary.size() - 1;
+    int hi = dictionary.count() - 1;
     for (int guessLen = 1; guessLen <= key.length(); ++guessLen) {
         Entry guessKey(key, guessLen);
         lo = firstReqMatch(guessKey.req, lo, hi);
@@ -190,25 +196,26 @@ ExDictionary::Entry ExDictionary::getEntry(int dictIdx) const {
 void ExDictionary::rebuild() {
     dictionary.clear();
     
-    const char* begin = filebuf.get();
+    const char* begin = filebuf;
     while (*begin) {
-        dictionary.resize(dictionary.size() + 1);
-        Entry& name = dictionary.back();
+        StringView req, opt;
 
         const char* end = begin;
         while (*end != '[') {
             ++end;
         }
-        name.req.begin = begin;
-        name.req.end = end;
+        req.begin = begin;
+        req.end = end;
 
         begin = end + 1;
         end = begin;
         while (*end != ']') {
             ++end;
         }
-        name.opt.begin = begin;
-        name.opt.end = end;
+        opt.begin = begin;
+        opt.end = end;
+
+        dictionary.emplace(req, opt);
 
         ++end;
         assert(*end == '\n');
@@ -224,7 +231,7 @@ static int less(const ExDictionary::Entry& lhs, const ExDictionary::Entry& rhs) 
 
 bool ExDictionary::debugCheckSorted() {
     bool sorted = true;
-    for (int i = 1; i < dictionary.size(); ++i) {
+    for (int i = 1; i < dictionary.count(); ++i) {
         if (!less(dictionary[i - 1], dictionary[i])) {
             sorted = false;
             break;
@@ -235,8 +242,8 @@ bool ExDictionary::debugCheckSorted() {
     }
 
     fputs("Dictionary is not sorted. This is the expected order:\n", stdout);
-    std::sort(dictionary.begin(), dictionary.end(), less);
-    for (int i = 0; i < dictionary.size(); ++i) {
+    std::sort(&dictionary.first(), &dictionary.last(), less);
+    for (int i = 0; i < dictionary.count(); ++i) {
         printf("%.*s", dictionary[i].req.length(), dictionary[i].req.begin);
         printf("[%.*s]", dictionary[i].opt.length(), dictionary[i].opt.begin);
         fputc('\n', stdout);

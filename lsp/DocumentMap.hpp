@@ -9,7 +9,7 @@ struct WorkingDocument {
         version = textDoc.version;
         uri = textDoc.uri;
         content = textDoc.text;
-        ast.reload(content.str(), diagnostics);
+        ast.reload(content.str(), &diagnostics);
     }
 
     void change(const DidChangeTextDocumentParams& params) {
@@ -22,13 +22,13 @@ struct WorkingDocument {
             }
         }
         diagnostics.clear();
-        ast.reload(content.str(), diagnostics);
+        ast.reload(content.str(), &diagnostics);
         version = params.textDocument.version;
         assert(uri == params.textDocument.uri);
     }
 
     SyntaxTree ast;
-    std::vector<Diagnostic> diagnostics;
+    DiagnosticReporter diagnostics;
 
     int version;
     FStr uri;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Blocks.hpp>
-#include <Diagnostics.hpp>
+#include <DiagnosticReporter.hpp>
 #include <EvalFactory.hpp>
 
 #include <type_traits>
@@ -41,10 +41,7 @@ struct SyntaxTree {
     SyntaxTree(const SyntaxTree&) = delete;
     SyntaxTree(SyntaxTree&&) = delete;
 
-    void reload(const char* str, std::vector<Diagnostic>& errors);
-    bool isLoaded() const;
-private:
-    void reloadStorage();
+    void reload(const char* str, DiagnosticReporter* reporter);
 
 public:
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations

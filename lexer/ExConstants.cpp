@@ -1,4 +1,5 @@
 #include <FStr.hpp>
+#include <Vector.hpp>
 
 #include "ExConstants.hpp"
 #include "ExDictionary.hpp"
@@ -6,7 +7,7 @@
 bool debugCheckExConstants() {
     const ExDictionary& dict = ExDictionary::getSingleton();
     FStr lowercase;
-    std::vector<int> values;
+    Vector<int> values;
 
     int okay = true;
 
@@ -15,9 +16,9 @@ bool debugCheckExConstants() {
     for (int i = 0; i < lowercase.length(); ++i) {    \
         lowercase[i] = tolower(lowercase[i]);         \
     }                                                 \
-    values.push_back(dict.search(lowercase));   \
-    assert(values.back() != -1);                      \
-    okay &= (values.back() == val);                   \
+    values.emplace(dict.search(lowercase));   \
+    assert(values.last() != -1);                      \
+    okay &= (values.last() == val);                   \
 
     FOR_EACH_COMMAND(COMPUTE_COMMAND_VALUE);
 

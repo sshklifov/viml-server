@@ -111,7 +111,7 @@ struct DidChangeTextDocumentParams {
          */
         FStr text;
     };
-    std::vector<TextDocumentContentChangeEvent> contentChanges;
+    Vector<TextDocumentContentChangeEvent> contentChanges;
 };
 
 struct DidCloseParams {

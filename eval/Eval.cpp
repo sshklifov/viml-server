@@ -99,53 +99,44 @@ void eval::parser::error(const eval::parser::location_type& l, const std::string
     assert(false);
 }
 
-class ErrorPushParser : public eval::parser {
+class ReportingParser : public eval::parser {
 public:
-    ErrorPushParser(EvalLexState& lexState, EvalFactory& f, EvalCommand*& result) :
-        eval::parser(lexState, f, result), locMap(nullptr), digs(nullptr) {}
+    ReportingParser(EvalLexState& lexState, EvalFactory& f, EvalCommand*& result) :
+        eval::parser(lexState, f, result) {}
 
-    void setErrorPush(const LocationMap* locMap, LocationMap::Key locKey, std::vector<Diagnostic>* digs) {
-        this->locMap = locMap;
+    void setReporter(DiagnosticReporter* reporter, LocationMap::Key locKey) {
+        this->reporter = reporter;
         this->locKey = locKey;
-        this->digs = digs;
     }
 
     virtual void error(const eval::parser::location_type& l, const std::string& msg) override {
-        assert(digs);
-
-        digs->resize(digs->size() + 1);
-        Diagnostic& error = digs->back();
-        error.severity = Diagnostic::Error;
-        error.message = msg.c_str();
-        error.range = locMap->resolve(locKey, l.begin, l.end - 1);
+        reporter->error(msg.c_str(), locKey, l.begin, l.end - 1);
     }
 
 private:
+    DiagnosticReporter* reporter;
     LocationMap::Key locKey;
-    const LocationMap* locMap;
-    std::vector<Diagnostic>* digs;
 };
 
-bool blockSupported(const Block& block) {
-    eval::parser::token::token_kind_type tok = exDictToKindType(block.lexem.exDictIdx);
+bool supported(const ExLexem& lexem) {
+    eval::parser::token::token_kind_type tok = exDictToKindType(lexem.exDictIdx);
     return tok != eval::parser::token::token_kind_type::EVALerror;
 }
 
-bool evalParseBlock(Block& block, SyntaxTree& root, std::vector<Diagnostic>& digs) {
+EvalCommand* evalEx(const ExLexem& lexem, EvalFactory& factory, DiagnosticReporter* reporter) {
     // Only a few ex commands have support for eval parsing. Ignore the rest (issue no warnings).
-    if (!blockSupported(block)) {
-        return false;
+    if (!supported(lexem)) {
+        return nullptr;
     }
 
-    EvalLexState lexState(block.lexem);
+    EvalLexState lexState(lexem);
     EvalCommand* result = nullptr;
-    ErrorPushParser parser(lexState, root.evalFac, result);
-    parser.setErrorPush(&root.lexer.getLocationMap(), block.lexem.locationKey, &digs);
+    ReportingParser parser(lexState, factory, result);
+    parser.setReporter(reporter, lexem.locationKey);
 
     bool notOk = parser.parse();
     if (notOk) {
-        return false;
+        return nullptr;
     }
-    block.evalCmd = result;
-    return true;
+    return result;
 }

@@ -9,10 +9,7 @@ struct Vector {
     Vector() : arr(nullptr), len(0), allocLen(0) {}
 
     Vector(const Vector& rhs) : Vector() {
-        allocAtLeast(rhs.len);
-        for (int i = 0; i < rhs.len; ++i) {
-            new(arr + i) T(rhs.arr[i]);
-        }
+        copy(rhs);
     }
 
     Vector(Vector&& rhs) : arr(rhs.arr), len(rhs.len), allocLen(rhs.allocLen) {
@@ -26,6 +23,11 @@ struct Vector {
         if (arr) {
             free(arr);
         }
+    }
+
+    Vector& operator=(const Vector& rhs) {
+        copy(rhs);
+        return *this;
     }
 
     template <typename... Types>
@@ -42,6 +44,17 @@ struct Vector {
         len = 0;
     }
 
+    void copy(const Vector& rhs) {
+        clear();
+        allocAtLeast(rhs.len);
+        for (int i = 0; i < rhs.len; ++i) {
+            new(arr + i) T(rhs.arr[i]);
+        }
+        len = rhs.len;
+    }
+
+    bool empty() const { return len == 0; }
+
     void remove(int pos) {
         assert(pos < len);
         arr[pos].~T();
@@ -56,7 +69,27 @@ struct Vector {
     T& operator[](int i) { return arr[i]; }
     const T& operator[](int i) const { return arr[i]; }
 
-private:
+    T& first() { return arr[0]; }
+    const T& first() const { return arr[0]; }
+    T& last() { return arr[len - 1]; }
+    const T& last() const { return arr[len - 1]; }
+
+    T* begin() { return arr; }
+    T* end() { return arr + len; }
+
+    const T* begin() const { return arr; }
+    const T* end() const { return arr + len; }
+
+    // TODO problem?
+    void resize(int n) {
+        clear();
+        allocAtLeast(n);
+        for (int i = 0; i < n; ++i) {
+            new(arr + i) T();
+        }
+        len = n;
+    }
+
     void allocAtLeast(int n) {
         if (n < allocLen) {
             return;
@@ -66,6 +99,7 @@ private:
         arr = (T*)realloc(arr, sizeof(T) * allocLen);
     }
 
+private:
     T* arr;
     int len;
     int allocLen;

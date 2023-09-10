@@ -51,6 +51,15 @@ struct LocationMap {
         return res;
     }
 
+    Range resolve(const Key& key) const {
+        Range res;
+        res.start.line = fragments[key.fragBegin].line;
+        res.start.character = fragments[key.fragBegin].col;
+        res.end.line = fragments[key.fragEnd].line;
+        res.end.character = fragments[key.fragEnd].col;
+        return res;
+    }
+
 private:
     Vector<Fragment> fragments;
 };
