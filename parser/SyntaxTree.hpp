@@ -50,6 +50,5 @@ public:
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
     BlockFactory blockFac; //< Holds memory for the created blocks (main ast)
     EvalFactory evalFac; //< Holds memory for command qargs (second level ast)
-
-    RootBlock* root;
+    RootBlock* root; //< AST root
 };

@@ -1,5 +1,5 @@
 include_directories(${CMAKE_CURRENT_LIST_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/fstr)
+include_directories(${CMAKE_SOURCE_DIR}/container)
 
 run_flex_generator(Command.l Command.cpp)
 find_file(EXCMDS_TXT NAMES excmds.txt PATHS ${CMAKE_CURRENT_LIST_DIR} REQUIRED NO_DEFAULT_PATH)

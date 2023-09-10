@@ -3,6 +3,7 @@
 #include <rapidjson/writer.h>
 
 #include <FStr.hpp>
+#include <Range.hpp>
 #include <vector>
 
 struct BufferWriter {
@@ -86,6 +87,22 @@ struct BufferWriter {
 
     void write(const char* s) {
         w.String(s);
+    }
+
+    void write(const Position& pos) {
+        w.StartObject();
+        w.Key("line");
+        w.Int(pos.line);
+        w.Key("character");
+        w.Int(pos.character);
+    }
+
+    void write(const Range& range) {
+        w.StartObject();
+        w.Key("start");
+        write(range.start);
+        w.Key("end");
+        write(range.end);
     }
 
 private:

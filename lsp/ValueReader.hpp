@@ -3,6 +3,8 @@
 #include <rapidjson/document.h>
 
 #include <FStr.hpp>
+#include <Range.hpp>
+
 #include <vector>
 #include <optional>
 
@@ -74,6 +76,16 @@ private:
 
     void read(FStr& res) {
         res = val->GetString();
+    }
+
+    void read(Position& pos) {
+        readMember("line", pos.line);
+        readMember("character", pos.character);
+    }
+
+    void read(Range& range) {
+        readMember("start", range.start);
+        readMember("end", range.end);
     }
 
     MemberScope beginMember(const char* name) {

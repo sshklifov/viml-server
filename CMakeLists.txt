@@ -27,7 +27,7 @@ function(run_bison_generator bison_file bison_cpp)
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endfunction()
 
-add_subdirectory(fstr)
+add_subdirectory(container)
 add_subdirectory(lexer)
 add_subdirectory(parser)
 add_subdirectory(eval)

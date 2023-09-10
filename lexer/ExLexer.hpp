@@ -45,7 +45,7 @@ struct Continuation {
         beginPtr = contStorage.buf + contStorage.len;
         writePtr = beginPtr;
         availableStorage = contStorage.maxlen - contStorage.len;
-        locationBegin = locMap.locations.size();
+        fragmentsBegin = locMap.fragments.count();
     }
 
     void add(StringView lineNoBackslash, int line, int col) {
@@ -58,8 +58,8 @@ struct Continuation {
         if (n <= availableStorage) {
             memcpy(writePtr, lineNoBackslash.begin, n);
 
-            int entryLen = lineNoBackslash.length();
-            locMap.addEntry(line, col, entryLen);
+            int fragLen = lineNoBackslash.length();
+            locMap.addFragment(line, col, fragLen);
 
             writePtr += n;
             availableStorage -= n;
@@ -77,8 +77,8 @@ struct Continuation {
         assert(contStorage.len <= contStorage.maxlen);
         StringView res(beginPtr, writePtr);
 
-        key.entryBegin = this->locationBegin;
-        key.entryEnd = locMap.locations.size();
+        key.fragBegin = this->fragmentsBegin;
+        key.fragEnd = locMap.fragments.count();
 
         writePtr = nullptr;
         beginPtr = nullptr;
@@ -93,7 +93,7 @@ private:
     char* beginPtr;
     char* writePtr;
     int availableStorage;
-    int locationBegin;
+    int fragmentsBegin;
 };
 
 /// Internal helper for parsing program line by line

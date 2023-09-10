@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Vector.hpp>
-#include <FStr.hpp>
+#include "Vector.hpp"
+#include "FStr.hpp"
 
 template <typename Value>
 struct StringMap {

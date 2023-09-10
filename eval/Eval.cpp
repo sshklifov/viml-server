@@ -104,9 +104,9 @@ public:
     ErrorPushParser(EvalLexState& lexState, EvalFactory& f, EvalCommand*& result) :
         eval::parser(lexState, f, result), locMap(nullptr), digs(nullptr) {}
 
-    void setErrorPush(const LocationMap* locMap, LocationMap::Key key, std::vector<Diagnostic>* digs) {
+    void setErrorPush(const LocationMap* locMap, LocationMap::Key locKey, std::vector<Diagnostic>* digs) {
         this->locMap = locMap;
-        this->locKey = key;
+        this->locKey = locKey;
         this->digs = digs;
     }
 
@@ -117,8 +117,7 @@ public:
         Diagnostic& error = digs->back();
         error.severity = Diagnostic::Error;
         error.message = msg.c_str();
-        locMap->resolve(locKey, l.begin, error.range.start.line, error.range.start.character);
-        locMap->resolve(locKey, l.end - 1, error.range.end.line, error.range.end.character);
+        error.range = locMap->resolve(locKey, l.begin, l.end - 1);
     }
 
 private:

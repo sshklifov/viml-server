@@ -54,6 +54,7 @@ struct Vector {
     int count() const { return len; }
 
     T& operator[](int i) { return arr[i]; }
+    const T& operator[](int i) const { return arr[i]; }
 
 private:
     void allocAtLeast(int n) {

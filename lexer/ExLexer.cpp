@@ -12,8 +12,6 @@
 #include "ExDictionary.hpp"
 
 static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& lex) {
-    YY_BUFFER_STATE buf = cmd_scan_bytes(line.begin, line.length());
-
     lex.exDictIdx = -1;
     lex.name.begin = lex.name.end;
     lex.qargs.begin = lex.qargs.end;
@@ -23,6 +21,7 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
     lex.bang = 0;
     lex.range = 0;
 
+    YY_BUFFER_STATE buf = cmd_scan_bytes(line.begin, line.length());
     const ExDictionary& dict = ExDictionary::getSingleton();
 
     enum {ERROR=256, RANGE_ARG, RANGE_DELIM, COMMAND_COLON, COMMAND, COMMAND_SPECIAL};
@@ -44,17 +43,17 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                 lex.range = 1;
                 break;
 
+            case COMMAND_SPECIAL:
             case COMMAND: {
                 int cmdNameLen = 0;
                 int dictIdx = dict.partialSearch(cmdget_text(), cmdNameLen);
                 if (dictIdx < 0) {
                     // TODO error
-                    break;
                 } else {
                     StringView namePart(line.begin + lineOffset, cmdNameLen);
                     StringView restPart(namePart.end, namePart.begin + cmdget_leng());
                     if (!restPart.empty()) {
-                        if (isalpha(restPart.left())) {
+                        if (tok != COMMAND_SPECIAL && isalpha(restPart.left())) {
                             // TODO error
                             break;
                         } else if (restPart.left() == '!') {
@@ -71,22 +70,6 @@ static int buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& 
                 break;
             }
 
-            case COMMAND_SPECIAL: {
-                int cmdNameLen = 0;
-                int dictIdx = dict.partialSearch(cmdget_text(), cmdNameLen);
-                if (dictIdx < 0) {
-                    // TODO error
-                } else {
-                    StringView namePart(line.begin + lineOffset, cmdNameLen);
-                    StringView restPart(namePart.end, namePart.begin + cmdget_leng());
-                    lex.exDictIdx = dictIdx;
-                    lex.name = namePart;
-                    lex.qargs = restPart.trimLeftSpace();
-                    lex.nameOffset = namePart.begin - line.begin;
-                    lex.qargsOffset = restPart.begin - line.begin;
-                }
-                break;
-            }
         }
         lineOffset += cmdget_leng();
     }
@@ -100,7 +83,7 @@ bool ExLexer::reload(const char* str) {
     int n = strlen(str);
     program.set(str, n);
     contStorage.realloc(n);
-    locationMap.clearEntries();
+    locationMap.clearFlagments();
     return true;
 }
 

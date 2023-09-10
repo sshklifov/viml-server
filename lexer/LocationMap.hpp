@@ -1,49 +1,56 @@
 #pragma once
 
-#include <vector>
+#include <Range.hpp>
+#include <Vector.hpp>
 
 struct LocationMap {
     friend struct Continuation;
 
     struct Key {
         Key() = default;
-        Key(int begin, int end) : entryBegin(begin), entryEnd(end) {}
+        Key(int begin, int end) : fragBegin(begin), fragEnd(end) {}
 
-        int entryBegin;
-        int entryEnd;
+        int fragBegin;
+        int fragEnd;
     };
 
-    struct Location {
-        Location() = default;
-        Location(int line, int col, int entryLen) : line(line), col(col), entryLen(entryLen) {}
+    struct Fragment {
+        Fragment() = default;
+        Fragment(int line, int col, int fragLen) : line(line), col(col), fragLen(fragLen) {}
 
         int line;
         int col;
-        int entryLen;
+        int fragLen;
     };
 
-    void addEntry(int line, int col, int entryLen) {
-        locations.push_back(Location(line, col, entryLen));
+    void addFragment(int line, int col, int entryLen) {
+        fragments.emplace(line, col, entryLen);
     }
 
-    void clearEntries() {
-        locations.clear();
+    void clearFlagments() {
+        fragments.clear();
     }
 
-    bool resolve(const Key& key, int strOffset, int& line, int& col) const {
+    Range resolve(const Key& key, int first, int last) const {
+        Range res;
         int strBegin = 0;
-        for (int i = key.entryBegin; i < key.entryEnd; ++i) {
-            int strEnd = strBegin + locations[i].entryLen;
-            if (strOffset >= strBegin && strOffset < strEnd) {
-                line = locations[i].line;
-                col = locations[i].col + (strOffset - strBegin);
-                return true;
+        for (int i = key.fragBegin; i < key.fragEnd; ++i) {
+            int strEnd = strBegin + fragments[i].fragLen;
+            if (first >= strBegin && first < strEnd) {
+                res.start.line = fragments[i].line;
+                res.start.character = fragments[i].col + (first - strBegin);
+            }
+            if (last >= strBegin && last < strEnd) {
+                res.end.line = fragments[i].line;
+                res.end.character = fragments[i].col + (last - strBegin);
+                return res;
             }
             strBegin = strEnd;
         }
-        return false;
+        assert(false);
+        return res;
     }
 
 private:
-    std::vector<Location> locations;
+    Vector<Fragment> fragments;
 };
