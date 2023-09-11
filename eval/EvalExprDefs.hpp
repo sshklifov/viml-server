@@ -130,7 +130,7 @@ private:
 };
 
 struct TokenNode : public EvalExpr {
-    enum Type {STRING, NUMBER, FLOAT, BLOB, OPTION, REGISTER, ENV, AUTOLOAD, VA, ID};
+    enum Type {STRING, NUMBER, FLOAT, BLOB, OPTION, REGISTER, ENV, AUTOLOAD, ID};
 
     TokenNode(FStr tok, Type type) : tok(std::move(tok)), type(type) {}
 

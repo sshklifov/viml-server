@@ -22,6 +22,14 @@
     MATCH_CASE "=~#"
     NOT_MATCH_CASE "!~#"
 
+%token PLUS_EQ "+="
+    MINUS_EQ "-="
+    MULT_EQ "*="
+    DIV_EQ "/="
+    MOD_EQ "%="
+    DOT_EQ ".="
+    CONCAT_EQ "..="
+
 %token EQ_ICASE "==?"
     NOT_EQ_ICASE "!=?"
     GR_ICASE ">?"
@@ -32,12 +40,14 @@
     NOT_MATCH_ICASE "!~?"
 
 %token CONCAT ".."
+%token VA "..."
+%token ARROW "->"
 
 %token <FStr> NUMBER FLOAT BLOB STR
-%token <int> ARROW
-%token <FStr> VA_ID SID_ID AUTOLOAD_ID OPTION_ID REGISTER_ID ENV_ID ID
+%token <FStr> SID_ID AUTOLOAD_ID OPTION_ID REGISTER_ID ENV_ID ID
 
-%type <std::vector<FStr>> id_list id_list_or_empty
+%type <FStr> any_id
+%type <std::vector<FStr>> any_ids any_id_list any_id_list_or_empty
 %type <std::vector<EvalExpr*>> expr1_list expr1_list_or_empty
 %type <std::vector<DictNode::Pair>> expr1_pairs expr1_pairs_or_empty
 
@@ -52,8 +62,6 @@
     FUNCTION "function"
 
 %type <EvalCommand*> let unlet const lockvar unlockvar
-%type <FStr> varname
-%type <std::vector<FStr>> varname_list_or_empty varname_list varname_multiple
 
 %type <EvalCommand*> function
 
@@ -79,7 +87,6 @@
 
 %code {
     std::ostream& operator<<(std::ostream& o, const eval::parser::location_type& l) {
-        o << l.begin << ":" << l.end;
         return o;
     }
 }
@@ -114,68 +121,71 @@ command: let
      | unlockvar
      | function
 
-// TODO remove .. from tokens pls! (and others)
+// Spaces:
+// (OK?) 2. varname . varname (dictionary) OR concatenation...
+// (OK but not trivial) 4. indexing a[1] is not the same as a [1]
 // TODO additional checking!
-let: LET varname '=' expr1                                         { $$ = f.create<LetVar>($2, $4); }
-   | LET varname '[' expr1 ']' '=' expr1                           { $$ = f.create<LetElement>($2, $4, $7); }
-   | LET varname '[' ':' ']' '=' expr1                             { $$ = f.create<LetRange>($2, nullptr, nullptr, $7); }
-   | LET varname '[' ':' expr1 ']' '=' expr1                       { $$ = f.create<LetRange>($2, nullptr, $5, $8); }
-   | LET varname '[' expr1 ':' expr1 ']' '=' expr1                 { $$ = f.create<LetRange>($2, $4, $6, $9); }
-   | LET varname '+' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::PLUS); }
-   | LET varname '-' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::MINUS); }
-   | LET varname '*' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::MULT); }
-   | LET varname '/' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::DIV); }
-   | LET varname '%' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::MOD); }
-   | LET varname '.' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::DOT); }
-   | LET varname '.' '.' '=' expr1                                 { $$ = f.create<LetVar>($2, $6, LetOp::DOT2); }
-   | LET '[' varname_list_or_empty ']' '=' expr1                   { $$ = f.create<LetUnpack>($3, $6); }
-   | LET '[' varname_list_or_empty ']' '.' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::DOT); }
-   | LET '[' varname_list_or_empty ']' '+' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::PLUS); }
-   | LET '[' varname_list_or_empty ']' '-' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::MINUS); }
-   | LET '[' varname_list_or_empty ';' varname ']' '=' expr1       { $$ = f.create<LetRemainder>($3, $5, $8); }
-   | LET '[' varname_list_or_empty ';' varname ']' '+' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::PLUS); }
-   | LET '[' varname_list_or_empty ';' varname ']' '-' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::MINUS); }
-   | LET '[' varname_list_or_empty ';' varname ']' '.' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::DOT); }
-   | LET                                                           { $$ = f.create<LetPrint>(); }
-   | LET varname_multiple                                          { $$ = f.create<LetPrint>($2); }
+
+let: LET any_id '=' expr1                                    { $$ = f.create<LetVar>($2, $4); }
+   | LET any_id '[' expr1 ']' '=' expr1                      { $$ = f.create<LetElement>($2, $4, $7); }
+   | LET any_id '[' ':' ']' '=' expr1                        { $$ = f.create<LetRange>($2, nullptr, nullptr, $7); }
+   | LET any_id '[' ':' expr1 ']' '=' expr1                  { $$ = f.create<LetRange>($2, nullptr, $5, $8); }
+   | LET any_id '[' expr1 ':' expr1 ']' '=' expr1            { $$ = f.create<LetRange>($2, $4, $6, $9); }
+   | LET any_id PLUS_EQ expr1                                { $$ = f.create<LetVar>($2, $4, LetOp::PLUS); }
+   | LET any_id MINUS_EQ expr1                               { $$ = f.create<LetVar>($2, $4, LetOp::MINUS); }
+   | LET any_id MULT_EQ expr1                                { $$ = f.create<LetVar>($2, $4, LetOp::MULT); }
+   | LET any_id DIV_EQ expr1                                 { $$ = f.create<LetVar>($2, $4, LetOp::DIV); }
+   | LET any_id MOD_EQ expr1                                 { $$ = f.create<LetVar>($2, $4, LetOp::MOD); }
+   | LET any_id DOT_EQ expr1                                 { $$ = f.create<LetVar>($2, $4, LetOp::DOT); }
+   | LET any_id CONCAT_EQ expr1                              { $$ = f.create<LetVar>($2, $4, LetOp::DOT2); }
+   | LET '[' any_id_list_or_empty ']' '=' expr1                  { $$ = f.create<LetUnpack>($3, $6); }
+   | LET '[' any_id_list_or_empty ']' DOT_EQ expr1               { $$ = f.create<LetUnpack>($3, $6, LetOp::DOT); }
+   | LET '[' any_id_list_or_empty ']' PLUS_EQ expr1              { $$ = f.create<LetUnpack>($3, $6, LetOp::PLUS); }
+   | LET '[' any_id_list_or_empty ']' MINUS_EQ expr1             { $$ = f.create<LetUnpack>($3, $6, LetOp::MINUS); }
+   | LET '[' any_id_list_or_empty ';' any_id ']' '=' expr1       { $$ = f.create<LetRemainder>($3, $5, $8); }
+   | LET '[' any_id_list_or_empty ';' any_id ']' PLUS_EQ expr1   { $$ = f.create<LetRemainder>($3, $5, $8, LetOp::PLUS); }
+   | LET '[' any_id_list_or_empty ';' any_id ']' MINUS_EQ expr1  { $$ = f.create<LetRemainder>($3, $5, $8, LetOp::MINUS); }
+   | LET '[' any_id_list_or_empty ';' any_id ']' DOT_EQ expr1    { $$ = f.create<LetRemainder>($3, $5, $8, LetOp::DOT); }
+   | LET                                                     { $$ = f.create<LetPrint>(); }
+   | LET any_ids                                             { $$ = f.create<LetPrint>($2); }
 ;
 
-unlet: UNLET varname_list_or_empty                                 { $$ = f.create<Unlet>($2); }
+unlet: UNLET any_id_list_or_empty                                 { $$ = f.create<Unlet>($2); }
 ;
 
-const: CONST varname '=' expr1                                     { $$ = f.create<ConstVar>($2, $4); }
-     | CONST '[' varname_list_or_empty ']' '=' expr1               { $$ = f.create<ConstUnpack>($3, $6); }
-     | CONST '[' varname_list_or_empty ';' varname ']' '=' expr1   { $$ = f.create<ConstRemainder>($3, $5, $8); }
-     | CONST                                                       { $$ = f.create<LetPrint>(); }
-     | CONST varname_multiple                                      { $$ = f.create<LetPrint>($2); }
+const: CONST any_id '=' expr1                                 { $$ = f.create<ConstVar>($2, $4); }
+     | CONST '[' any_id_list_or_empty ']' '=' expr1               { $$ = f.create<ConstUnpack>($3, $6); }
+     | CONST '[' any_id_list_or_empty ';' any_id ']' '=' expr1    { $$ = f.create<ConstRemainder>($3, $5, $8); }
+     | CONST                                                  { $$ = f.create<LetPrint>(); }
+     | CONST any_ids                                          { $$ = f.create<LetPrint>($2); }
 ;
 
-lockvar: LOCKVAR varname_multiple                         { $$ = f.create<LockVar>($2); }
-       | LOCKVAR NUMBER varname_multiple                  { $$ = f.create<LockVar>($3, $2); }
+lockvar: LOCKVAR any_ids                         { $$ = f.create<LockVar>($2); }
+       | LOCKVAR NUMBER any_ids                  { $$ = f.create<LockVar>($3, $2); }
 ;
 
-unlockvar: UNLOCKVAR varname_multiple                         { $$ = f.create<UnlockVar>($2); }
-         | UNLOCKVAR NUMBER varname_multiple                  { $$ = f.create<UnlockVar>($3, $2); }
+unlockvar: UNLOCKVAR any_ids                         { $$ = f.create<UnlockVar>($2); }
+         | UNLOCKVAR NUMBER any_ids                  { $$ = f.create<UnlockVar>($3, $2); }
 ;
 
-varname: VA_ID | SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID
+any_id: SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID
 ;
 
-varname_list_or_empty: %empty             { $$ = {}; }
-                     | varname_list       { $$ = $1; }
+any_id_list_or_empty: %empty             { $$ = {}; }
+                | any_id_list            { $$ = $1; }
 
-varname_list: varname                        { $$ = {}; $$.push_back($1); }
-            | varname ',' varname_list       { $$ = $3; $$.push_back($1); }
+any_id_list: any_id                         { $$ = {}; $$.push_back($1); }
+       | any_id ',' any_id_list             { $$ = $3; $$.push_back($1); }
 ;
 
-varname_multiple: varname                    { $$ = {}; $$.push_back($1); }
-                | varname varname_multiple   { $$ = {}; $$.push_back($1); }
+any_ids: any_id                    { $$ = {}; $$.push_back($1); }
+       | any_id any_ids            { $$ = {}; $$.push_back($1); }
 
 // TODO function matching pattern
 // TODO function attributes
-function: FUNCTION                                                     { $$ = new FunctionPrint(); }
-        | FUNCTION varname '(' varname_list_or_empty ')'               { $$ = new Function($2, $4); }
-        | FUNCTION varname '.' varname '(' varname_list_or_empty ')'   { $$ = new FunctionDict($2, $4, $6); }
+function: FUNCTION                                               { $$ = new FunctionPrint(); }
+        | FUNCTION any_id '(' any_id_list_or_empty ')'               { $$ = new Function($2, $4); }
+        | FUNCTION any_id '.' any_id '(' any_id_list_or_empty ')'    { $$ = new FunctionDict($2, $4, $6); }
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = f.create<TernaryNode>($1, $3, $5); }
@@ -253,26 +263,19 @@ expr8: expr9
 ;
 
 // TODO Dictionary #{}
-expr9: NUMBER                               { $$ = f.create<TokenNode>($1, TokenNode::NUMBER); }
-     | FLOAT                                { $$ = f.create<TokenNode>($1, TokenNode::FLOAT); }
-     | BLOB                                 { $$ = f.create<TokenNode>($1, TokenNode::BLOB); }
-     | STR                                  { $$ = f.create<TokenNode>($1, TokenNode::STRING); }
-     | '[' expr1_list_or_empty ']'          { $$ = f.create<ListNode>($2); }
-     | '{' expr1_pairs_or_empty '}'         { $$ = f.create<DictNode>($2); }
-     | '(' expr1 ')'                        { $$ = f.create<NestedNode>($2); }
-     | '{' id_list_or_empty ARROW expr1 '}' { $$ = f.create<LambdaNode>($2, $4); }
-     | '&' ID                               { $$ = f.create<TokenNode>($2, TokenNode::OPTION); }
-     | '@' ID                               { $$ = f.create<TokenNode>($2, TokenNode::REGISTER); }
-     | '$' ID                               { $$ = f.create<TokenNode>($2, TokenNode::ENV); }
-     | ID                                   { $$ = f.create<TokenNode>($1, TokenNode::ID); }
-;
-
-// TODO {a, b, c**,**}
-id_list_or_empty: %empty           { $$ = {}; }
-                | id_list          { $$ = $1; }
-
-id_list: ID                        { $$ = {}; $$.push_back($1); }
-       | ID ',' id_list            { $$ = $3; $$.push_back($1); }
+expr9: NUMBER                                     { $$ = f.create<TokenNode>($1, TokenNode::NUMBER); }
+     | FLOAT                                      { $$ = f.create<TokenNode>($1, TokenNode::FLOAT); }
+     | BLOB                                       { $$ = f.create<TokenNode>($1, TokenNode::BLOB); }
+     | STR                                        { $$ = f.create<TokenNode>($1, TokenNode::STRING); }
+     | '[' expr1_list_or_empty ']'                { $$ = f.create<ListNode>($2); }
+     | '{' expr1_pairs_or_empty '}'               { $$ = f.create<DictNode>($2); }
+     | '(' expr1 ')'                              { $$ = f.create<NestedNode>($2); }
+     | '{' any_id_list_or_empty ARROW expr1 '}'   { $$ = f.create<LambdaNode>($2, $4); }
+     | OPTION_ID                                  { $$ = f.create<TokenNode>($1, TokenNode::OPTION); }
+     | REGISTER_ID                                { $$ = f.create<TokenNode>($1, TokenNode::REGISTER); }
+     | ENV_ID                                     { $$ = f.create<TokenNode>($1, TokenNode::ENV); }
+     | ID                                         { $$ = f.create<TokenNode>($1, TokenNode::ID); }
+     | AUTOLOAD_ID                                { $$ = f.create<TokenNode>($1, TokenNode::AUTOLOAD); }
 ;
 
 expr1_list_or_empty: %empty        { $$ = {}; }

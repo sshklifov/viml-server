@@ -73,7 +73,6 @@ int evallex(eval::parser::value_type* v, eval::parser::location_type* l, EvalLex
         case kind_type::FLOAT:
         case kind_type::BLOB:
         case kind_type::STR:
-        case kind_type::VA_ID:
         case kind_type::SID_ID:
         case kind_type::AUTOLOAD_ID:
         case kind_type::OPTION_ID:
@@ -102,9 +101,7 @@ void eval::parser::error(const eval::parser::location_type& l, const std::string
 class ReportingParser : public eval::parser {
 public:
     ReportingParser(EvalLexState& lexState, EvalFactory& f, EvalCommand*& result) :
-        eval::parser(lexState, f, result) {
-            set_debug_level(1);
-        }
+        eval::parser(lexState, f, result) {}
 
     void setReporter(DiagnosticReporter* reporter, LocationMap::Key locKey) {
         this->reporter = reporter;

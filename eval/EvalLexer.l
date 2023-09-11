@@ -6,7 +6,16 @@ str ["]({str_loop}*|\\.)*["]
 quote_loop [ -~]{-}[\\']
 quote [']({quote_loop}*|\\.)*[']
 
-id [a-zA-Z_][a-zA-Z0-9_]*
+name [0-9a-zA-Z_]+
+curly_name ({name}?"{"[0-9a-zA-Z_{}]+"}"{name}?)|{name}
+scope [gbwtslav]:
+
+id {scope}?{curly_name}
+sid_id "<SID>"{curly_name}
+au_id {scope}?({curly_name}[#])+{curly_name}
+opt_id "&"([gl]:)?{name}
+reg_id "@"[0-9a-zA-Z:.%#=*+_/-]?
+env_id "$"{name}
 
 radix "0x"|"0X"|"0b"|"0B"
 number {radix}?[0-9]+
@@ -123,6 +132,34 @@ blob "0z"[0-9a-fA-F.]+
     return eval::parser::token::NOT_MATCH_ICASE;
 }
 
+"+=" {
+    return eval::parser::token::PLUS_EQ;
+}
+
+"-=" {
+    return eval::parser::token::MINUS_EQ;
+}
+
+"*=" {
+    return eval::parser::token::MULT_EQ;
+}
+
+"/=" {
+    return eval::parser::token::DIV_EQ;
+}
+
+"%=" {
+    return eval::parser::token::MOD_EQ;
+}
+
+".=" {
+    return eval::parser::token::DOT_EQ;
+}
+
+"..=" {
+    return eval::parser::token::CONCAT_EQ;
+}
+
 "is" {
     return eval::parser::token::IS;
 }
@@ -133,6 +170,10 @@ blob "0z"[0-9a-fA-F.]+
 
 ".." {
     return eval::parser::token::CONCAT;
+}
+
+"..." {
+    return eval::parser::token::VA;
 }
 
 {number} {
@@ -161,6 +202,26 @@ blob "0z"[0-9a-fA-F.]+
 
 {id} {
     return eval::parser::token::ID;
+}
+
+{sid_id} {
+    return eval::parser::token::SID_ID;
+}
+
+{au_id} {
+    return eval::parser::token::AUTOLOAD_ID;
+}
+
+{opt_id} {
+    return eval::parser::token::OPTION_ID;
+}
+
+{reg_id} {
+    return eval::parser::token::REGISTER_ID;
+}
+
+{env_id} {
+    return eval::parser::token::ENV_ID;
 }
 
 "\n" {
