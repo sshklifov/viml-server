@@ -79,7 +79,7 @@
 
 %code {
     std::ostream& operator<<(std::ostream& o, const eval::parser::location_type& l) {
-        assert(false);
+        o << l.begin << ":" << l.end;
         return o;
     }
 }
@@ -261,14 +261,13 @@ expr9: NUMBER                               { $$ = f.create<TokenNode>($1, Token
      | '{' expr1_pairs_or_empty '}'         { $$ = f.create<DictNode>($2); }
      | '(' expr1 ')'                        { $$ = f.create<NestedNode>($2); }
      | '{' id_list_or_empty ARROW expr1 '}' { $$ = f.create<LambdaNode>($2, $4); }
-     | OPTION_ID                            { $$ = f.create<TokenNode>($1, TokenNode::OPTION); }
-     | REGISTER_ID                          { $$ = f.create<TokenNode>($1, TokenNode::REGISTER); }
-     | ENV_ID                               { $$ = f.create<TokenNode>($1, TokenNode::ENV); }
+     | '&' ID                               { $$ = f.create<TokenNode>($2, TokenNode::OPTION); }
+     | '@' ID                               { $$ = f.create<TokenNode>($2, TokenNode::REGISTER); }
+     | '$' ID                               { $$ = f.create<TokenNode>($2, TokenNode::ENV); }
      | ID                                   { $$ = f.create<TokenNode>($1, TokenNode::ID); }
-     | AUTOLOAD_ID                          { $$ = f.create<TokenNode>($1, TokenNode::AUTOLOAD); }
-     | VA_ID                                { $$ = f.create<TokenNode>($1, TokenNode::VA); }
 ;
 
+// TODO {a, b, c**,**}
 id_list_or_empty: %empty           { $$ = {}; }
                 | id_list          { $$ = $1; }
 

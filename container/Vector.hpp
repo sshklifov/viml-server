@@ -64,6 +64,8 @@ struct Vector {
         --len;
     }
 
+    void removeLast() { remove(len - 1); }
+
     int count() const { return len; }
 
     T& operator[](int i) { return arr[i]; }

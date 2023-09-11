@@ -1,5 +1,7 @@
 #include "SyntaxTree.hpp"
 
+#include <Stack.hpp>
+
 #include <ExConstants.hpp>
 #include <ExLexer.hpp>
 #include <Eval.hpp>
@@ -18,8 +20,10 @@ void SyntaxTree::reload(const char* str) {
     reporter.clear();
 
     root = blockFac.create<RootBlock>();
-    std::stack<Block*> blocks;
-    blocks.push(root); //< Guarantees that stack is never empty
+    Stack<Block*> blocks;
+    blocks.emplace(root); //< Guarantees that stack is never empty
+
+    // TODO error recovery
 
     ExLexem lexem;
     while (lexer.lex(lexem)) {
@@ -28,7 +32,7 @@ void SyntaxTree::reload(const char* str) {
         case IF:
             newBlock = blockFac.create<IfBlock>(lexem);
             blocks.top()->addToScope(newBlock);
-            blocks.push(newBlock);
+            blocks.emplace(newBlock);
             break;
 
         case ELSEIF:
@@ -74,7 +78,7 @@ void SyntaxTree::reload(const char* str) {
         case WHILE:
             newBlock = blockFac.create<WhileBlock>(lexem);
             blocks.top()->addToScope(newBlock);
-            blocks.push(newBlock);
+            blocks.emplace(newBlock);
             break;
 
         case ENDWHILE:
@@ -90,7 +94,7 @@ void SyntaxTree::reload(const char* str) {
         case FOR:
             newBlock = blockFac.create<ForBlock>(lexem);
             blocks.top()->addToScope(newBlock);
-            blocks.push(newBlock);
+            blocks.emplace(newBlock);
             break;
 
         case ENDFOR:
@@ -106,7 +110,7 @@ void SyntaxTree::reload(const char* str) {
         case FUNCTION:
             newBlock = blockFac.create<FunctionBlock>(lexem);
             blocks.top()->addToScope(newBlock);
-            blocks.push(newBlock);
+            blocks.emplace(newBlock);
             break;
 
         case ENDFUNCTION:
@@ -120,7 +124,7 @@ void SyntaxTree::reload(const char* str) {
         case TRY:
             newBlock = blockFac.create<TryBlock>(lexem);
             blocks.top()->addToScope(newBlock);
-            blocks.push(newBlock);
+            blocks.emplace(newBlock);
             break;
 
          case CATCH:
@@ -130,7 +134,7 @@ void SyntaxTree::reload(const char* str) {
             if (blocks.top()->getId() == TRY) {
                 newBlock = blockFac.create<CatchBlock>(lexem);
                 blocks.top()->cast<TryBlock>()->catchBlocks.push_back(newBlock);
-                blocks.push(newBlock);
+                blocks.emplace(newBlock);
             } else if (blocks.top()->getId() == FINALLY) {
                 reporter.error("catch after finally", lexem);
             } else {
@@ -145,7 +149,7 @@ void SyntaxTree::reload(const char* str) {
             if (blocks.top()->getId() == TRY) {
                 newBlock = blockFac.create<FinallyBlock>(lexem);
                 blocks.top()->cast<TryBlock>()->finally = newBlock;
-                blocks.push(newBlock);
+                blocks.emplace(newBlock);
             } else if (blocks.top()->getId() == FINALLY) {
                 reporter.error("multiple finally", lexem);
             } else if (blocks.top()->getId() == FINALLY) {

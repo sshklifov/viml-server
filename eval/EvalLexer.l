@@ -6,17 +6,7 @@ str ["]({str_loop}*|\\.)*["]
 quote_loop [ -~]{-}[\\']
 quote [']({quote_loop}*|\\.)*[']
 
-name [a-zA-Z_][a-zA-Z0-9_]*
-curly_name [a-zA-Z_{}][a-zA-Z0-9_{}]*
-scope [a-zA-Z]:
-
-id {scope}?{curly_name}
-sid_id "<SID>"{curly_name}
-au_id {scope}?({curly_name}[#])+{curly_name}
-opt_id "&"{scope}?{curly_name}
-reg_id "@"{curly_name}
-env_id "$"{curly_name}
-va_id "a:"{number}?
+id [a-zA-Z_][a-zA-Z0-9_]*
 
 radix "0x"|"0X"|"0b"|"0B"
 number {radix}?[0-9]+
@@ -167,30 +157,6 @@ blob "0z"[0-9a-fA-F.]+
 
 "->" {
     return eval::parser::token::ARROW;
-}
-
-{va_id} {
-    return eval::parser::token::VA_ID;
-}
-
-{sid_id} {
-    return eval::parser::token::SID_ID;
-}
-
-{au_id} {
-    return eval::parser::token::AUTOLOAD_ID;
-}
-
-{opt_id} {
-    return eval::parser::token::OPTION_ID;
-}
-
-{reg_id} {
-    return eval::parser::token::REGISTER_ID;
-}
-
-{env_id} {
-    return eval::parser::token::ENV_ID;
 }
 
 {id} {

@@ -102,7 +102,9 @@ void eval::parser::error(const eval::parser::location_type& l, const std::string
 class ReportingParser : public eval::parser {
 public:
     ReportingParser(EvalLexState& lexState, EvalFactory& f, EvalCommand*& result) :
-        eval::parser(lexState, f, result) {}
+        eval::parser(lexState, f, result) {
+            set_debug_level(1);
+        }
 
     void setReporter(DiagnosticReporter* reporter, LocationMap::Key locKey) {
         this->reporter = reporter;
