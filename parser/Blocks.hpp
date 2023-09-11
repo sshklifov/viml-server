@@ -37,6 +37,7 @@ struct Block {
         if (T::id == getId()) {
             return static_cast<T*>(this);
         } else {
+            assert(false);
             return nullptr;
         }
     }
@@ -74,26 +75,40 @@ struct ExBlock : Block {
 };
 
 struct IfBlock : public Block {
-    IfBlock(const ExLexem& lexem) : Block(lexem), elseBlock(nullptr) {}
+    IfBlock(const ExLexem& lexem) : Block(lexem), elseIfBlock(nullptr) {}
 
     void enumerate(EnumCallback cb) override {
         Block::enumerate(cb);
-        if (elseBlock) {
-            elseBlock->enumerate(cb);
+        if (elseIfBlock) {
+            elseIfBlock->enumerate(cb);
         }
     }
 
     void appendStr(FStr& res) override {
         res.appendf("If({})\n", lexem.qargs);
         appendBodyStr(res);
-        if (elseBlock) {
-            elseBlock->appendStr(res);
+        if (elseIfBlock) {
+            elseIfBlock->appendStr(res);
         }
         res.append("Endif()\n");
     }
 
     static const int id = IF;
-    Block* elseBlock;
+    Block* elseIfBlock;
+};
+
+struct ElseIfBlock : public IfBlock {
+    ElseIfBlock(const ExLexem& lexem) : IfBlock(lexem) {}
+
+    void appendStr(FStr& res) override {
+        res.appendf("ElseIf({})\n", lexem.qargs);
+        appendBodyStr(res);
+        if (elseIfBlock) {
+            elseIfBlock->appendStr(res);
+        }
+    }
+
+    static const int id = ELSEIF;
 };
 
 struct ElseBlock : public Block {

@@ -32,9 +32,13 @@ void SyntaxTree::reload(const char* str) {
             break;
 
         case ELSEIF:
-            if (blocks.top()->getId() == IF) {
-                newBlock = blockFac.create<IfBlock>(lexem);
-                blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
+            if (blocks.top()->getId() == IF || blocks.top()->getId() == ELSEIF) {
+                newBlock = blockFac.create<ElseIfBlock>(lexem);
+                if (blocks.top()->getId() == IF) {
+                    blocks.top()->cast<IfBlock>()->elseIfBlock = newBlock;
+                } else {
+                    blocks.top()->cast<ElseIfBlock>()->elseIfBlock = newBlock;
+                }
                 blocks.top() = newBlock;
             } else if (blocks.top()->getId() == ELSE) {
                 reporter.error("elseif after else", lexem);
@@ -44,9 +48,13 @@ void SyntaxTree::reload(const char* str) {
             break;
 
         case ELSE:
-            if (blocks.top()->getId() == IF) {
+            if (blocks.top()->getId() == IF || blocks.top()->getId() == ELSEIF) {
                 newBlock = blockFac.create<ElseBlock>(lexem);
-                blocks.top()->cast<IfBlock>()->elseBlock = newBlock;
+                if (blocks.top()->getId() == IF) {
+                    blocks.top()->cast<IfBlock>()->elseIfBlock = newBlock;
+                } else {
+                    blocks.top()->cast<ElseIfBlock>()->elseIfBlock = newBlock;
+                }
                 blocks.top() = newBlock;
             } else if (blocks.top()->getId() == ELSE) {
                 reporter.error("multiple else", lexem);
@@ -56,10 +64,10 @@ void SyntaxTree::reload(const char* str) {
             break;
 
         case ENDIF:
-            if (blocks.top()->getId() != IF && blocks.top()->getId() != ELSE) {
-                reporter.error("endif without if", lexem);
-            } else {
+            if (blocks.top()->getId() == IF || blocks.top()->getId() == ELSEIF || blocks.top()->getId() == ELSE) {
                 blocks.pop();
+            } else {
+                reporter.error("endif without if", lexem);
             }
             break;
 
@@ -115,21 +123,6 @@ void SyntaxTree::reload(const char* str) {
             blocks.push(newBlock);
             break;
 
-        case FINALLY:
-            if (blocks.top()->getId() == CATCH) {
-                blocks.pop(); // end catch block
-            }
-            if (blocks.top()->getId() == TRY) {
-                newBlock = blockFac.create<FinallyBlock>(lexem);
-                blocks.top()->cast<TryBlock>()->finally = newBlock;
-                blocks.push(newBlock);
-            } else if (blocks.top()->getId() == FINALLY) {
-                reporter.error("multiple finally", lexem);
-            } else if (blocks.top()->getId() == FINALLY) {
-                reporter.error("finally without try", lexem);
-            }
-            break;
-
          case CATCH:
             if (blocks.top()->getId() == CATCH) {
                 blocks.pop(); // end catch block
@@ -145,11 +138,23 @@ void SyntaxTree::reload(const char* str) {
             }
             break;
 
-        case ENDTRY:
-            if (blocks.top()->getId() == FINALLY) {
-                blocks.pop();
-            }
+        case FINALLY:
             if (blocks.top()->getId() == CATCH) {
+                blocks.pop(); // end catch block
+            }
+            if (blocks.top()->getId() == TRY) {
+                newBlock = blockFac.create<FinallyBlock>(lexem);
+                blocks.top()->cast<TryBlock>()->finally = newBlock;
+                blocks.push(newBlock);
+            } else if (blocks.top()->getId() == FINALLY) {
+                reporter.error("multiple finally", lexem);
+            } else if (blocks.top()->getId() == FINALLY) {
+                reporter.error("finally without try", lexem);
+            }
+            break;
+
+        case ENDTRY:
+            if (blocks.top()->getId() == FINALLY || blocks.top()->getId() == CATCH) {
                 blocks.pop();
             }
             if (blocks.top()->getId() != TRY) {
