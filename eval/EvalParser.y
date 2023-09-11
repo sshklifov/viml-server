@@ -53,7 +53,7 @@
 
 %type <EvalCommand*> let unlet const lockvar unlockvar
 %type <FStr> varname
-%type <std::vector<FStr>> varname_list varname_multiple
+%type <std::vector<FStr>> varname_list_or_empty varname_list varname_multiple
 
 %type <EvalCommand*> function
 
@@ -116,38 +116,38 @@ command: let
 
 // TODO remove .. from tokens pls! (and others)
 // TODO additional checking!
-let: LET varname '=' expr1                                { $$ = f.create<LetVar>($2, $4); }
-   | LET varname '[' expr1 ']' '=' expr1                  { $$ = f.create<LetElement>($2, $4, $7); }
-   | LET varname '[' ':' ']' '=' expr1                    { $$ = f.create<LetRange>($2, nullptr, nullptr, $7); }
-   | LET varname '[' ':' expr1 ']' '=' expr1              { $$ = f.create<LetRange>($2, nullptr, $5, $8); }
-   | LET varname '[' expr1 ':' expr1 ']' '=' expr1        { $$ = f.create<LetRange>($2, $4, $6, $9); }
-   | LET varname '+' '=' expr1                            { $$ = f.create<LetVar>($2, $5, LetOp::PLUS); }
-   | LET varname '-' '=' expr1                            { $$ = f.create<LetVar>($2, $5, LetOp::MINUS); }
-   | LET varname '*' '=' expr1                            { $$ = f.create<LetVar>($2, $5, LetOp::MULT); }
-   | LET varname '/' '=' expr1                            { $$ = f.create<LetVar>($2, $5, LetOp::DIV); }
-   | LET varname '%' '=' expr1                            { $$ = f.create<LetVar>($2, $5, LetOp::MOD); }
-   | LET varname '.' '=' expr1                            { $$ = f.create<LetVar>($2, $5, LetOp::DOT); }
-   | LET varname '.' '.' '=' expr1                        { $$ = f.create<LetVar>($2, $6, LetOp::DOT2); }
-   | LET '[' varname_list ']' '=' expr1                   { $$ = f.create<LetUnpack>($3, $6); }
-   | LET '[' varname_list ']' '.' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::DOT); }
-   | LET '[' varname_list ']' '+' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::PLUS); }
-   | LET '[' varname_list ']' '-' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::MINUS); }
-   | LET '[' varname_list ';' varname ']' '=' expr1       { $$ = f.create<LetRemainder>($3, $5, $8); }
-   | LET '[' varname_list ';' varname ']' '+' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::PLUS); }
-   | LET '[' varname_list ';' varname ']' '-' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::MINUS); }
-   | LET '[' varname_list ';' varname ']' '.' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::DOT); }
-   | LET                                                  { $$ = f.create<LetPrint>(); }
-   | LET varname_multiple                                 { $$ = f.create<LetPrint>($2); }
+let: LET varname '=' expr1                                         { $$ = f.create<LetVar>($2, $4); }
+   | LET varname '[' expr1 ']' '=' expr1                           { $$ = f.create<LetElement>($2, $4, $7); }
+   | LET varname '[' ':' ']' '=' expr1                             { $$ = f.create<LetRange>($2, nullptr, nullptr, $7); }
+   | LET varname '[' ':' expr1 ']' '=' expr1                       { $$ = f.create<LetRange>($2, nullptr, $5, $8); }
+   | LET varname '[' expr1 ':' expr1 ']' '=' expr1                 { $$ = f.create<LetRange>($2, $4, $6, $9); }
+   | LET varname '+' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::PLUS); }
+   | LET varname '-' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::MINUS); }
+   | LET varname '*' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::MULT); }
+   | LET varname '/' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::DIV); }
+   | LET varname '%' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::MOD); }
+   | LET varname '.' '=' expr1                                     { $$ = f.create<LetVar>($2, $5, LetOp::DOT); }
+   | LET varname '.' '.' '=' expr1                                 { $$ = f.create<LetVar>($2, $6, LetOp::DOT2); }
+   | LET '[' varname_list_or_empty ']' '=' expr1                   { $$ = f.create<LetUnpack>($3, $6); }
+   | LET '[' varname_list_or_empty ']' '.' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::DOT); }
+   | LET '[' varname_list_or_empty ']' '+' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::PLUS); }
+   | LET '[' varname_list_or_empty ']' '-' '=' expr1               { $$ = f.create<LetUnpack>($3, $7, LetOp::MINUS); }
+   | LET '[' varname_list_or_empty ';' varname ']' '=' expr1       { $$ = f.create<LetRemainder>($3, $5, $8); }
+   | LET '[' varname_list_or_empty ';' varname ']' '+' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::PLUS); }
+   | LET '[' varname_list_or_empty ';' varname ']' '-' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::MINUS); }
+   | LET '[' varname_list_or_empty ';' varname ']' '.' '=' expr1   { $$ = f.create<LetRemainder>($3, $5, $9, LetOp::DOT); }
+   | LET                                                           { $$ = f.create<LetPrint>(); }
+   | LET varname_multiple                                          { $$ = f.create<LetPrint>($2); }
 ;
 
-unlet: UNLET varname_list                                 { $$ = f.create<Unlet>($2); }
+unlet: UNLET varname_list_or_empty                                 { $$ = f.create<Unlet>($2); }
 ;
 
-const: CONST varname '=' expr1                            { $$ = f.create<ConstVar>($2, $4); }
-     | CONST '[' varname_list ']' '=' expr1               { $$ = f.create<ConstUnpack>($3, $6); }
-     | CONST '[' varname_list ';' varname ']' '=' expr1   { $$ = f.create<ConstRemainder>($3, $5, $8); }
-     | CONST                                              { $$ = f.create<LetPrint>(); }
-     | CONST varname_multiple                             { $$ = f.create<LetPrint>($2); }
+const: CONST varname '=' expr1                                     { $$ = f.create<ConstVar>($2, $4); }
+     | CONST '[' varname_list_or_empty ']' '=' expr1               { $$ = f.create<ConstUnpack>($3, $6); }
+     | CONST '[' varname_list_or_empty ';' varname ']' '=' expr1   { $$ = f.create<ConstRemainder>($3, $5, $8); }
+     | CONST                                                       { $$ = f.create<LetPrint>(); }
+     | CONST varname_multiple                                      { $$ = f.create<LetPrint>($2); }
 ;
 
 lockvar: LOCKVAR varname_multiple                         { $$ = f.create<LockVar>($2); }
@@ -161,6 +161,9 @@ unlockvar: UNLOCKVAR varname_multiple                         { $$ = f.create<Un
 varname: VA_ID | SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID
 ;
 
+varname_list_or_empty: %empty             { $$ = {}; }
+                     | varname_list       { $$ = $1; }
+
 varname_list: varname                        { $$ = {}; $$.push_back($1); }
             | varname ',' varname_list       { $$ = $3; $$.push_back($1); }
 ;
@@ -170,9 +173,9 @@ varname_multiple: varname                    { $$ = {}; $$.push_back($1); }
 
 // TODO function matching pattern
 // TODO function attributes
-function: FUNCTION                                            { $$ = new FunctionPrint(); }
-        | FUNCTION varname '(' varname_list ')'               { $$ = new Function($2, $4); }
-        | FUNCTION varname '.' varname '(' varname_list ')'   { $$ = new FunctionDict($2, $4, $6); }
+function: FUNCTION                                                     { $$ = new FunctionPrint(); }
+        | FUNCTION varname '(' varname_list_or_empty ')'               { $$ = new Function($2, $4); }
+        | FUNCTION varname '.' varname '(' varname_list_or_empty ')'   { $$ = new FunctionDict($2, $4, $6); }
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = f.create<TernaryNode>($1, $3, $5); }
@@ -246,7 +249,7 @@ expr8: expr9
      | expr8 '[' expr1 ':' ']'           { $$ = f.create<IndexRangeNode>($1, $3, nullptr); }
      | expr8 '[' ':' expr1 ']'           { $$ = f.create<IndexRangeNode>($1, nullptr, $4); }
      | expr8 '[' ':' ']'                 { $$ = f.create<IndexRangeNode>($1, nullptr, nullptr); }
-     | expr8 '(' expr1_list ')'          { $$ = f.create<InvokeNode>($1, $3); }
+     | expr8 '(' expr1_list_or_empty ')' { $$ = f.create<InvokeNode>($1, $3); }
 ;
 
 // TODO Dictionary #{}
@@ -283,6 +286,7 @@ expr1_list: expr1                  { $$ = {}; $$.push_back($1); }
 
 expr1_pairs_or_empty: %empty       { $$ = {}; }
                     | expr1_pairs  { $$ = $1; }
+;
 
 expr1_pairs: expr1 ':' expr1                      { $$ = {}; $$.push_back(DictNode::Pair($1, $3)); }
            | expr1 ':' expr1 ',' expr1_pairs      { $$ = $5; $$.push_back(DictNode::Pair($1, $3)); }
