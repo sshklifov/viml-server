@@ -49,12 +49,13 @@
 
 %token <FStr> NUMBER FLOAT BLOB STR
 %token <FStr>
+    DICT_ID "dot identifier"
+    ID "identifier"
     SID_ID "<SID>"
     AUTOLOAD_ID "autoload"
     OPTION_ID "option"
     REGISTER_ID "register"
     ENV_ID "env"
-    ID "identifier"
 
 %type <FStr> any_id
 %type <std::vector<FStr>> any_ids any_ids_or_empty va_list any_id_list_or_empty
@@ -178,7 +179,7 @@ unlockvar: UNLOCKVAR any_ids                         { $$ = f.create<UnlockVar>(
          | UNLOCKVAR NUMBER any_ids                  { $$ = f.create<UnlockVar>($3, $2); }
 ;
 
-any_id: SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID
+any_id: SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID | DICT_ID
 ;
 
 any_id_list_or_empty: %empty                          { $$ = {}; }
@@ -295,6 +296,7 @@ expr9: NUMBER                                     { $$ = f.create<TokenNode>($1,
      | ID                                         { $$ = f.create<TokenNode>($1, TokenNode::ID); }
      | AUTOLOAD_ID                                { $$ = f.create<TokenNode>($1, TokenNode::AUTOLOAD); }
      | SID_ID                                     { $$ = f.create<TokenNode>($1, TokenNode::SID); }
+     | DICT_ID                                    { $$ = f.create<TokenNode>($1, TokenNode::DICT); }
 ;
 
 expr1_list_or_empty: %empty                          { $$ = {}; }

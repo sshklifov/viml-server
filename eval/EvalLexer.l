@@ -3,14 +3,15 @@
 
 str_loop [ -~]{-}[\\"]
 str ["]({str_loop}*|\\.)*["]
-quote_loop [ -~]{-}[\\']
-quote [']({quote_loop}*|\\.)*[']
+quote_loop [ -~]{-}[']
+quote [']({quote_loop}*|[']['])*[']
 
 name [0-9a-zA-Z_]+
 curly_name ({name}?"{"[0-9a-zA-Z_{}]+"}"{name}?)|{name}
 scope [gbwtslav]:
 
 id {scope}?{curly_name}|{scope}
+dot_id {scope}?{id}"."{id}("."{id})*
 sid_id "<SID>"{curly_name}
 au_id {scope}?({curly_name}[#])+{curly_name}
 opt_id "&"([gl]:)?{name}
@@ -218,6 +219,10 @@ blob "0z"[0-9a-fA-F.]+
 
 {id} {
     return eval::parser::token::ID;
+}
+
+{dot_id} {
+    return eval::parser::token::DICT_ID;
 }
 
 {sid_id} {
