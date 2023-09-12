@@ -126,20 +126,22 @@ struct FunctionPrint : public FunctionCommand {
 };
 
 struct Function : public FunctionCommand {
-    Function(FStr name, std::vector<FStr> args, int va = false) :
-        name(std::move(name)), args(std::move(args)), variadic(va) {}
+    Function(FStr name, std::vector<FStr> args, int va, std::vector<FStr> attrs) :
+        name(std::move(name)), args(std::move(args)), variadic(va), attrs(std::move(attrs)) {}
 
     FStr name;
     std::vector<FStr> args;
     bool variadic;
+    std::vector<FStr> attrs;
 };
 
 struct FunctionDict : public FunctionCommand {
-    FunctionDict(FStr dict, FStr key, std::vector<FStr> args, int va = false) :
-        dict(std::move(dict)), key(std::move(key)), args(std::move(args)), variadic(va) {}
+    FunctionDict(FStr dict, FStr key, std::vector<FStr> args, int va, std::vector<FStr> attrs) :
+        dict(std::move(dict)), key(std::move(key)), args(std::move(args)), variadic(va), attrs(std::move(attrs)) {}
 
     FStr dict;
     FStr key;
     std::vector<FStr> args;
     bool variadic;
+    std::vector<FStr> attrs;
 };

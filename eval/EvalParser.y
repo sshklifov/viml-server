@@ -49,10 +49,11 @@
     AUTOLOAD_ID "autoload"
     OPTION_ID "option"
     REGISTER_ID "register"
-    ENV_ID ID "env var"
+    ENV_ID "env"
+    ID "identifier"
 
 %type <FStr> any_id
-%type <std::vector<FStr>> any_ids any_id_list va_list any_id_list_or_empty
+%type <std::vector<FStr>> any_ids any_ids_or_empty any_id_list va_list any_id_list_or_empty
 %type <std::vector<EvalExpr*>> expr1_list expr1_list_or_empty
 %type <std::vector<DictNode::Pair>> expr1_pairs expr1_pairs_or_empty
 
@@ -186,16 +187,19 @@ any_id_list: any_id                         { $$ = {}; $$.push_back($1); }
 va_list: VA                              { $$ = {}; }
        | any_id ',' va_list              { $$ = $3; $$.push_back($1); }
 
+any_ids_or_empty: %empty     { $$ = {}; }
+                | any_ids    { $$ = $1; }
+
 any_ids: any_id                    { $$ = {}; $$.push_back($1); }
        | any_id any_ids            { $$ = {}; $$.push_back($1); }
 
 // TODO function matching pattern
 // TODO function attributes
-function: FUNCTION                                                   { $$ = new FunctionPrint(); }
-        | FUNCTION any_id '(' any_id_list_or_empty ')'               { $$ = new Function($2, $4); }
-        | FUNCTION any_id '(' va_list ')'                            { $$ = new Function($2, $4, true); }
-        | FUNCTION any_id '.' any_id '(' any_id_list_or_empty ')'    { $$ = new FunctionDict($2, $4, $6); }
-        | FUNCTION any_id '.' any_id '(' va_list ')'                 { $$ = new FunctionDict($2, $4, $6, true); }
+function: FUNCTION                                                                    { $$ = new FunctionPrint(); }
+        | FUNCTION any_id '(' any_id_list_or_empty ')' any_ids_or_empty               { $$ = new Function($2, $4, false, $6); }
+        | FUNCTION any_id '(' va_list ')' any_ids_or_empty                            { $$ = new Function($2, $4, true, $6); }
+        | FUNCTION any_id '.' any_id '(' any_id_list_or_empty ')' any_ids_or_empty    { $$ = new FunctionDict($2, $4, $6, false, $8); }
+        | FUNCTION any_id '.' any_id '(' va_list ')' any_ids_or_empty                 { $$ = new FunctionDict($2, $4, $6, true, $8); }
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = f.create<TernaryNode>($1, $3, $5); }
