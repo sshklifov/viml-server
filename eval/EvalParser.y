@@ -11,7 +11,11 @@
     NOT_MATCH "!~"
 
 %token IS "is"
+    IS_CASE "is#"
+    IS_ICASE "is?"
     ISNOT "isnot"
+    ISNOT_CASE "isnot#"
+    ISNOT_ICASE "isnot?"
 
 %token EQ_CASE "==#"
     NOT_EQ_CASE "!=#"
@@ -239,9 +243,12 @@ expr4: expr5
      | expr5 MATCH_ICASE expr5                { $$ = f.create<InfixOpNode>($1, $3, "=~?"); }
      | expr5 NOT_MATCH_ICASE expr5            { $$ = f.create<InfixOpNode>($1, $3, "!~?"); }
 
-
      | expr5 IS expr5                         { $$ = f.create<InfixOpNode>($1, $3, "is"); }
+     | expr5 IS_CASE expr5                    { $$ = f.create<InfixOpNode>($1, $3, "is#"); }
+     | expr5 IS_ICASE expr5                   { $$ = f.create<InfixOpNode>($1, $3, "is?"); }
      | expr5 ISNOT expr5                      { $$ = f.create<InfixOpNode>($1, $3, "isnot"); }
+     | expr5 ISNOT_CASE expr5                 { $$ = f.create<InfixOpNode>($1, $3, "isnot#"); }
+     | expr5 ISNOT_ICASE expr5                { $$ = f.create<InfixOpNode>($1, $3, "isnot?"); }
 ;
 
 expr5: expr6

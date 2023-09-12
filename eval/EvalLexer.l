@@ -164,8 +164,24 @@ blob "0z"[0-9a-fA-F.]+
     return eval::parser::token::IS;
 }
 
+"is#" {
+    return eval::parser::token::IS_CASE;
+}
+
+"is?" {
+    return eval::parser::token::IS_ICASE;
+}
+
 "isnot" {
     return eval::parser::token::ISNOT;
+}
+
+"isnot#" {
+    return eval::parser::token::ISNOT_CASE;
+}
+
+"isnot?" {
+    return eval::parser::token::ISNOT_ICASE;
 }
 
 ".." {
