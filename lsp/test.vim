@@ -1,9 +1,3 @@
-function! ale#ant#FindProjectRoot(buffer) abort
-    let l:build_xml_path = ale#path#FindNearestFile(a:buffer, 'build.xml')
-
-    if !empty(l:build_xml_path)
-        return fnamemodify(l:build_xml_path, ':h')
-    endif
-
-    return ''
-endfunction
+AssertEqual
+\   [a:expected_executable, a:expected_command],
+\   [l:executable, l:command]

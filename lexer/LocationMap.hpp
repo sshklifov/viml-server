@@ -57,7 +57,7 @@ struct LocationMap {
         res.start.line = fragments[key.fragBegin].line;
         res.start.character = fragments[key.fragBegin].col;
         res.end.line = fragments[key.fragEnd-1].line;
-        res.end.character = fragments[key.fragEnd-1].col;
+        res.end.character = fragments[key.fragEnd-1].col + fragments[key.fragEnd-1].fragLen - 1;
         return res;
     }
 
