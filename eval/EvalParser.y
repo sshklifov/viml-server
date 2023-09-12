@@ -57,9 +57,9 @@
     ID "identifier"
 
 %type <FStr> any_id
-%type <std::vector<FStr>> any_ids any_ids_or_empty any_id_list va_list any_id_list_or_empty
-%type <std::vector<EvalExpr*>> expr1_list expr1_list_or_empty
-%type <std::vector<DictNode::Pair>> expr1_pairs expr1_pairs_or_empty
+%type <std::vector<FStr>> any_ids any_ids_or_empty va_list any_id_list_or_empty
+%type <std::vector<EvalExpr*>> expr1_list_or_empty
+%type <std::vector<DictNode::Pair>> expr1_pairs_or_empty
 
 %type <EvalExpr*> expr1 expr2 expr3 expr4 expr5 expr6 expr7 expr8 expr9
 
@@ -181,12 +181,9 @@ unlockvar: UNLOCKVAR any_ids                         { $$ = f.create<UnlockVar>(
 any_id: SID_ID | AUTOLOAD_ID | OPTION_ID | REGISTER_ID | ENV_ID | ID
 ;
 
-any_id_list_or_empty: %empty             { $$ = {}; }
-                | any_id_list            { $$ = $1; }
-
-any_id_list: any_id                         { $$ = {}; $$.push_back($1); }
-       | any_id ',' any_id_list             { $$ = $3; $$.push_back($1); }
-;
+any_id_list_or_empty: %empty                          { $$ = {}; }
+                    | any_id                          { $$ = {}; $$.push_back($1); }
+                    | any_id ',' any_id_list_or_empty { $$ = $3; $$.push_back($1); }
 
 va_list: VA                              { $$ = {}; }
        | any_id ',' va_list              { $$ = $3; $$.push_back($1); }
@@ -300,18 +297,12 @@ expr9: NUMBER                                     { $$ = f.create<TokenNode>($1,
      | SID_ID                                     { $$ = f.create<TokenNode>($1, TokenNode::SID); }
 ;
 
-expr1_list_or_empty: %empty        { $$ = {}; }
-                   | expr1_list    { $$ = $1; }
+expr1_list_or_empty: %empty                          { $$ = {}; }
+                   | expr1                           { $$ = {}; $$.push_back($1); }
+                   | expr1 ',' expr1_list_or_empty   { $$ = $3; $$.push_back($1); }
 ;
 
-expr1_list: expr1                  { $$ = {}; $$.push_back($1); }
-          | expr1 ',' expr1_list   { $$ = $3; $$.push_back($1); }
-;
-
-expr1_pairs_or_empty: %empty       { $$ = {}; }
-                    | expr1_pairs  { $$ = $1; }
-;
-
-expr1_pairs: expr1 ':' expr1                      { $$ = {}; $$.push_back(DictNode::Pair($1, $3)); }
-           | expr1 ':' expr1 ',' expr1_pairs      { $$ = $5; $$.push_back(DictNode::Pair($1, $3)); }
+expr1_pairs_or_empty: %empty                                    { $$ = {}; }
+                    | expr1 ':' expr1                           { $$ = {}; $$.push_back(DictNode::Pair($1, $3)); }
+                    | expr1 ':' expr1 ',' expr1_pairs_or_empty  { $$ = $5; $$.push_back(DictNode::Pair($1, $3)); }
 ;
