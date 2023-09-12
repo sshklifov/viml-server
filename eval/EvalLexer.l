@@ -6,6 +6,8 @@ str ["]({str_loop}*|\\.)*["]
 quote_loop [ -~]{-}[']
 quote [']({quote_loop}*|[']['])*[']
 
+comment ["]({str_loop}*|\\.)*
+
 name [0-9a-zA-Z_]+
 curly_name ({name}?"{"[0-9a-zA-Z_{}]+"}"{name}?)|{name}
 scope [gbwtslav]:
@@ -203,6 +205,10 @@ blob "0z"[0-9a-fA-F.]+
 
 {blob} {
     return eval::parser::token::BLOB;
+}
+
+{comment} {
+    // Ignore
 }
 
 {str} {

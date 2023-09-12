@@ -78,6 +78,7 @@ int evallex(eval::parser::value_type* v, eval::parser::location_type* l, EvalLex
         case kind_type::OPTION_ID:
         case kind_type::REGISTER_ID:
         case kind_type::ENV_ID:
+        case kind_type::DICT_ID:
         case kind_type::ID:
             v->build<FStr>(evalget_text());
             return t;
