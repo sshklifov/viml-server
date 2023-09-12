@@ -77,9 +77,10 @@
     RETURN "return"
     FOR "for"
     EXECUTE "execute"
+    WHILE "while"
 
 %type <LetOp> any_let_op
-%type <EvalCommand*> let unlet const lockvar unlockvar if elseif call return for execute
+%type <EvalCommand*> let unlet const lockvar unlockvar if elseif call return for execute while
 
 %type <EvalCommand*> function
 
@@ -144,6 +145,7 @@ command: let
      | return
      | for
      | execute
+     | while
 
 // Spaces:
 // (OK?) 2. varname . varname (dictionary) OR concatenation...
@@ -232,6 +234,9 @@ for: FOR any_id any_id expr1 { $$ = new For($2, $3, $4); }
 ;
 
 execute: EXECUTE expr1 { $$ = new Execute($2); }
+;
+
+while: WHILE expr1 { $$ = new While($2); }
 ;
 
 expr1: expr2

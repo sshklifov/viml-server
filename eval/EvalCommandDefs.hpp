@@ -205,3 +205,9 @@ struct Execute : public EvalCommand {
 
     EvalExpr* expr;
 };
+
+struct While : public EvalCommand {
+    While(EvalExpr* expr) : expr(expr) {}
+
+    EvalExpr* expr;
+};
