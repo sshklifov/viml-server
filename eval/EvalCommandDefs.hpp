@@ -185,3 +185,9 @@ struct Call : public EvalCommand {
 
     EvalExpr* expr;
 };
+
+struct Return : public EvalCommand {
+    Return(EvalExpr* expr) : expr(expr) {}
+
+    EvalExpr* expr;
+};
