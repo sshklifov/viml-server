@@ -191,3 +191,11 @@ struct Return : public EvalCommand {
 
     EvalExpr* expr;
 };
+
+struct For : public EvalCommand {
+    For(FStr id, FStr in, EvalExpr* obj) : id(id), in(in), obj(obj) {}
+
+    FStr id;
+    FStr in;
+    EvalExpr* obj;
+};

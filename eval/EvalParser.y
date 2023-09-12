@@ -75,9 +75,10 @@
     ELSEIF "elseif"
     CALL "call"
     RETURN "return"
+    FOR "for"
 
 %type <LetOp> any_let_op
-%type <EvalCommand*> let unlet const lockvar unlockvar if elseif call return
+%type <EvalCommand*> let unlet const lockvar unlockvar if elseif call return for
 
 %type <EvalCommand*> function
 
@@ -140,6 +141,7 @@ command: let
      | elseif
      | call
      | return
+     | for
 
 // Spaces:
 // (OK?) 2. varname . varname (dictionary) OR concatenation...
@@ -222,6 +224,9 @@ call: CALL expr1 { $$ = new Call($2); }
 ;
 
 return: RETURN expr1 { $$ = new Return($2); }
+;
+
+for: FOR any_id any_id expr1 { $$ = new For($2, $3, $4); }
 ;
 
 expr1: expr2
