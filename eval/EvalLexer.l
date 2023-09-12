@@ -10,7 +10,7 @@ name [0-9a-zA-Z_]+
 curly_name ({name}?"{"[0-9a-zA-Z_{}]+"}"{name}?)|{name}
 scope [gbwtslav]:
 
-id {scope}?{curly_name}
+id {scope}?{curly_name}|{scope}
 sid_id "<SID>"{curly_name}
 au_id {scope}?({curly_name}[#])+{curly_name}
 opt_id "&"([gl]:)?{name}

@@ -44,10 +44,15 @@
 %token ARROW "->"
 
 %token <FStr> NUMBER FLOAT BLOB STR
-%token <FStr> SID_ID AUTOLOAD_ID OPTION_ID REGISTER_ID ENV_ID ID
+%token <FStr>
+    SID_ID "<SID>"
+    AUTOLOAD_ID "autoload"
+    OPTION_ID "option"
+    REGISTER_ID "register"
+    ENV_ID ID "env var"
 
 %type <FStr> any_id
-%type <std::vector<FStr>> any_ids any_id_list any_id_list_or_empty
+%type <std::vector<FStr>> any_ids any_id_list va_list any_id_list_or_empty
 %type <std::vector<EvalExpr*>> expr1_list expr1_list_or_empty
 %type <std::vector<DictNode::Pair>> expr1_pairs expr1_pairs_or_empty
 
@@ -178,14 +183,19 @@ any_id_list: any_id                         { $$ = {}; $$.push_back($1); }
        | any_id ',' any_id_list             { $$ = $3; $$.push_back($1); }
 ;
 
+va_list: VA                              { $$ = {}; }
+       | any_id ',' va_list              { $$ = $3; $$.push_back($1); }
+
 any_ids: any_id                    { $$ = {}; $$.push_back($1); }
        | any_id any_ids            { $$ = {}; $$.push_back($1); }
 
 // TODO function matching pattern
 // TODO function attributes
-function: FUNCTION                                               { $$ = new FunctionPrint(); }
+function: FUNCTION                                                   { $$ = new FunctionPrint(); }
         | FUNCTION any_id '(' any_id_list_or_empty ')'               { $$ = new Function($2, $4); }
+        | FUNCTION any_id '(' va_list ')'                            { $$ = new Function($2, $4, true); }
         | FUNCTION any_id '.' any_id '(' any_id_list_or_empty ')'    { $$ = new FunctionDict($2, $4, $6); }
+        | FUNCTION any_id '.' any_id '(' va_list ')'                 { $$ = new FunctionDict($2, $4, $6, true); }
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = f.create<TernaryNode>($1, $3, $5); }
@@ -276,6 +286,7 @@ expr9: NUMBER                                     { $$ = f.create<TokenNode>($1,
      | ENV_ID                                     { $$ = f.create<TokenNode>($1, TokenNode::ENV); }
      | ID                                         { $$ = f.create<TokenNode>($1, TokenNode::ID); }
      | AUTOLOAD_ID                                { $$ = f.create<TokenNode>($1, TokenNode::AUTOLOAD); }
+     | SID_ID                                     { $$ = f.create<TokenNode>($1, TokenNode::SID); }
 ;
 
 expr1_list_or_empty: %empty        { $$ = {}; }

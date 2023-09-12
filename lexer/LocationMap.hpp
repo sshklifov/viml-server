@@ -32,6 +32,7 @@ struct LocationMap {
     }
 
     Range resolve(const Key& key, int first, int last) const {
+        assert(first <= last);
         Range res;
         int strBegin = 0;
         for (int i = key.fragBegin; i < key.fragEnd; ++i) {
@@ -55,8 +56,8 @@ struct LocationMap {
         Range res;
         res.start.line = fragments[key.fragBegin].line;
         res.start.character = fragments[key.fragBegin].col;
-        res.end.line = fragments[key.fragEnd].line;
-        res.end.character = fragments[key.fragEnd].col;
+        res.end.line = fragments[key.fragEnd-1].line;
+        res.end.character = fragments[key.fragEnd-1].col;
         return res;
     }
 
