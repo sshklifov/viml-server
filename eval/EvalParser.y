@@ -71,9 +71,12 @@
     LOCKVAR "lockvar"
     UNLOCKVAR "unlockvar"
     FUNCTION "function"
+    IF "if"
+    ELSEIF "elseif"
+    CALL "call"
 
 %type <LetOp> any_let_op
-%type <EvalCommand*> let unlet const lockvar unlockvar
+%type <EvalCommand*> let unlet const lockvar unlockvar if elseif call
 
 %type <EvalCommand*> function
 
@@ -132,6 +135,9 @@ command: let
      | lockvar
      | unlockvar
      | function
+     | if
+     | elseif
+     | call
 
 // Spaces:
 // (OK?) 2. varname . varname (dictionary) OR concatenation...
@@ -202,6 +208,16 @@ function: FUNCTION                                                              
         | FUNCTION any_id '(' va_list ')' any_ids_or_empty                            { $$ = new Function($2, $4, true, $6); }
         | FUNCTION any_id '.' any_id '(' any_id_list_or_empty ')' any_ids_or_empty    { $$ = new FunctionDict($2, $4, $6, false, $8); }
         | FUNCTION any_id '.' any_id '(' va_list ')' any_ids_or_empty                 { $$ = new FunctionDict($2, $4, $6, true, $8); }
+;
+
+if: IF expr1         { $$ = new If($2); }
+;
+
+elseif: ELSEIF expr1 { $$ = new ElseIf($2); }
+;
+
+call: CALL expr1 { $$ = new Call($2); }
+;
 
 expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = f.create<TernaryNode>($1, $3, $5); }

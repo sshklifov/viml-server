@@ -167,3 +167,21 @@ struct FunctionDict : public FunctionCommand {
     bool variadic;
     std::vector<FStr> attrs;
 };
+
+struct If : public EvalCommand {
+    If(EvalExpr* expr) : expr(expr) {}
+
+    EvalExpr* expr;
+};
+
+struct ElseIf : public EvalCommand {
+    ElseIf(EvalExpr* expr) : expr(expr) {}
+
+    EvalExpr* expr;
+};
+
+struct Call : public EvalCommand {
+    Call(EvalExpr* expr) : expr(expr) {}
+
+    EvalExpr* expr;
+};

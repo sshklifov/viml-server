@@ -42,6 +42,12 @@ eval::parser::token::token_kind_type exDictToKindType(int exDict) {
         case FUNCTION:
             return kind_type::FUNCTION;
 
+        case IF:
+            return kind_type::IF;
+
+        case ELSEIF:
+            return kind_type::ELSEIF;
+
         default:
             return kind_type::EVALerror;
     }
