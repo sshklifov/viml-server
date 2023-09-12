@@ -199,3 +199,9 @@ struct For : public EvalCommand {
     FStr in;
     EvalExpr* obj;
 };
+
+struct Execute : public EvalCommand {
+    Execute(EvalExpr* expr) : expr(expr) {}
+
+    EvalExpr* expr;
+};
