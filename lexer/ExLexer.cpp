@@ -11,6 +11,114 @@
 #include "Command.hpp"
 #include "ExDictionary.hpp"
 
+#if 0
+files: ex_cmds.lua
+src/nvim/eval.c
+
+notables:
+/// skip_regexp() with extra arguments:
+/// When "newp" is not NULL and "dirc" is '?', make an allocated copy of the
+/// expression and change "\?" to "?".  If "*newp" is not NULL the expression
+/// is changed in-place.
+/// If a "\?" is changed to "?" then "dropped" is incremented, unless NULL.
+/// If "magic_val" is not NULL, returns the effective magicness of the pattern
+char *skip_regexp_ex(char *startp, int dirc, int magic, char **newp, int *dropped,
+                     magic_T *magic_val)
+{
+  magic_T mymagic;
+  char *p = startp;
+
+  if (magic) {
+    mymagic = MAGIC_ON;
+  } else {
+    mymagic = MAGIC_OFF;
+  }
+  get_cpo_flags();
+
+  for (; p[0] != NUL; MB_PTR_ADV(p)) {
+    if (p[0] == dirc) {         // found end of regexp
+      break;
+    }
+    if ((p[0] == '[' && mymagic >= MAGIC_ON)
+        || (p[0] == '\\' && p[1] == '[' && mymagic <= MAGIC_OFF)) {
+      p = skip_anyof(p + 1);
+      if (p[0] == NUL) {
+        break;
+      }
+    } else if (p[0] == '\\' && p[1] != NUL) {
+      if (dirc == '?' && newp != NULL && p[1] == '?') {
+        // change "\?" to "?", make a copy first.
+        if (*newp == NULL) {
+          *newp = xstrdup(startp);
+          p = *newp + (p - startp);
+        }
+        if (dropped != NULL) {
+          (*dropped)++;
+        }
+        STRMOVE(p, p + 1);
+      } else {
+        p++;            // skip next character
+      }
+      if (*p == 'v') {
+        mymagic = MAGIC_ALL;
+      } else if (*p == 'V') {
+        mymagic = MAGIC_NONE;
+      }
+    }
+  }
+  if (magic_val != NULL) {
+    *magic_val = mymagic;
+  }
+  return p;
+}
+
+if (*p != delim) {
+  semsg(_("E654: missing delimiter after search pattern: %s"), startp);
+  return NULL;
+}
+
+char *skip_vimgrep_pat(char *p, char **s, int *flags)
+
+  if (*p != NUL && (eap->cmdidx == CMD_vimgrep || eap->cmdidx == CMD_lvimgrep
+                    || eap->cmdidx == CMD_vimgrepadd
+                    || eap->cmdidx == CMD_lvimgrepadd
+                    || grep_internal(eap->cmdidx))) {
+
+// Return true when using ":vimgrep" for ":grep".
+int grep_internal(cmdidx_T cmdidx)
+{
+  return (cmdidx == CMD_grep
+          || cmdidx == CMD_lgrep
+          || cmdidx == CMD_grepadd
+          || cmdidx == CMD_lgrepadd)
+         && strcmp("internal", *curbuf->b_p_gp == NUL ? p_gp : curbuf->b_p_gp) == 0;
+}
+
+/// Check for '|' to separate commands and '"' to start comments.
+void separate_nextcmd(exarg_T *eap)
+
+#endif
+
+int checkTrailingBar(int exDictIdx, StringView args) {
+    // TODO ExDictionary extend
+    return -1;
+
+    /* enum State {NONE, INSIDE_STR, INSIDE_QUOTE} state = NONE; */
+    /* for (int i = 0; i < line.length(); ++i) { */
+    /*     char c = line[i]; */
+    /*     switch (state) { */
+    /*     case NONE: */
+    /*         if (c == '\'') { */
+    /*             state = INSIDE_QUOTE; */
+    /*         } else if (c == '\"') { */
+    /*             state = INSIDE_STR; */
+    /*         } else if (c == '/') { */
+    /*             state = INSIDE_PAT */
+    /*         } */
+    /*     } */
+    /* } */
+}
+
 bool ExLexer::buildExLexem(StringView line, LocationMap::Key locationKey, ExLexem& lex) {
     lex.exDictIdx = -1;
     lex.name.begin = lex.name.end;
