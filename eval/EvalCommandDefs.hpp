@@ -64,10 +64,30 @@ struct LetPrint : public LetCommand {
     std::vector<FStr> ids;
 };
 
-struct Unlet : public EvalCommand {
+struct UnletCommand : public EvalCommand {
+};
+
+struct Unlet : public UnletCommand {
     Unlet(std::vector<FStr> ids) : ids(std::move(ids)) {}
 
     std::vector<FStr> ids;
+};
+
+struct UnletElement : public UnletCommand {
+    UnletElement(FStr id, EvalExpr* elem) :
+        id(std::move(id)), elem(elem) {}
+
+    FStr id;
+    EvalExpr* elem;
+};
+
+struct UnletRange : public UnletCommand {
+    UnletRange(FStr id, EvalExpr* from, EvalExpr* to) :
+        id(std::move(id)), from(from), to(to) {}
+
+    FStr id;
+    EvalExpr* from;
+    EvalExpr* to;
 };
 
 struct ConstCommand : public EvalCommand {

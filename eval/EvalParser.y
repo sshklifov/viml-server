@@ -157,6 +157,10 @@ let: LET any_id '=' expr1                                    { $$ = f.create<Let
 ;
 
 unlet: UNLET any_id_list_or_empty                                 { $$ = f.create<Unlet>($2); }
+     | UNLET any_id '[' expr1 ']'                                 { $$ = f.create<UnletElement>($2, $4); }
+     | UNLET any_id '[' ':' ']'                                   { $$ = f.create<UnletRange>($2, nullptr, nullptr); }
+     | UNLET any_id '[' ':' expr1 ']'                             { $$ = f.create<UnletRange>($2, nullptr, $5); }
+     | UNLET any_id '[' expr1 ':' expr1 ']'                       { $$ = f.create<UnletRange>($2, $4, $6); }
 ;
 
 const: CONST any_id '=' expr1                                 { $$ = f.create<ConstVar>($2, $4); }

@@ -1,3 +1,4 @@
-AssertEqual
-\   [a:expected_executable, a:expected_command],
-\   [l:executable, l:command]
+for l:key in filter(keys(g:), l:filter_expr)
+    execute 'Save g:' . l:key
+    unlet g:[l:key]
+endfor
