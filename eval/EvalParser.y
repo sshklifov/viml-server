@@ -67,6 +67,7 @@
     UNLOCKVAR "unlockvar"
     FUNCTION "function"
 
+%type <LetOp> any_let_op
 %type <EvalCommand*> let unlet const lockvar unlockvar
 
 %type <EvalCommand*> function
@@ -132,28 +133,23 @@ command: let
 // (OK but not trivial) 4. indexing a[1] is not the same as a [1]
 // TODO additional checking!
 
-let: LET any_id '=' expr1                                    { $$ = f.create<LetVar>($2, $4); }
-   | LET any_id '[' expr1 ']' '=' expr1                      { $$ = f.create<LetElement>($2, $4, $7); }
-   | LET any_id '[' ':' ']' '=' expr1                        { $$ = f.create<LetRange>($2, nullptr, nullptr, $7); }
-   | LET any_id '[' ':' expr1 ']' '=' expr1                  { $$ = f.create<LetRange>($2, nullptr, $5, $8); }
-   | LET any_id '[' expr1 ':' expr1 ']' '=' expr1            { $$ = f.create<LetRange>($2, $4, $6, $9); }
-   | LET any_id PLUS_EQ expr1                                { $$ = f.create<LetVar>($2, $4, LetOp::PLUS); }
-   | LET any_id MINUS_EQ expr1                               { $$ = f.create<LetVar>($2, $4, LetOp::MINUS); }
-   | LET any_id MULT_EQ expr1                                { $$ = f.create<LetVar>($2, $4, LetOp::MULT); }
-   | LET any_id DIV_EQ expr1                                 { $$ = f.create<LetVar>($2, $4, LetOp::DIV); }
-   | LET any_id MOD_EQ expr1                                 { $$ = f.create<LetVar>($2, $4, LetOp::MOD); }
-   | LET any_id DOT_EQ expr1                                 { $$ = f.create<LetVar>($2, $4, LetOp::DOT); }
-   | LET any_id CONCAT_EQ expr1                              { $$ = f.create<LetVar>($2, $4, LetOp::DOT2); }
-   | LET '[' any_id_list_or_empty ']' '=' expr1                  { $$ = f.create<LetUnpack>($3, $6); }
-   | LET '[' any_id_list_or_empty ']' DOT_EQ expr1               { $$ = f.create<LetUnpack>($3, $6, LetOp::DOT); }
-   | LET '[' any_id_list_or_empty ']' PLUS_EQ expr1              { $$ = f.create<LetUnpack>($3, $6, LetOp::PLUS); }
-   | LET '[' any_id_list_or_empty ']' MINUS_EQ expr1             { $$ = f.create<LetUnpack>($3, $6, LetOp::MINUS); }
-   | LET '[' any_id_list_or_empty ';' any_id ']' '=' expr1       { $$ = f.create<LetRemainder>($3, $5, $8); }
-   | LET '[' any_id_list_or_empty ';' any_id ']' PLUS_EQ expr1   { $$ = f.create<LetRemainder>($3, $5, $8, LetOp::PLUS); }
-   | LET '[' any_id_list_or_empty ';' any_id ']' MINUS_EQ expr1  { $$ = f.create<LetRemainder>($3, $5, $8, LetOp::MINUS); }
-   | LET '[' any_id_list_or_empty ';' any_id ']' DOT_EQ expr1    { $$ = f.create<LetRemainder>($3, $5, $8, LetOp::DOT); }
-   | LET                                                     { $$ = f.create<LetPrint>(); }
-   | LET any_ids                                             { $$ = f.create<LetPrint>($2); }
+any_let_op: '='       { $$ = LetOp::EQUAL; }
+          | PLUS_EQ   { $$ = LetOp::PLUS; }
+          | MINUS_EQ  { $$ = LetOp::MINUS; }
+          | DIV_EQ    { $$ = LetOp::DIV; }
+          | MOD_EQ    { $$ = LetOp::MOD; }
+          | DOT_EQ    { $$ = LetOp::DOT; }
+          | CONCAT_EQ { $$ = LetOp::CONCAT; }
+
+let: LET any_id any_let_op expr1                                     { $$ = f.create<LetVar>($2, $4, $3); }
+   | LET any_id '[' expr1 ']' any_let_op expr1                       { $$ = f.create<LetElement>($2, $4, $7, $6); }
+   | LET any_id '[' ':' ']' any_let_op expr1                         { $$ = f.create<LetRange>($2, nullptr, nullptr, $7, $6); }
+   | LET any_id '[' ':' expr1 ']' any_let_op expr1                   { $$ = f.create<LetRange>($2, nullptr, $5, $8, $7); }
+   | LET any_id '[' expr1 ':' expr1 ']' any_let_op expr1             { $$ = f.create<LetRange>($2, $4, $6, $9, $8); }
+   | LET '[' any_id_list_or_empty ']' any_let_op expr1               { $$ = f.create<LetUnpack>($3, $6, $5); }
+   | LET '[' any_id_list_or_empty ';' any_id ']' any_let_op expr1    { $$ = f.create<LetRemainder>($3, $5, $8, $7); }
+   | LET                                                             { $$ = f.create<LetPrint>(); }
+   | LET any_ids                                                     { $$ = f.create<LetPrint>($2); }
 ;
 
 unlet: UNLET any_id_list_or_empty                                 { $$ = f.create<Unlet>($2); }

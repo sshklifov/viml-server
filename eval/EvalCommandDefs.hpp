@@ -5,13 +5,13 @@
 
 #include <vector>
 
-enum class LetOp { NONE, PLUS, MINUS, MULT, DIV, MOD, DOT, DOT2};
+enum class LetOp { EQUAL, PLUS, MINUS, MULT, DIV, MOD, DOT, CONCAT};
 
 struct LetCommand : public EvalCommand {
 };
 
 struct LetVar : public LetCommand {
-    LetVar(FStr id, EvalExpr* expr, LetOp op = LetOp::NONE) :
+    LetVar(FStr id, EvalExpr* expr, LetOp op) :
         id(std::move(id)), expr(expr), op(op) {}
 
     FStr id;
@@ -20,26 +20,28 @@ struct LetVar : public LetCommand {
 };
 
 struct LetElement : public LetCommand {
-    LetElement(FStr id, EvalExpr* elem, EvalExpr* expr) :
-        id(std::move(id)), elem(elem), expr(expr)  {}
+    LetElement(FStr id, EvalExpr* elem, EvalExpr* expr, LetOp op) :
+        id(std::move(id)), elem(elem), expr(expr), op(op)  {}
 
     FStr id;
     EvalExpr* elem;
     EvalExpr* expr;
+    LetOp op;
 };
 
 struct LetRange : public LetCommand {
-    LetRange(FStr id, EvalExpr* from, EvalExpr* to, EvalExpr* expr) :
+    LetRange(FStr id, EvalExpr* from, EvalExpr* to, EvalExpr* expr, LetOp op) :
         id(std::move(id)), from(from), to(to), expr(expr) {}
 
     FStr id;
     EvalExpr* from;
     EvalExpr* to;
     EvalExpr* expr;
+    LetOp op;
 };
 
 struct LetUnpack : public LetCommand {
-    LetUnpack(std::vector<FStr> ids, EvalExpr* expr, LetOp op = LetOp::NONE) :
+    LetUnpack(std::vector<FStr> ids, EvalExpr* expr, LetOp op) :
         ids(std::move(ids)), expr(expr), op(op) {}
 
     std::vector<FStr> ids;
@@ -48,7 +50,7 @@ struct LetUnpack : public LetCommand {
 };
 
 struct LetRemainder : public LetCommand {
-    LetRemainder(std::vector<FStr> ids, FStr rem, EvalExpr* expr, LetOp op = LetOp::NONE) :
+    LetRemainder(std::vector<FStr> ids, FStr rem, EvalExpr* expr, LetOp op) :
         ids(std::move(ids)), rem(std::move(rem)), expr(expr), op(op) {}
 
     std::vector<FStr> ids;
