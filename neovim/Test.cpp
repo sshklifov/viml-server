@@ -1,3 +1,6 @@
+#include "ExCmdsDefs.hpp"
+#include "Ascii.hpp"
+
 #include <cstring>
 #include <type_traits>
 
@@ -108,7 +111,7 @@ static int get_equi_class(char **pp)
   int l = 1;
   char *p = *pp;
 
-  if (p[1] == '=' && p[2] != '\0') {
+  if (p[1] == '=' && p[2] != NUL) {
     l = strlen(p + 2);
     if (p[l + 2] == '=' && p[l + 3] == ']') {
       c = strlen(p + 2);
@@ -129,7 +132,7 @@ static int get_coll_element(char **pp)
   int l = 1;
   char *p = *pp;
 
-  if (p[0] != '\0' && p[1] == '.' && p[2] != '\0') {
+  if (p[0] != NUL && p[1] == '.' && p[2] != NUL) {
     l = strlen(p + 2);
     if (p[l + 2] == '.' && p[l + 3] == ']') {
       c = strlen(p + 2);
@@ -153,12 +156,12 @@ static char *skip_anyof(char *p)
   if (*p == ']' || *p == '-') {
     p++;
   }
-  while (*p != '\0' && *p != ']') {
+  while (*p != NUL && *p != ']') {
     if ((l = strlen(p)) > 1) {
       p += l;
     } else if (*p == '-') {
       p++;
-      if (*p != ']' && *p != '\0') {
+      if (*p != ']' && *p != NUL) {
         p++;
       }
     } else if (*p == '\\'
@@ -170,7 +173,7 @@ static char *skip_anyof(char *p)
       if (get_char_class(&p) == CLASS_NONE
           && get_equi_class(&p) == 0
           && get_coll_element(&p) == 0
-          && *p != '\0') {
+          && *p != NUL) {
         p++;          // It is not a class name and not NUL
       }
     } else {
@@ -205,17 +208,17 @@ char *skip_regexp_ex(
   }
   /* get_cpo_flags(); */
 
-  for (; p[0] != '\0'; p++) {
+  for (; p[0] != NUL; p++) {
     if (p[0] == dirc) { // found end of regexp
       break;
     }
     if ((p[0] == '[' && mymagic >= MAGIC_ON) ||
         (p[0] == '\\' && p[1] == '[' && mymagic <= MAGIC_OFF)) {
       p = skip_anyof(p + 1);
-      if (p[0] == '\0') {
+      if (p[0] == NUL) {
         break;
       }
-    } else if (p[0] == '\\' && p[1] != '\0') {
+    } else if (p[0] == '\\' && p[1] != NUL) {
       if (dirc == '?' && newp != NULL && p[1] == '?') {
         // change "\?" to "?", make a copy first.
         if (*newp == NULL) {
@@ -272,7 +275,7 @@ char *skip_regexp_err(char *startp, int delim, int magic)
 /// @return Pointer to the next whitespace or NUL character.
 char *skiptowhite(const char *p)
 {
-  while (*p != ' ' && *p != '\t' && *p != '\0') {
+  while (*p != ' ' && *p != '\t' && *p != NUL) {
     p++;
   }
   return (char *)p;
@@ -298,8 +301,8 @@ char *skip_vimgrep_pat(char *p, char **s, int *flags)
       *s = p;
     }
     p = skiptowhite(p);
-    if (s != NULL && *p != '\0') {
-      *p++ = '\0';
+    if (s != NULL && *p != NUL) {
+      *p++ = NUL;
     }
   } else {
     // ":vimgrep /pattern/[g][j] fname"
@@ -314,7 +317,7 @@ char *skip_vimgrep_pat(char *p, char **s, int *flags)
 
     // Truncate the pattern.
     if (s != NULL) {
-      *p = '\0';
+      *p = NUL;
     }
     p++;
 
@@ -341,7 +344,8 @@ static char *skip_grep_pat(exarg *eap)
 {
   char *p = eap->arg;
 
-  if (*p != '\0' && (eap->cmdidx == CMD_vimgrep || eap->cmdidx == CMD_lvimgrep
+#if 0
+  if (*p != NUL && (eap->cmdidx == CMD_vimgrep || eap->cmdidx == CMD_lvimgrep
                     || eap->cmdidx == CMD_vimgrepadd
                     || eap->cmdidx == CMD_lvimgrepadd
                     || grep_internal(eap->cmdidx))) {
@@ -350,64 +354,17 @@ static char *skip_grep_pat(exarg *eap)
       p = eap->arg;
     }
   }
+#endif
   return p;
 }
-
-// TODO
-/// Arguments used for Ex commands.
-struct exarg {
-  char *arg;                    ///< argument of the command
-  char **args;                  ///< starting position of command arguments
-  size_t *arglens;              ///< length of command arguments
-  size_t argc;                  ///< number of command arguments
-  char *nextcmd;                ///< next command (NULL if none)
-  char *cmd;                    ///< the name of the command (except for :make)
-  char **cmdlinep;              ///< pointer to pointer of allocated cmdline
-  cmdidx_T cmdidx;              ///< the index for the command
-  uint32_t argt;                ///< flags for the command
-  int skip;                     ///< don't execute the command, only parse it
-  int forceit;                  ///< true if ! present
-  int addr_count;               ///< the number of addresses given
-  linenr_T line1;               ///< the first line number
-  linenr_T line2;               ///< the second line number or count
-  cmd_addr_T addr_type;         ///< type of the count/range
-  int flags;                    ///< extra flags after count: EXFLAG_
-  char *do_ecmd_cmd;            ///< +command arg to be used in edited file
-  linenr_T do_ecmd_lnum;        ///< the line number in an edited file
-  int append;                   ///< true with ":w >>file" command
-  int usefilter;                ///< true with ":w !command" and ":r!command"
-  int amount;                   ///< number of '>' or '<' for shift command
-  int regname;                  ///< register name (NUL if none)
-  int force_bin;                ///< 0, FORCE_BIN or FORCE_NOBIN
-  int read_edit;                ///< ++edit argument
-  int mkdir_p;                  ///< ++p argument
-  int force_ff;                 ///< ++ff= argument (first char of argument)
-  int force_enc;                ///< ++enc= argument (index in cmd[])
-  int bad_char;                 ///< BAD_KEEP, BAD_DROP or replacement byte
-  int useridx;                  ///< user command index
-  char *errmsg;                 ///< returned error message
-  LineGetter getline;           ///< Function used to get the next line
-  void *cookie;                 ///< argument for getline()
-  cstack_T *cstack;             ///< condition stack for ":if" etc.
-};
 
 /// Check for '|' to separate commands and '"' to start comments.
 void separate_nextcmd(exarg *eap)
 {
   char *p = skip_grep_pat(eap);
 
-  for (; *p; MB_PTR_ADV(p)) {
-    if (*p == Ctrl_V) {
-      if (eap->argt & (EX_CTRLV | EX_XFILE)) {
-        p++;  // skip CTRL-V and next char
-      } else {
-        // remove CTRL-V and skip next char
-        STRMOVE(p, p + 1);
-      }
-      if (*p == NUL) {  // stop at NUL after CTRL-V
-        break;
-      }
-    } else if (p[0] == '`' && p[1] == '=' && (eap->argt & EX_XFILE)) {
+  for (; *p; p++) {
+    if (p[0] == '`' && p[1] == '=' && (eap->argt & EX_XFILE)) {
       // Skip over `=expr` when wildcards are expanded.
       p += 2;
       (void)skip_expr(&p);
