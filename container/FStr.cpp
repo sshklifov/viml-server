@@ -8,8 +8,18 @@
 FStr::FStr() : s(nullptr), len(0), allocLen(0) {}
 
 FStr::FStr(const char* s) : FStr() {
-    append(s);
+    if (*s) {
+        append(s);
+    }
 }
+
+FStr::FStr(const char* s, int n) : FStr() {
+    if (*s) {
+        append(s, n);
+    }
+}
+
+FStr::FStr(const char* begin, const char* end) : FStr(begin, end - begin) {}
 
 FStr::FStr(const FStr& rhs) : FStr() {
     append(rhs);
@@ -180,6 +190,10 @@ const char* FStr::str() const { return s; }
 
 int FStr::length() const {
     return len;
+}
+
+bool FStr::empty() const {
+    return len == 0;
 }
 
 void FStr::allocAtLeast(int n) {

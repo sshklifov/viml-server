@@ -46,7 +46,15 @@ struct StringMap {
         return find(f.str());
     }
 
+    int count() const {
+        return map.count();
+    }
+
     Value& operator[](int pos) {
+        return map[pos].val;
+    }
+
+    const Value& operator[](int pos) const {
         return map[pos].val;
     }
 

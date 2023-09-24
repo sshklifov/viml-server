@@ -243,65 +243,64 @@ expr1: expr2
      | expr2 '?' expr1 ':' expr1            { $$ = f.create<TernaryNode>($1, $3, $5); }
 ;
 
-expr2: expr3 | expr3 OR expr2               { $$ = f.create<InfixOpNode>($1, $3, "||"); }
+expr2: expr3 | expr3 OR expr2               { $$ = f.create<LogicOpNode>($1, $3, LogicOpNode::OR); }
 ;
 
-expr3: expr4 | expr4 AND expr3              { $$ = f.create<InfixOpNode>($1, $3, "&&"); }
+expr3: expr4 | expr4 AND expr3              { $$ = f.create<LogicOpNode>($1, $3, LogicOpNode::AND); }
 ;
 
 expr4: expr5
-     | expr5 EQ expr5                   { $$ = f.create<InfixOpNode>($1, $3, "=="); }
-     | expr5 NOT_EQ expr5               { $$ = f.create<InfixOpNode>($1, $3, "!="); }
-     | expr5 GR expr5                   { $$ = f.create<InfixOpNode>($1, $3, ">"); }
-     | expr5 GR_EQ expr5                { $$ = f.create<InfixOpNode>($1, $3, ">="); }
-     | expr5 LESS expr5                 { $$ = f.create<InfixOpNode>($1, $3, "<"); }
-     | expr5 LESS_EQ expr5              { $$ = f.create<InfixOpNode>($1, $3, ">"); }
-     | expr5 MATCH expr5                { $$ = f.create<InfixOpNode>($1, $3, "=~"); }
-     | expr5 NOT_MATCH expr5            { $$ = f.create<InfixOpNode>($1, $3, "!~"); }
+     | expr5 EQ expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 NOT_EQ expr5               { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 GR expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 GR_EQ expr5                { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 LESS expr5                 { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 LESS_EQ expr5              { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 MATCH expr5                { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 NOT_MATCH expr5            { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 IS expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0); }
+     | expr5 ISNOT expr5                { $$ = f.create<CmpOpNode>($1, $3, 0); }
 
-     | expr5 EQ_CASE expr5                   { $$ = f.create<InfixOpNode>($1, $3, "==#"); }
-     | expr5 NOT_EQ_CASE expr5               { $$ = f.create<InfixOpNode>($1, $3, "!=#"); }
-     | expr5 GR_CASE expr5                   { $$ = f.create<InfixOpNode>($1, $3, ">#"); }
-     | expr5 GR_EQ_CASE expr5                { $$ = f.create<InfixOpNode>($1, $3, ">=#"); }
-     | expr5 LESS_CASE expr5                 { $$ = f.create<InfixOpNode>($1, $3, "<#"); }
-     | expr5 LESS_EQ_CASE expr5              { $$ = f.create<InfixOpNode>($1, $3, ">#"); }
-     | expr5 MATCH_CASE expr5                { $$ = f.create<InfixOpNode>($1, $3, "=~#"); }
-     | expr5 NOT_MATCH_CASE expr5            { $$ = f.create<InfixOpNode>($1, $3, "!~#"); }
+     | expr5 EQ_CASE expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 NOT_EQ_CASE expr5               { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 GR_CASE expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 GR_EQ_CASE expr5                { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 LESS_CASE expr5                 { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 LESS_EQ_CASE expr5              { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 MATCH_CASE expr5                { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 NOT_MATCH_CASE expr5            { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 IS_CASE expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
+     | expr5 ISNOT_CASE expr5                { $$ = f.create<CmpOpNode>($1, $3, 0, '#'); }
 
-     | expr5 EQ_ICASE expr5                   { $$ = f.create<InfixOpNode>($1, $3, "==?"); }
-     | expr5 NOT_EQ_ICASE expr5               { $$ = f.create<InfixOpNode>($1, $3, "!=?"); }
-     | expr5 GR_ICASE expr5                   { $$ = f.create<InfixOpNode>($1, $3, ">?"); }
-     | expr5 GR_EQ_ICASE expr5                { $$ = f.create<InfixOpNode>($1, $3, ">=?"); }
-     | expr5 LESS_ICASE expr5                 { $$ = f.create<InfixOpNode>($1, $3, "<?"); }
-     | expr5 LESS_EQ_ICASE expr5              { $$ = f.create<InfixOpNode>($1, $3, ">?"); }
-     | expr5 MATCH_ICASE expr5                { $$ = f.create<InfixOpNode>($1, $3, "=~?"); }
-     | expr5 NOT_MATCH_ICASE expr5            { $$ = f.create<InfixOpNode>($1, $3, "!~?"); }
-
-     | expr5 IS expr5                         { $$ = f.create<InfixOpNode>($1, $3, "is"); }
-     | expr5 IS_CASE expr5                    { $$ = f.create<InfixOpNode>($1, $3, "is#"); }
-     | expr5 IS_ICASE expr5                   { $$ = f.create<InfixOpNode>($1, $3, "is?"); }
-     | expr5 ISNOT expr5                      { $$ = f.create<InfixOpNode>($1, $3, "isnot"); }
-     | expr5 ISNOT_CASE expr5                 { $$ = f.create<InfixOpNode>($1, $3, "isnot#"); }
-     | expr5 ISNOT_ICASE expr5                { $$ = f.create<InfixOpNode>($1, $3, "isnot?"); }
+     | expr5 EQ_ICASE expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 NOT_EQ_ICASE expr5               { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 GR_ICASE expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 GR_EQ_ICASE expr5                { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 LESS_ICASE expr5                 { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 LESS_EQ_ICASE expr5              { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 MATCH_ICASE expr5                { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 NOT_MATCH_ICASE expr5            { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 IS_ICASE expr5                   { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
+     | expr5 ISNOT_ICASE expr5                { $$ = f.create<CmpOpNode>($1, $3, 0, '?'); }
 ;
 
 expr5: expr6
-     | expr6 '+' expr5        {  $$ = f.create<InfixOpNode>($1, $3, "+");  }
-     | expr6 '-' expr5        {  $$ = f.create<InfixOpNode>($1, $3, "-");  }
-     | expr6 '.' expr5        {  $$ = f.create<InfixOpNode>($1, $3, ".");  }
-     | expr6 CONCAT expr5     {  $$ = f.create<InfixOpNode>($1, $3, "..");  }
+     | expr6 '+' expr5        {  $$ = f.create<ArithOpNode>($1, $3, '+');  }
+     | expr6 '-' expr5        {  $$ = f.create<ArithOpNode>($1, $3, '-');  }
+     | expr6 '.' expr5        {  $$ = f.create<ArithOpNode>($1, $3, '.');  }
+     | expr6 CONCAT expr5     {  $$ = f.create<ArithOpNode>($1, $3, '.');  }
 ;
 
 expr6: expr7
-     | expr7 '*' expr6        { $$ = f.create<InfixOpNode>($1, $3, "*"); }
-     | expr7 '/' expr6        { $$ = f.create<InfixOpNode>($1, $3, "/"); }
-     | expr7 '%' expr6        { $$ = f.create<InfixOpNode>($1, $3, "%"); }
+     | expr7 '*' expr6        { $$ = f.create<ArithOpNode>($1, $3, '*'); }
+     | expr7 '/' expr6        { $$ = f.create<ArithOpNode>($1, $3, '/'); }
+     | expr7 '%' expr6        { $$ = f.create<ArithOpNode>($1, $3, '%'); }
 ;
 
 expr7: expr8
-     | '!' expr7            { $$ = f.create<PrefixOpNode>($2, "!"); }
-     | '-' expr7            { $$ = f.create<PrefixOpNode>($2, "-"); }
-     | '+' expr7            { $$ = f.create<PrefixOpNode>($2, "+"); }
+     | '!' expr7            { $$ = f.create<PrefixOpNode>($2, '!'); }
+     | '-' expr7            { $$ = f.create<PrefixOpNode>($2, '-'); }
+     | '+' expr7            { $$ = f.create<PrefixOpNode>($2, '+'); }
 ;
 
 // TODO help cmdline-special

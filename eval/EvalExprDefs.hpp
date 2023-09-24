@@ -1,8 +1,7 @@
 #pragma once
 
 #include <EvalExpr.hpp>
-
-#include <vector>
+#include <Vector.hpp>
 
 struct TernaryNode : public EvalExpr {
     TernaryNode(EvalExpr* cond, EvalExpr* left, EvalExpr* right) : cond(cond), left(left), right(right) {}
@@ -42,8 +41,27 @@ private:
     Type op;
 };
 
-struct InfixOpNode : public EvalExpr {
-    InfixOpNode(EvalExpr* lhs, EvalExpr* rhs, const char* op) : lhs(lhs), rhs(rhs), op(op) {}
+struct CmpOpNode : public EvalExpr {
+    CmpOpNode(EvalExpr* lhs, EvalExpr* rhs, int enumOp, char mod = 0) :
+        lhs(lhs), rhs(rhs), enumOp(enumOp), mod(mod) {}
+
+    void appendStr(FStr& res) override {
+        assert(false); // TODO
+        lhs->appendStr(res);
+        // res.appendf(" {} ", op);
+        rhs->appendStr(res);
+    }
+
+private:
+    EvalExpr* lhs;
+    EvalExpr* rhs;
+    int enumOp;
+    char mod;
+};
+
+struct ArithOpNode : public EvalExpr {
+    ArithOpNode(EvalExpr* lhs, EvalExpr* rhs, char op) :
+        lhs(lhs), rhs(rhs), op(op) {}
 
     void appendStr(FStr& res) override {
         lhs->appendStr(res);
@@ -54,11 +72,11 @@ struct InfixOpNode : public EvalExpr {
 private:
     EvalExpr* lhs;
     EvalExpr* rhs;
-    const char* op;
+    char op;
 };
 
 struct PrefixOpNode : public EvalExpr {
-    PrefixOpNode(EvalExpr* val, const char* op) : val(val), op(op) {}
+    PrefixOpNode(EvalExpr* val, char op) : val(val), op(op) {}
 
     void appendStr(FStr& res) override {
         res += op;
@@ -67,7 +85,7 @@ struct PrefixOpNode : public EvalExpr {
 
 private:
     EvalExpr* val;
-    const char* op;
+    char op;
 };
 
 struct IndexNode : public EvalExpr {
@@ -109,14 +127,14 @@ private:
 };
 
 struct InvokeNode : public EvalExpr {
-    InvokeNode(EvalExpr* fun, std::vector<EvalExpr*> args) : fun(fun), args(std::move(args)) {}
+    InvokeNode(EvalExpr* name, Vector<EvalExpr*> args) : name(name), args(std::move(args)) {}
 
     void appendStr(FStr& res) override {
-        fun->appendStr(res);
+        name->appendStr(res);
         res += '(';
         if (!args.empty()) {
             args[0]->appendStr(res);
-            for (int i = 1; i < args.size(); ++i) {
+            for (int i = 1; i < args.count(); ++i) {
                 res += ", ";
                 args[i]->appendStr(res);
             }
@@ -125,8 +143,19 @@ struct InvokeNode : public EvalExpr {
     }
 
 private:
-    EvalExpr* fun;
-    std::vector<EvalExpr*> args;
+    EvalExpr* name;
+    Vector<EvalExpr*> args;
+};
+
+struct NameNode : public EvalExpr {
+    NameNode(EvalExpr* name) : name(name) {}
+
+    void appendStr(FStr& res) override {
+        name->appendStr(res);
+    }
+
+private:
+    EvalExpr* name;
 };
 
 struct TokenNode : public EvalExpr {
@@ -141,16 +170,28 @@ struct TokenNode : public EvalExpr {
 private:
     FStr tok;
     Type type;
+}; // TODO superseded by BaseNode
+
+struct BaseNode : public EvalExpr {
+    BaseNode(int type, FStr tok) : tok(std::move(tok)), type(type) {}
+
+    void appendStr(FStr& res) override {
+        res += tok;
+    }
+
+private:
+    int type;
+    FStr tok;
 };
 
 struct ListNode : public EvalExpr {
-    ListNode(std::vector<EvalExpr*> elems) : elems(std::move(elems)) {}
+    ListNode(Vector<EvalExpr*> elems) : elems(std::move(elems)) {}
 
     void appendStr(FStr& res) override {
         res += "[";
         if (!elems.empty()) {
             elems[0]->appendStr(res);
-            for (int i = 1; i < elems.size(); ++i) {
+            for (int i = 1; i < elems.count(); ++i) {
                 res += ", ";
                 elems[i]->appendStr(res);
             }
@@ -159,7 +200,7 @@ struct ListNode : public EvalExpr {
     }
 
 private:
-    std::vector<EvalExpr*> elems;
+    Vector<EvalExpr*> elems;
 };
 
 struct DictNode : public EvalExpr {
@@ -167,11 +208,16 @@ struct DictNode : public EvalExpr {
         Pair() = default;
         Pair(EvalExpr* key, EvalExpr* value) : key(key), value(value) {}
 
+        bool operator<(const Pair& rhs) {
+            // TODO
+            return this < &rhs;
+        }
+
         EvalExpr* key;
         EvalExpr* value;
     };
 
-    DictNode(std::vector<Pair> entries) : entries(std::move(entries)) {}
+    DictNode(Vector<Pair> entries) : entries(std::move(entries)) {}
 
     void appendStr(FStr& res) override {
         res += "{";
@@ -179,7 +225,7 @@ struct DictNode : public EvalExpr {
             entries[0].key->appendStr(res);
             res += ": ";
             entries[0].value->appendStr(res);
-            for (int i = 1; i < entries.size(); ++i) {
+            for (int i = 1; i < entries.count(); ++i) {
                 res += ", ";
                 entries[i].key->appendStr(res);
                 res += ": ";
@@ -190,7 +236,7 @@ struct DictNode : public EvalExpr {
     }
 
 private:
-    std::vector<Pair> entries;
+    Vector<Pair> entries;
 };
 
 struct NestedNode : public EvalExpr {
@@ -207,13 +253,13 @@ private:
 };
 
 struct LambdaNode : public EvalExpr {
-    LambdaNode(std::vector<FStr> args, EvalExpr* body) : args(std::move(args)), body(body) {}
+    LambdaNode(Vector<FStr> args, EvalExpr* body) : args(std::move(args)), body(body) {}
 
     void appendStr(FStr& res) override {
         res += "{";
         if (!args.empty()) {
             res += args[0];
-            for (int i = 1; i < args.size(); ++i) {
+            for (int i = 1; i < args.count(); ++i) {
                 res += ", ";
                 res += args[i];
             }
@@ -224,6 +270,6 @@ struct LambdaNode : public EvalExpr {
     }
 
 private:
-    std::vector<FStr> args;
+    Vector<FStr> args;
     EvalExpr* body;
 };

@@ -9,6 +9,8 @@ struct StringView;
 struct FStr {
     FStr();
     FStr(const char* s);
+    FStr(const char* s, int n);
+    FStr(const char* begin, const char* end);
     FStr(const FStr& rhs);
     FStr(FStr&& rhs);
 
@@ -48,6 +50,7 @@ struct FStr {
     const char* str() const;
 
     int length() const;
+    bool empty() const;
 
     template <typename T, typename... Types>
     void appendf(const char* fmt, const T& head, const Types&... tail) {

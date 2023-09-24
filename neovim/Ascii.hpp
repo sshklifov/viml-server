@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdbool>
+#include <cctype>
 
 #define NUL             '\000'
 #define BELL            '\007'
@@ -69,3 +69,64 @@
 # define PATHSEP        '/'
 # define PATHSEPSTR     "/"
 #endif
+
+// toupper() and tolower() for ASCII only and ignore the current locale.
+#define TOUPPER_ASC(c) (((c) < 'a' || (c) > 'z') ? (c) : (c) - ('a' - 'A'))
+#define TOLOWER_ASC(c) (((c) < 'A' || (c) > 'Z') ? (c) : (c) + ('a' - 'A'))
+
+// Like isalpha() but reject non-ASCII characters.  Can't be used with a
+// special key (negative value).
+#define ASCII_ISLOWER(c) ((unsigned)(c) >= 'a' && (unsigned)(c) <= 'z')
+#define ASCII_ISUPPER(c) ((unsigned)(c) >= 'A' && (unsigned)(c) <= 'Z')
+#define ASCII_ISALPHA(c) (ASCII_ISUPPER(c) || ASCII_ISLOWER(c))
+#define ASCII_ISALNUM(c) (ASCII_ISALPHA(c) || ascii_isdigit(c))
+
+// TODO
+
+/// Checks if `c` is a space or tab character.
+///
+/// @see {ascii_isdigit}
+static inline bool ascii_iswhite(int c)
+{
+    return c == ' ' || c == '\t';
+}
+
+/// Check whether character is a decimal digit.
+///
+/// Library isdigit() function is officially locale-dependent and, for
+/// example, returns true for superscript 1 (¹) in locales where encoding
+/// contains it in lower 8 bits. Also avoids crashes in case c is below
+/// 0 or above 255: library functions are officially defined as accepting
+/// only EOF and unsigned char values (otherwise it is undefined behaviour)
+/// what may be used for some optimizations (e.g. simple `return
+/// isdigit_table[c];`).
+static inline bool ascii_isdigit(int c)
+{
+    return isdigit(c);
+}
+
+/// Checks if `c` is a hexadecimal digit, that is, one of 0-9, a-f, A-F.
+///
+/// @see {ascii_isdigit}
+static inline bool ascii_isxdigit(int c)
+{
+  return (c >= '0' && c <= '9')
+         || (c >= 'a' && c <= 'f')
+         || (c >= 'A' && c <= 'F');
+}
+
+/// Checks if `c` is a binary digit, that is, 0-1.
+///
+/// @see {ascii_isdigit}
+static inline bool ascii_isbdigit(int c)
+{
+  return (c == '0' || c == '1');
+}
+
+/// Checks if `c` is an octal digit, that is, 0-7.
+///
+/// @see {ascii_isdigit}
+static inline bool ascii_isodigit(int c)
+{
+  return (c >= '0' && c <= '7');
+}
