@@ -238,7 +238,7 @@ static bool eval_isdictc(int c) {
 /// Skips one character past the end of the name of a v:lua function.
 /// @param p    Pointer to the char AFTER the "v:lua." prefix.
 /// @return Pointer to the char one past the end of the function's name.
-const char* skip_luafunc_name(const char *p) {
+static const char* skip_luafunc_name(const char *p) {
     while (ASCII_ISALNUM(*p) || *p == '_' || *p == '-' || *p == '.' || *p == '\'') {
         p++;
     }
@@ -248,7 +248,7 @@ const char* skip_luafunc_name(const char *p) {
 /// @return  5 if "p" starts with "<SID>" or "<SNR>" (ignoring case).
 ///          2 if "p" starts with "s:".
 ///          0 otherwise.
-int get_fname_script_len(const char* p) {
+static int get_fname_script_len(const char* p) {
     if (p[0] == '<' && tolower(p[1]) == 's') {
         if (tolower(p[2]) == 'i' && tolower(p[3]) == 'd' && p[4] == '>') {
             return 5;
@@ -269,7 +269,7 @@ int get_fname_script_len(const char* p) {
 /// @param allow_scope  name can be preceded by a scope
 ///
 /// @return  0 if something is wrong.
-int get_id_len(const char* arg, int allow_scope = 1) {
+static int get_id_len(const char* arg, int allow_scope = 1) {
     const char* p = arg;
     if (allow_scope) {
         int len = get_fname_script_len(p);

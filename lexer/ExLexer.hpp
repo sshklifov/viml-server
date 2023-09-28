@@ -1,6 +1,5 @@
 #pragma once
 
-#include "LocationMap.hpp"
 #include "ExLexem.hpp"
 #include "DiagnosticReporter.hpp"
 
@@ -143,7 +142,7 @@ struct ExLexer {
     ExLexer(ExLexer&&) = delete;
 
     bool reload(const char* str);
-    bool lex(DiagnosticReporter& rep, ExLexem& res);
+    bool lexNext(DiagnosticReporter& rep, ExLexem& res);
 
 private:
     // Input program allowing to access current and next lines.

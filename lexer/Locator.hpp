@@ -40,11 +40,8 @@ struct Locator {
         }
 
         assert(false);
-        res.start.line = MAXLNUM;
-        res.start.character = MAXCOL;
-        res.end.line = MAXLNUM;
-        res.end.character = MAXCOL;
-        return res;
+        Position bad(MAXLNUM, MAXCOL);
+        return Range(bad);
     }
 
     Range resolve() const {

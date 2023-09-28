@@ -15,7 +15,7 @@ void SyntaxTree::reload(const char* str) {
     nodes.emplace(root); //< Guarantees that stack is never empty
 
     ExLexem lexem;
-    while (lexer.lex(rep, lexem)) {
+    while (lexer.lexNext(rep, lexem)) {
         GroupNode* node = nullptr;
         switch (lexem.cmdidx) {
         case CMD_if:

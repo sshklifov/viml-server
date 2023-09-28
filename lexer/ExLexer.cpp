@@ -1,6 +1,7 @@
 #include <ExLexer.hpp>
 
 #include <DoCmd.hpp>
+#include <OptionDefs.hpp>
 #include <Message.hpp>
 
 #include <cassert>
@@ -12,31 +13,49 @@ bool ExLexer::reload(const char* str) {
     return true;
 }
 
-// TODO 'cpo' C
 // TODO carriage returns
 
-bool ExLexer::lex(DiagnosticReporter& rep, ExLexem& res) {
+bool ExLexer::lexNext(DiagnosticReporter& rep, ExLexem& res) {
+    if (res.nextcmd) {
+        // "res" is a command that should be continued
+        StringView origCmdline = res.cmdline;
+        StringView cmdline(res.nextcmd, origCmdline.end);
+        try {
+            if (do_one_cmd(cmdline, res)) {
+                res.cmdline = origCmdline; //< Use original
+                return true;
+            }
+        } catch (msg& m) {
+            int pos = m.ppos - origCmdline.begin;
+            Range range = res.locator.resolve(pos, pos);
+            rep.error(std::move(m.message), range);
+        }
+    }
+    // Treat res as an empty command and store the result there
     while (!program.empty()) {
         Locator locator;
         CmdlineCreator cmdlineCreator(contStorage, locator);
+
         cmdlineCreator.concat(program.top(), program.lineNumber(), 0);
         program.pop();
 
-        while (!program.empty()) {
-            StringView origLine = program.top();
-            // Determine if origLine is a continuation
-            StringView line = origLine.trimLeftSpace();
-            int codeCont = (line[0] == '\\');
-            int commentCont = (line[0] == '"' && line[1] == '\\' && line[2] == ' ');
-            if (!codeCont && !commentCont) {
-                break;
+        if (!cpo_no_cont) {
+            while (!program.empty()) {
+                StringView origLine = program.top();
+                // Determine if origLine is a continuation
+                StringView line = origLine.trimLeftSpace();
+                int codeCont = (line[0] == '\\');
+                int commentCont = (line[0] == '"' && line[1] == '\\' && line[2] == ' ');
+                if (!codeCont && !commentCont) {
+                    break;
+                }
+                if (codeCont) {
+                    line = line.popLeft(); //< Remove continuation character
+                    int col = line.begin - origLine.begin;
+                    cmdlineCreator.concat(origLine, program.lineNumber(), col);
+                }
+                program.pop();
             }
-            if (codeCont) {
-                line = line.popLeft(); //< Remove continuation character
-                int col = line.begin - origLine.begin;
-                cmdlineCreator.concat(origLine, program.lineNumber(), col);
-            }
-            program.pop();
         }
 
         StringView cmdline = cmdlineCreator.finish();
@@ -46,8 +65,9 @@ bool ExLexer::lex(DiagnosticReporter& rep, ExLexem& res) {
                 return true;
             }
         } catch (msg& m) {
-            rep.error(std::move(m.message), res, m.ppos);
-            // TODO try to issue lexem?
+            int pos = m.ppos - cmdline.begin;
+            Range range = locator.resolve(pos, pos);
+            rep.error(std::move(m.message), range);
         }
     }
     return false;

@@ -2,9 +2,11 @@
 
 #include "ExCmdsDefs.hpp"
 #include "ExCmdsEnum.hpp"
+#include "OptionDefs.hpp"
 
 #include "Ascii.hpp"
 #include "Charset.hpp"
+#include "Eval.hpp"
 #include "EvalUtil.hpp"
 #include "Message.hpp"
 #include "Mbyte.hpp"
@@ -85,8 +87,6 @@ const char* skip_anyof(const char* p) {
     //  \U  - Long multibyte character code, eg \U12345678
     char REGEXP_INRANGE[] = "]^-n\\";
     char REGEXP_ABBR[] = "nrtebdoxuU";
-
-    const int reg_cpo_lit = 0; // TODO
 
     if (*p == '^') {  // Complement of range.
         p++;
@@ -629,21 +629,9 @@ const char* skip_flags(const char* cmdline, int cmdidx) {
     return skipwhite(cmdline);
 }
 
-#if 0
-/// Check if *p is a separator between Ex commands, skipping over white space.
-///
-/// @return  NULL if it isn't, the following character if it is.
-const char* check_nextcmd(const char* p) {
-    p = skipwhite(p);
-    if (*p == '|' || *p == '\n') {
-        return p + 1;
-    }
-    return NULL;
-}
-#endif
-
 /// Check for '|' to separate commands and '"' to start comments.
-const char* separate_nextcmd(const char* cmdline, int cmdidx) {
+/// "cmdline" is advanced to the end of the command
+const char* separate_nextcmd(const char*& cmdline, int cmdidx) {
     int isgrep = cmdidx == CMD_vimgrep 
         || cmdidx == CMD_lvimgrep
         || cmdidx == CMD_vimgrepadd
@@ -653,64 +641,55 @@ const char* separate_nextcmd(const char* cmdline, int cmdidx) {
         || cmdidx == CMD_grepadd
         || cmdidx == CMD_lgrepadd;
 
-    if (*cmdline != NUL && isgrep) {
-        cmdline = skip_vimgrep_pat(cmdline);
+    const char* p = cmdline;
+    if (*p != NUL && isgrep) {
+        p = skip_vimgrep_pat(p);
     }
 
-    return cmdline;
-#if 0
-    // TODO skip put = ala bala
-    
-    // TODO
-    const int cpo_bar = 0; // cpo has 'b'
-
-  int cmd_argt = cmdnames[cmdidx].cmd_argt;
-  for (const char* p = cmdline; *p; p++) {
-    if (*p == Ctrl_V) {
-      if (cmd_argt & (EX_CTRLV | EX_XFILE)) {
-        p++;  // skip CTRL-V and next char
-      }
-      if (*p == NUL) {  // stop at NUL after CTRL-V
-        break;
-      }
-    } else if (p[0] == '`' && p[1] == '=' && (cmd_argt & EX_XFILE)) {
-      // Skip over `=expr` when wildcards are expanded.
-      p += 2;
-      // TODO
-      (void)skip_expr(&p);
-      if (*p == NUL) {  // stop at NUL after CTRL-V
-        break;
-      }
-    } else if (
-               // Check for '"': start of comment or '|': next command */
-               // :@" does not start a comment!
-               // :redir @" doesn't either.
-               (*p == '"'
+    int cmd_argt = cmdnames[cmdidx].cmd_argt;
+    for (; *p; p++) {
+        if (*p == Ctrl_V) {
+            p++;  // skip CTRL-V and next char
+            if (*p == NUL) {  // stop at NUL after CTRL-V
+                break;
+            }
+        } else if (p[0] == '`' && p[1] == '=' && (cmd_argt & EX_XFILE)) {
+            // Skip over `=expr` when wildcards are expanded.
+            p = skip_expr(p + 2);
+            if (*p != '`') {
+                throw msg(p, "Expecting '`'");
+            }
+        } else {
+            // Check for '"': start of comment or '|': next command */
+            // :@" does not start a comment!
+            // :redir @" doesn't either.
+            bool comment_start = (*p  == '"')
                 && !(cmd_argt & EX_NOTRLCOM)
                 && (cmdidx != CMD_at || p != cmdline)
-                && (cmdidx != CMD_redir
-                    || p != cmdline + 1 || p[-1] != '@')) || *p == '|' || *p == '\n') {
-      // We remove the '\' before the '|', unless EX_CTRLV is used
-      // AND 'b' is present in 'cpoptions'.
-      if (p[-1] == '\\' && (!cpo_bar || !(cmd_argt & EX_CTRLV))) {
-        STRMOVE(p - 1, p);  // remove the '\'
-        p--;
-      } else {
-        eap->nextcmd = check_nextcmd(p);
-        *p = NUL;
-        break;
-      }
-    }
-  }
+                && (cmdidx != CMD_redir || p != cmdline + 1 || p[-1] != '@');
 
-  if (!(eap->argt & EX_NOTRLCOM)) {  // remove trailing spaces
-    del_trailing_spaces(eap->arg);
-  }
-#endif
+            if (comment_start || *p == '|' || *p == '\n') {
+                // We remove the '\' before the '|', unless EX_CTRLV is used
+                // AND 'b' is present in 'cpoptions'.
+                if (p[-1] != '\\' || (cpo_bar && (cmd_argt & EX_CTRLV))) {
+                    cmdline = p;
+                    if (*p == '|') {
+                        return cmdline + 1;
+                    } else {
+                        return NULL;
+                    }
+                }
+            }
+        }
+    }
+    assert(*p == NUL);
+    cmdline = p;
+    return NULL;
 }
 
-int do_one_cmd(StringView cmd, ExLexem& lexem) {
-    const char* cmdline = cmd.begin;
+int do_one_cmd(StringView cmdView, ExLexem& lexem) {
+    const char* cmdline = cmdView.begin;
+
     // "#!anything" is handled like a comment.
     if (cmdline[0] == '#' && cmdline[1] == '!') {
         return false;
@@ -735,7 +714,7 @@ int do_one_cmd(StringView cmd, ExLexem& lexem) {
 
     // ignore comment and empty lines
     if (ends_excmd(*skipwhite(cmdline))) {
-        return false;
+        return false; // TODO!
     }
 
     const char* name_pos = cmdline;
@@ -825,18 +804,23 @@ int do_one_cmd(StringView cmd, ExLexem& lexem) {
 
     // Check for '|' to separate commands and '"' to start comments.
     // Don't do this for ":read !cmd" and ":write !cmd".
-    const char* cmdline_end = cmd.end;
+    const char* cmdend = NULL;
+    const char* nextcmd = NULL;
     if ((cmd_argt & EX_TRLBAR) && !usefilter) {
-        // TODO separate_nextcmd(cmdline, cmdidx);
+        cmdend = cmdline;
+        nextcmd = separate_nextcmd(cmdend, cmdidx);
+    } else {
+        cmdend = cmdView.end;
     }
 
     // 6.9. Fill in ExLexem attributes
     lexem.bang = forceit;
     lexem.range = has_range;
     lexem.cmdidx = cmdidx;
-    lexem.cmdline = cmd;
+    lexem.nextcmd = nextcmd;
+    lexem.cmdline = cmdView;
     lexem.name = StringView(name_pos, name_len);
-    lexem.qargs = StringView(cmdline, lexem.cmdline.end);
+    lexem.qargs = StringView(cmdline, cmdend);
     return true;
 
 #if 0

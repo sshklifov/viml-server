@@ -27,6 +27,10 @@ struct Position {
 };
 
 struct Range {
+    Range() = default;
+    Range(const Position& pos) : start(pos), end(pos) {}
+    Range(const Position& start, const Position& end) : start(start), end(end) {}
+
     /**
      * The range's start position.
      */
