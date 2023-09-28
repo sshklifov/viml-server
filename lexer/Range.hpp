@@ -1,5 +1,12 @@
 #pragma once
 
+/// Maximal (invalid) line number
+enum { MAXLNUM = 0x7fffffff, };
+/// Maximal column number
+/// MAXCOL used to be INT_MAX, but with 64 bit ints that results in running
+/// out of memory when trying to allocate a very long line.
+enum { MAXCOL = 0x7fffffff, };
+
 struct Position {
     Position() = default;
     Position(int line, int col) : line(line), character(col) {}

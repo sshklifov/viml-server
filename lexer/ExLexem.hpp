@@ -4,14 +4,13 @@
 #include "LocationMap.hpp"
 
 struct ExLexem {
-    int exDictIdx;
+    StringView cmdline;
     StringView name;
     StringView qargs;
 
-    LocationMap::Key locationKey;
-    int nameOffset;
-    int qargsOffset;
+    Locator locator;
 
     bool bang;
     int range;
+    int cmdidx;
 };

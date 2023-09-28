@@ -2,6 +2,9 @@
 
 #include <cctype>
 
+#define CHAR_ORD_LOW(x)   ((uint8_t)(x) - 'a')
+#define CHAR_ORD_UP(x)    ((uint8_t)(x) - 'A')
+
 #define NUL             '\000'
 #define BELL            '\007'
 #define BS              '\010'
@@ -89,6 +92,15 @@
 static inline bool ascii_iswhite(int c)
 {
     return c == ' ' || c == '\t';
+}
+
+/// Checks if `c` is a white-space character, that is,
+/// one of \f, \n, \r, \t, \v.
+///
+/// @see {ascii_isdigit}
+static inline bool ascii_isspace(int c)
+{
+    return (c >= 9 && c <= 13) || c == ' ';
 }
 
 /// Check whether character is a decimal digit.

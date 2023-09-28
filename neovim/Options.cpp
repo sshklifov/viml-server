@@ -1,6 +1,10 @@
 #include "Options.hpp"
 #include "Eval.hpp"
+#include "EvalUtil.hpp"
+
 #include <cstring>
+
+// TODO see Mbyte.cpp
 
 int OptionsMap::findVarType(const char* name, int n) const {
     if (name[0] < 'a' || name[0] > 'z') {

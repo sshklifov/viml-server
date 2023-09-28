@@ -3,17 +3,7 @@
 #include <Range.hpp>
 #include <Vector.hpp>
 
-struct LocationMap {
-    friend struct Continuation;
-
-    struct Key {
-        Key() = default;
-        Key(int begin, int end) : fragBegin(begin), fragEnd(end) {}
-
-        int fragBegin;
-        int fragEnd;
-    };
-
+struct Locator {
     struct Fragment {
         Fragment() = default;
         Fragment(int line, int col, int fragLen) : line(line), col(col), fragLen(fragLen) {}
@@ -31,11 +21,11 @@ struct LocationMap {
         fragments.clear();
     }
 
-    Range resolve(const Key& key, int first, int last) const {
+    Range resolve(int first, int last) const {
         assert(first <= last);
         Range res;
         int strBegin = 0;
-        for (int i = key.fragBegin; i < key.fragEnd; ++i) {
+        for (int i = 0; i < fragments.count(); ++i) {
             int strEnd = strBegin + fragments[i].fragLen;
             if (first >= strBegin && first < strEnd) {
                 res.start.line = fragments[i].line;
@@ -48,16 +38,21 @@ struct LocationMap {
             }
             strBegin = strEnd;
         }
+
         assert(false);
+        res.start.line = MAXLNUM;
+        res.start.character = MAXCOL;
+        res.end.line = MAXLNUM;
+        res.end.character = MAXCOL;
         return res;
     }
 
-    Range resolve(const Key& key) const {
+    Range resolve() const {
         Range res;
-        res.start.line = fragments[key.fragBegin].line;
-        res.start.character = fragments[key.fragBegin].col;
-        res.end.line = fragments[key.fragEnd-1].line;
-        res.end.character = fragments[key.fragEnd-1].col + fragments[key.fragEnd-1].fragLen - 1;
+        res.start.line = fragments[0].line;
+        res.start.character = fragments[0].col;
+        res.end.line = fragments.last().line;
+        res.end.character = fragments.last().col + fragments.last().fragLen - 1;
         return res;
     }
 

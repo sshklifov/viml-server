@@ -1,55 +1,48 @@
 #pragma once
 
-#include <Blocks.hpp>
+#include <Nodes.hpp>
+#include <ExLexer.hpp>
 #include <DiagnosticReporter.hpp>
-#include <EvalFactory.hpp>
 
-#include <type_traits>
-#include <stack>
-#include <cassert>
+struct NodeFactory {
+    NodeFactory() = default;
+    NodeFactory(const NodeFactory&) = delete;
+    NodeFactory(NodeFactory&&) = delete;
 
-struct BlockFactory {
-    BlockFactory() = default;
-    BlockFactory(const BlockFactory&) = delete;
-    BlockFactory(BlockFactory&&) = delete;
-
-    ~BlockFactory() {
+    ~NodeFactory() {
         clear();
     }
 
     void clear() {
-        for (Block* block : blocks) {
-            delete block;
+        for (BaseExpr* node : nodes) {
+            delete node;
         }
-        blocks.clear();
+        nodes.clear();
     }
 
     template <typename T, typename ... Args>
     T* create(Args&&... args) {
-        static_assert(std::is_base_of<Block, T>::value, "Bad template argument");
+        static_assert(std::is_base_of<BaseExpr, T>::value, "Bad template argument");
 
         T* res = new T(std::forward<Args>(args)...);
-        blocks.push_back(res);
+        nodes.emplace(res);
         return res;
     }
 
-    std::vector<Block*> blocks;
+    Vector<BaseExpr*> nodes;
 };
 
 struct SyntaxTree {
-    SyntaxTree();
+    SyntaxTree() = default;
     SyntaxTree(const SyntaxTree&) = delete;
     SyntaxTree(SyntaxTree&&) = delete;
 
     void reload(const char* str);
-
     const Vector<Diagnostic>& diagnostics() const;
 
 public:
+    DiagnosticReporter rep; //< Diagnostics found during parse of AST
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
-    BlockFactory blockFac; //< Holds memory for the created blocks (main ast)
-    EvalFactory evalFac; //< Holds memory for command qargs (second level ast)
-
-    RootBlock* root; //< AST root
-    DiagnosticReporter reporter; //< Diagnostics found during parse of AST
+    NodeFactory factory; //< Holds memory for the created nodes
+    RootNode* root; //< AST root
 };

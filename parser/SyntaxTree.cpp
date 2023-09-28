@@ -1,215 +1,187 @@
 #include "SyntaxTree.hpp"
 
 #include <Stack.hpp>
-
-#include <ExConstants.hpp>
-#include <ExLexer.hpp>
-#include <Eval.hpp>
-
-SyntaxTree::SyntaxTree() {
-    reporter.bindLocationResolver(lexer.getLocationMap());
-    lexer.setDiagnosticReporter(reporter);
-}
+#include <ExCmdsEnum.hpp>
 
 void SyntaxTree::reload(const char* str) {
     if (!lexer.reload(str)) {
         return;
     }
-    blockFac.clear();
-    evalFac.clear();
-    reporter.clear();
+    factory.clear();
+    rep.clear();
 
-    root = blockFac.create<RootBlock>();
-    Stack<Block*> blocks;
-    blocks.emplace(root); //< Guarantees that stack is never empty
-
-    // TODO error recovery
+    root = factory.create<RootNode>();
+    Stack<GroupNode*> nodes;
+    nodes.emplace(root); //< Guarantees that stack is never empty
 
     ExLexem lexem;
-    while (lexer.lex(lexem)) {
-        Block* newBlock = nullptr;
-        switch (lexem.exDictIdx) {
-        case IF:
-            newBlock = blockFac.create<IfBlock>(lexem);
-            blocks.top()->addToScope(newBlock);
-            blocks.emplace(newBlock);
+    while (lexer.lex(rep, lexem)) {
+        GroupNode* node = nullptr;
+        switch (lexem.cmdidx) {
+        case CMD_if:
+            node = factory.create<IfNode>(lexem);
+            nodes.top()->body.emplace(node);
+            nodes.emplace(node);
             break;
 
-        case ELSEIF:
-            if (blocks.top()->getId() == IF || blocks.top()->getId() == ELSEIF) {
-                newBlock = blockFac.create<ElseIfBlock>(lexem);
-                if (blocks.top()->getId() == IF) {
-                    blocks.top()->cast<IfBlock>()->elseIfBlock = newBlock;
+        case CMD_elseif:
+            if (nodes.top()->getId() == CMD_if || nodes.top()->getId() == CMD_elseif) {
+                node = factory.create<ElseIfNode>(lexem);
+                if (nodes.top()->getId() == CMD_if) {
+                    nodes.top()->cast<IfNode>()->elseIfNode = node;
                 } else {
-                    blocks.top()->cast<ElseIfBlock>()->elseIfBlock = newBlock;
+                    nodes.top()->cast<ElseIfNode>()->elseIfNode = node;
                 }
-                blocks.top() = newBlock;
-            } else if (blocks.top()->getId() == ELSE) {
-                reporter.error("elseif after else", lexem);
+                nodes.top() = node;
+            } else if (nodes.top()->getId() == CMD_else) {
+                rep.error("elseif after else", lexem);
             } else {
-                reporter.error("elseif without if", lexem);
+                rep.error("elseif without if", lexem);
             }
             break;
 
-        case ELSE:
-            if (blocks.top()->getId() == IF || blocks.top()->getId() == ELSEIF) {
-                newBlock = blockFac.create<ElseBlock>(lexem);
-                if (blocks.top()->getId() == IF) {
-                    blocks.top()->cast<IfBlock>()->elseIfBlock = newBlock;
+        case CMD_else:
+            if (nodes.top()->getId() == CMD_if || nodes.top()->getId() == CMD_elseif) {
+                node = factory.create<ElseNode>(lexem);
+                if (nodes.top()->getId() == CMD_if) {
+                    nodes.top()->cast<IfNode>()->elseIfNode = node;
                 } else {
-                    blocks.top()->cast<ElseIfBlock>()->elseIfBlock = newBlock;
+                    nodes.top()->cast<ElseIfNode>()->elseIfNode = node;
                 }
-                blocks.top() = newBlock;
-            } else if (blocks.top()->getId() == ELSE) {
-                reporter.error("multiple else", lexem);
+                nodes.top() = node;
+            } else if (nodes.top()->getId() == CMD_else) {
+                rep.error("multiple else", lexem);
             } else {
-                reporter.error("else without if", lexem);
+                rep.error("else without if", lexem);
             }
             break;
 
-        case ENDIF:
-            if (blocks.top()->getId() == IF || blocks.top()->getId() == ELSEIF || blocks.top()->getId() == ELSE) {
-                blocks.pop();
+        case CMD_endif:
+            if (nodes.top()->getId() == CMD_if || nodes.top()->getId() == CMD_elseif || nodes.top()->getId() == CMD_else) {
+                nodes.pop();
             } else {
-                reporter.error("endif without if", lexem);
+                rep.error("endif without if", lexem);
             }
             break;
 
-        case WHILE:
-            newBlock = blockFac.create<WhileBlock>(lexem);
-            blocks.top()->addToScope(newBlock);
-            blocks.emplace(newBlock);
+        case CMD_while:
+            node = factory.create<WhileNode>(lexem);
+            nodes.top()->body.emplace(node);
+            nodes.emplace(node);
             break;
 
-        case ENDWHILE:
-            if (blocks.top()->getId() == WHILE) {
-                blocks.pop();
-            } else if (blocks.top()->getId() == FOR) {
-                reporter.error("using endwhile with for", lexem);
+        case CMD_endwhile:
+            if (nodes.top()->getId() == CMD_while) {
+                nodes.pop();
+            } else if (nodes.top()->getId() == CMD_for) {
+                rep.error("using endwhile with for", lexem);
             } else {
-                reporter.error("endwhile without while", lexem);
+                rep.error("endwhile without while", lexem);
             }
             break;
 
-        case FOR:
-            newBlock = blockFac.create<ForBlock>(lexem);
-            blocks.top()->addToScope(newBlock);
-            blocks.emplace(newBlock);
+        case CMD_for:
+            node = factory.create<ForNode>(lexem);
+            nodes.top()->body.emplace(node);
+            nodes.emplace(node);
             break;
 
-        case ENDFOR:
-            if (blocks.top()->getId() == FOR) {
-                blocks.pop();
-            } else if (blocks.top()->getId() == WHILE) {
-                reporter.error("using endfor with while", lexem);
+        case CMD_endfor:
+            if (nodes.top()->getId() == CMD_for) {
+                nodes.pop();
+            } else if (nodes.top()->getId() == CMD_while) {
+                rep.error("using endfor with while", lexem);
             } else {
-                reporter.error("endfor without for", lexem);
+                rep.error("endfor without for", lexem);
             }
             break;
 
-        case FUNCTION:
-            newBlock = blockFac.create<FunctionBlock>(lexem);
-            blocks.top()->addToScope(newBlock);
-            blocks.emplace(newBlock);
+        case CMD_function:
+            node = factory.create<FunctionNode>(lexem);
+            nodes.top()->body.emplace(node);
+            nodes.emplace(node);
             break;
 
-        case ENDFUNCTION:
-            if (blocks.top()->getId() != FUNCTION) {
-                reporter.error("endfunction not inside a function", lexem);
+        case CMD_endfunction:
+            if (nodes.top()->getId() != CMD_function) {
+                rep.error("endfunction not inside a function", lexem);
             } else {
-                blocks.pop();
+                nodes.pop();
             }
             break;
 
-        case TRY:
-            newBlock = blockFac.create<TryBlock>(lexem);
-            blocks.top()->addToScope(newBlock);
-            blocks.emplace(newBlock);
+        case CMD_try:
+            node = factory.create<TryNode>(lexem);
+            nodes.top()->body.emplace(node);
+            nodes.emplace(node);
             break;
 
-         case CATCH:
-            if (blocks.top()->getId() == CATCH) {
-                blocks.pop(); // end catch block
+         case CMD_catch:
+            if (nodes.top()->getId() == CMD_catch) {
+                nodes.pop(); // end catch node
             }
-            if (blocks.top()->getId() == TRY) {
-                newBlock = blockFac.create<CatchBlock>(lexem);
-                blocks.top()->cast<TryBlock>()->catchBlocks.push_back(newBlock);
-                blocks.emplace(newBlock);
-            } else if (blocks.top()->getId() == FINALLY) {
-                reporter.error("catch after finally", lexem);
+            if (nodes.top()->getId() == CMD_try) {
+                node = factory.create<CatchNode>(lexem);
+                nodes.top()->cast<TryNode>()->catchNodes.emplace(node);
+                nodes.emplace(node);
+            } else if (nodes.top()->getId() == CMD_finally) {
+                rep.error("catch after finally", lexem);
             } else {
-                reporter.error("catch without try", lexem);
+                rep.error("catch without try", lexem);
             }
             break;
 
-        case FINALLY:
-            if (blocks.top()->getId() == CATCH) {
-                blocks.pop(); // end catch block
+        case CMD_finally:
+            if (nodes.top()->getId() == CMD_catch) {
+                nodes.pop(); // end catch node
             }
-            if (blocks.top()->getId() == TRY) {
-                newBlock = blockFac.create<FinallyBlock>(lexem);
-                blocks.top()->cast<TryBlock>()->finally = newBlock;
-                blocks.emplace(newBlock);
-            } else if (blocks.top()->getId() == FINALLY) {
-                reporter.error("multiple finally", lexem);
-            } else if (blocks.top()->getId() == FINALLY) {
-                reporter.error("finally without try", lexem);
+            if (nodes.top()->getId() == CMD_try) {
+                node = factory.create<FinallyNode>(lexem);
+                nodes.top()->cast<TryNode>()->finally = node;
+                nodes.emplace(node);
+            } else if (nodes.top()->getId() == CMD_finally) {
+                rep.error("multiple finally", lexem);
+            } else if (nodes.top()->getId() == CMD_finally) {
+                rep.error("finally without try", lexem);
             }
             break;
 
-        case ENDTRY:
-            if (blocks.top()->getId() == FINALLY || blocks.top()->getId() == CATCH) {
-                blocks.pop();
+        case CMD_endtry:
+            if (nodes.top()->getId() == CMD_finally || nodes.top()->getId() == CMD_catch) {
+                nodes.pop();
             }
-            if (blocks.top()->getId() != TRY) {
-                reporter.error("endtry without try", lexem);
+            if (nodes.top()->getId() != CMD_try) {
+                rep.error("endtry without try", lexem);
             } else {
-                blocks.pop();
+                nodes.pop();
             }
             break;
 
         default:
-            blocks.top()->addToScope(blockFac.create<ExBlock>(lexem));
+            nodes.top()->body.emplace(factory.create<ExNode>(lexem));
         }
     }
 
-    while (blocks.top() != root) {
-        Block* block = blocks.top();
-        int id = block->getId();
-        blocks.pop();
-        if (id == IF || id == ELSEIF || id == ELSE) {
-            reporter.error("missing endif", block->lexem);
-        } else if (id == WHILE) {
-            reporter.error("missing endwhile", block->lexem);
-        } else if (id == FOR) {
-            reporter.error("missing endfor", block->lexem);
-        } else if (id == FUNCTION) {
-            reporter.error("missing endfunction", block->lexem);
-        } else if (id == TRY || id == FINALLY || id == CATCH) {
-            reporter.error("missing endtry", block->lexem);
+    while (nodes.top() != root) {
+        GroupNode* node = nodes.top();
+        int id = node->getId();
+        nodes.pop();
+        if (id == CMD_if || id == CMD_elseif || id == CMD_else) {
+            rep.error("missing endif", node->lexem);
+        } else if (id == CMD_while) {
+            rep.error("missing endwhile", node->lexem);
+        } else if (id == CMD_for) {
+            rep.error("missing endfor", node->lexem);
+        } else if (id == CMD_function) {
+            rep.error("missing endfunction", node->lexem);
+        } else if (id == CMD_try || id == CMD_finally || id == CMD_catch) {
+            rep.error("missing endtry", node->lexem);
         } else {
             assert(false);
         }
     }
-
-    // Parse qargs of blocks
-    struct RunEvalParse {
-        RunEvalParse(EvalFactory& factory, DiagnosticReporter& reporter) :
-            factory(factory), reporter(reporter) {}
-
-        void operator()(Block* block) {
-            block->evalCmd = evalEx(block->lexem, factory, reporter);
-        }
-
-    private:
-        EvalFactory& factory;
-        DiagnosticReporter& reporter;
-    };
-
-    RunEvalParse runner(evalFac, reporter);
-    root->enumerate(runner);
 }
 
 const Vector<Diagnostic>& SyntaxTree::diagnostics() const {
-    return reporter.get();
+    return rep.get();
 }

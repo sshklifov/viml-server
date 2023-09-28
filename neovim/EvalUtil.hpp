@@ -2,9 +2,24 @@
 
 #include "Ascii.hpp"
 #include "Charset.hpp"
-#include "Eval.hpp"
+#include "Message.hpp"
 
 #include <cstring>
+
+/// VimL variable types, for use in typval_T.v_type
+typedef enum {
+  VAR_UNKNOWN = 0,  ///< Unknown (unspecified) value.
+  VAR_NUMBER,       ///< Number, .v_number is used.
+  VAR_STRING,       ///< String, .v_string is used.
+  VAR_FUNC,         ///< Function reference, .v_string is used as function name.
+  VAR_LIST,         ///< List, .v_list is used.
+  VAR_DICT,         ///< Dictionary, .v_dict is used.
+  VAR_FLOAT,        ///< Floating-point value, .v_float is used.
+  VAR_BOOL,         ///< true, false
+  VAR_SPECIAL,      ///< Special value (null), .v_special is used.
+  VAR_PARTIAL,      ///< Partial, .v_partial is used.
+  VAR_BLOB,         ///< Blob, .v_blob is used.
+} VarType;
 
 /// @return  whether `regname` is a valid name of a yank register.
 ///
@@ -78,7 +93,7 @@ static const char* skip_lit_string(const char* arg) {
             arg++;
         }
     }
-    throw "Missing closing quote";
+    throw msg(arg, "Missing closing quote");
 }
 
 /// Skip over a string constant
@@ -92,7 +107,7 @@ static const char* skip_string(const char* arg) {
             return arg + 1;
         }
     }
-    throw "Missing closing quote";
+    throw msg(arg, "Missing closing quote");
 }
 
 /// Skip a "0z" blob constant.
@@ -101,7 +116,7 @@ static const char* skip_blob(const char *arg) {
     arg += 2;
     for (arg = arg + 2; ascii_isxdigit(*arg); arg += 2) {
         if (!ascii_isxdigit(arg[1])) {
-            throw "Blob literal should have an even number of hex characters";
+            throw msg(arg, "Blob literal should have an even number of hex characters");
         }
         if (arg[2] == '.' && ascii_isxdigit(arg[3])) {
             arg++;
@@ -141,7 +156,7 @@ static const char* skip_number(const char *arg, int* maybe_float) {
     // Check for an alphanumeric character immediately following, that is
     // most likely a typo.
     if (ASCII_ISALNUM(*arg)) {
-        throw "Invalid Number";
+        throw msg(arg, "Invalid Number");
     }
     return arg;
 }
@@ -255,8 +270,7 @@ int get_fname_script_len(const char* p) {
 ///
 /// @return  0 if something is wrong.
 int get_id_len(const char* arg, int allow_scope = 1) {
-    // TODO comment weird vim behavior
-    const char *p = arg;
+    const char* p = arg;
     if (allow_scope) {
         int len = get_fname_script_len(p);
         if (len > 0) {

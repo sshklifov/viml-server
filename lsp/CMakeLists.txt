@@ -1,6 +1,6 @@
 include_directories(${CMAKE_SOURCE_DIR}/parser)
 include_directories(${CMAKE_SOURCE_DIR}/lexer)
-include_directories(${CMAKE_SOURCE_DIR}/eval) # TODO needed?
+include_directories(${CMAKE_SOURCE_DIR}/neovim)
 include_directories(${CMAKE_SOURCE_DIR}/container)
 include_directories(${CMAKE_CURRENT_LIST_DIR})
 
@@ -8,6 +8,6 @@ find_file(TEST_TXT NAMES test.txt PATHS ${CMAKE_CURRENT_LIST_DIR} REQUIRED NO_DE
 add_compile_definitions(TEST_FILE="${TEST_TXT}")
 
 link_libraries(parser)
-link_libraries(eval)
+link_libraries(neovim)
 link_libraries(container)
 add_executable(lsp Main.cpp)

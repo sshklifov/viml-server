@@ -4,8 +4,8 @@
 // eval.c: Expression evaluation.
 
 #include "Eval.hpp"
+#include "EvalUtil.hpp"
 #include "Charset.hpp"
-#include "Help.hpp" // TODO rename idk
 #include "Options.hpp"
 
 #include <cassert>
@@ -16,72 +16,67 @@
 #include <cstdlib>
 #include <cstring>
 
-EvalExpr* Evaluator::eval(const char* arg, int& numRead) {
-    arg = skipwhite(arg);
-    try {
-        // TODO num read what used for
-        EvalExpr* res = eval1(arg);
-        return res;
-    } catch (const char* err) {
-        fprintf(stderr, "%s: \"%s\"\n", err, arg);
-        return nullptr;
-    }
+const char* skip_expr(const char* arg) {
+    EvalFactory dummy;
+    dummy.setEvaluate(0);
+    eval1(arg, dummy);
+    return arg;
 }
 
-EvalExpr* Evaluator::eval1(const char*& arg) {
+EvalExpr* eval1(const char*& arg, EvalFactory& factory) {
     // Get the first variable.
-    EvalExpr* expr = eval2(arg);
+    EvalExpr* expr = eval2(arg, factory);
 
     if (arg[0] == '?') {
         bool result = false;
         // Get the second variable.
         arg = skipwhite(arg + 1);
-        EvalExpr* bodyTrue = eval1(arg);
+        EvalExpr* bodyTrue = eval1(arg, factory);
         // Check for the ":".
         if (arg[0] != ':') {
-            throw "Missing ':' after '?'";
+            throw msg(arg, "Missing ':' after '?'");
         }
         // Get the third variable.
         arg = skipwhite(arg + 1);
-        EvalExpr* bodyFalse = eval1(arg);
-        expr = factory->create<TernaryNode>(expr, bodyTrue, bodyFalse);
+        EvalExpr* bodyFalse = eval1(arg, factory);
+        expr = factory.create<TernaryExpr>(expr, bodyTrue, bodyFalse);
     }
 
     return expr;
 }
 
-EvalExpr* Evaluator::eval2(const char*& arg) {
+EvalExpr* eval2(const char*& arg, EvalFactory& factory) {
     // Get the first variable.
-    EvalExpr* expr = eval3(arg);
+    EvalExpr* expr = eval3(arg, factory);
 
     // Repeat until there is no following "||".
     while (arg[0] == '|' && arg[1] == '|') {
         // Get the second variable.
         arg = skipwhite(arg + 2);
-        EvalExpr* rhs = eval3(arg);
-        expr = factory->create<LogicOpNode>(expr, rhs, LogicOpNode::OR);
+        EvalExpr* rhs = eval3(arg, factory);
+        expr = factory.create<LogicOpExpr>(expr, rhs, LogicOpExpr::OR);
     }
     return expr;
 }
 
-EvalExpr* Evaluator::eval3(const char*& arg) {
+EvalExpr* eval3(const char*& arg, EvalFactory& factory) {
     // Get the first variable.
-    EvalExpr* expr = eval4(arg);
+    EvalExpr* expr = eval4(arg, factory);
 
     // Repeat until there is no following "&&".
     while (arg[0] == '&' && arg[1] == '&') {
         // Get the second variable.
         arg = skipwhite(arg + 2);
-        EvalExpr* rhs = eval4(arg);
-        expr = factory->create<LogicOpNode>(expr, rhs, LogicOpNode::AND);
+        EvalExpr* rhs = eval4(arg, factory);
+        expr = factory.create<LogicOpExpr>(expr, rhs, LogicOpExpr::AND);
     }
 
     return expr;
 }
 
-EvalExpr* Evaluator::eval4(const char*& arg) {
+EvalExpr* eval4(const char*& arg, EvalFactory& factory) {
     // Get the first variable.
-    EvalExpr* expr = eval5(arg);
+    EvalExpr* expr = eval5(arg, factory);
 
     exprtype_T type = EXPR_UNKNOWN;
     int len = 2;
@@ -140,16 +135,16 @@ EvalExpr* Evaluator::eval4(const char*& arg) {
 
         // Get the second variable.
         arg = skipwhite(arg + len);
-        EvalExpr* rhs = eval5(arg);
-        expr = factory->create<CmpOpNode>(expr, rhs, type, mod);
+        EvalExpr* rhs = eval5(arg, factory);
+        expr = factory.create<CmpOpExpr>(expr, rhs, type, mod);
     }
 
     return expr;
 }
 
-EvalExpr* Evaluator::eval5(const char*& arg) {
+EvalExpr* eval5(const char*& arg, EvalFactory& factory) {
     // Get the first variable.
-    EvalExpr* expr = eval6(arg);
+    EvalExpr* expr = eval6(arg, factory);
 
     // Repeat computing, until no '+', '-' or '.' is following.
     for (;;) {
@@ -163,15 +158,15 @@ EvalExpr* Evaluator::eval5(const char*& arg) {
             arg++;
         }
         arg = skipwhite(arg + 1);
-        EvalExpr* rhs = eval6(arg);
-        expr = factory->create<ArithOpNode>(expr, rhs, op);
+        EvalExpr* rhs = eval6(arg, factory);
+        expr = factory.create<ArithOpExpr>(expr, rhs, op);
     }
     return expr;
 }
 
-EvalExpr* Evaluator::eval6(const char*& arg) {
+EvalExpr* eval6(const char*& arg, EvalFactory& factory) {
     // Get the first variable.
-    EvalExpr* expr = eval7(arg);
+    EvalExpr* expr = eval7(arg, factory);
 
     // Repeat computing, until no '*', '/' or '%' is following.
     for (;;) {
@@ -182,33 +177,33 @@ EvalExpr* Evaluator::eval6(const char*& arg) {
 
         // Get the second variable.
         arg = skipwhite(arg + 1);
-        EvalExpr* rhs = eval7(arg);
-        expr = factory->create<ArithOpNode>(expr, rhs, op);
+        EvalExpr* rhs = eval7(arg, factory);
+        expr = factory.create<ArithOpExpr>(expr, rhs, op);
     }
 
     return expr;
 }
 
-EvalExpr* Evaluator::eval7(const char*& arg) {
+EvalExpr* eval7(const char*& arg, EvalFactory& factory) {
     const char* start_leader = arg;
     while (*arg == '!' || *arg == '-' || *arg == '+') {
         arg = skipwhite(arg + 1);
     }
     const char *end_leader = arg;
 
-    EvalExpr* expr = eval8(arg);
+    EvalExpr* expr = eval8(arg, factory);
     while (end_leader > start_leader) {
         end_leader--;
         // Skip unary +
         if (*end_leader == '!' || *end_leader == '-') {
-            expr = factory->create<PrefixOpNode>(expr, *end_leader);
+            expr = factory.create<PrefixOpExpr>(expr, *end_leader);
         }
     }
     return expr;
 }
 
-EvalExpr* Evaluator::eval8(const char*& arg) {
-    EvalExpr* expr = eval9(arg);
+EvalExpr* eval8(const char*& arg, EvalFactory& factory) {
+    EvalExpr* expr = eval9(arg, factory);
     // "." is ".name" lookup when we found a dict.
     for (;;) {
         if (*arg == '-' && arg[1] == '>') {
@@ -216,7 +211,7 @@ EvalExpr* Evaluator::eval8(const char*& arg) {
             EvalExpr* name;
             if (*arg == '{') {
                 // expr->{lambda}()
-                name = get_curly(arg);
+                name = get_curly(arg, factory);
             } else {
                 // expr->name()
                 if (strncmp(arg, "v:lua.", 6) == 0) {
@@ -224,30 +219,31 @@ EvalExpr* Evaluator::eval8(const char*& arg) {
                     arg = skip_luafunc_name(lua_funcname);
                     if (arg > lua_funcname) {
                         FStr s(lua_funcname, arg);
-                        name = factory->create<BaseNode>(VAR_STRING, std::move(s));
-                        name = factory->create<NameNode>(expr);
+                        // TODO
+                        /* name = factory.create<BaseNode>(VAR_STRING, std::move(s)); */
+                        /* name = factory.create<NameNode>(expr); */
                     } else {
-                        throw "Missing name after ->";
+                        throw msg(arg, "Missing name after ->");
                     }
                 } else {
-                    name = get_expanded_part(arg, 1);
-                    name = accum_expanded(arg, name);
+                    name = get_expanded_part(arg, 1, factory);
+                    name = accum_expanded(arg, name, factory);
                 }
             }
             // Common code for both methods
             if (*arg != '(') {
                 if (*skipwhite(arg) == '(') {
-                    throw "No white space allowed before parenthesis";
+                    throw msg(arg, "No white space allowed before parenthesis");
                 } else {
-                    throw "Missing parentheses";
+                    throw msg(arg, "Missing parentheses");
                 }
             }
-            expr = get_func(arg, name, expr);
+            expr = get_func(arg, name, expr, factory);
         } else if (*arg == '(') {
-            expr = get_func(arg, expr);
+            expr = get_func(arg, expr, nullptr, factory);
         } else if (*arg == '[' || *arg == '.') {
             // TODO assume it is always dict
-            expr = get_index(arg, expr);
+            expr = get_index(arg, expr, factory);
         } else {
             break;
         }
@@ -257,7 +253,7 @@ EvalExpr* Evaluator::eval8(const char*& arg) {
     return expr;
 }
 
-EvalExpr* Evaluator::eval9(const char*& arg) {
+EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     EvalExpr* expr;
 
     int not_done = false;
@@ -275,7 +271,8 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
     case '9': {
         int type = VAR_UNKNOWN;
         const char* p = skip_numerical(arg, &type);
-        expr = factory->create<BaseNode>(type, FStr(arg, p));
+        // TODO
+        /* expr = factory.create<BaseNode>(type, FStr(arg, p)); */
         arg = p;
         break;
     }
@@ -283,7 +280,8 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
     // String constant: "string".
     case '"': {
         const char* p = skip_string(arg);
-        expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p));
+        // TODO
+        /* expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p)); */
         arg = p;
         break;
     }
@@ -291,21 +289,22 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
     // Literal string constant: 'str''ing'.
     case '\'': {
         const char* p = skip_lit_string(arg);
-        expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p));
+        // TODO
+        /* expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p)); */
         arg = p;
         break;
     }
 
     // List: [expr, expr]
     case '[':
-        expr = get_list(arg);
+        expr = get_list(arg, factory);
         break;
 
     // Dictionary: #{key: val, key: val}
     case '#':
         if (arg[1] == '{') {
             arg++;
-            expr = get_dict_or_expand(arg, true);
+            expr = get_dict_or_expand(arg, true, factory);
         } else {
             not_done = true;
         }
@@ -314,7 +313,7 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
     // Lambda: {arg, arg -> expr}
     // Dictionary: {'key': val, 'key': val}
     case '{':
-        expr = get_curly(arg);
+        expr = get_curly(arg, factory);
         break;
 
     // Option value: &name
@@ -323,9 +322,10 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
         int len = get_option_len(p);
         int type = OptionsMap::getSingleton().findVarType(p, len);
         if (type == VAR_UNKNOWN) {
-            throw "Unknown option";
+            throw msg(arg, "Unknown option");
         }
-        expr = factory->create<BaseNode>(type, FStr(arg, p + len));
+        // TODO
+        /* expr = factory->create<BaseNode>(type, FStr(arg, p + len)); */
         arg = p + len;
         break;
     }
@@ -335,9 +335,10 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
         const char* p = arg + 1; // Skip $
         int len = get_env_len(p);
         if (len == 0) {
-            throw "Expecting environment name";
+            throw msg(arg, "Expecting environment name");
         }
-        expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p + len));
+        // TODO
+        /* expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p + len)); */
         arg = p + len;
         break;
     }
@@ -345,7 +346,8 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
     // Register contents: @r.
     case '@': {
         int len = 1 + valid_yank_reg(arg[1]);
-        expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, len));
+        // TODO
+        /* expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, len)); */
         arg += len;
         break;
     }
@@ -353,9 +355,9 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
     // nested expression: (expression).
     case '(': {
         arg = skipwhite(arg + 1);
-        EvalExpr* expr = eval1(arg);
+        EvalExpr* expr = eval1(arg, factory);
         if (*arg != ')') {
-            throw "Missing ')'";
+            throw msg(arg, "Missing ')'");
         }
         arg++;
         break;
@@ -369,39 +371,39 @@ EvalExpr* Evaluator::eval9(const char*& arg) {
     if (not_done) {
         // Must be a variable or function name.
         // Can also be a curly-braces kind of name: {expr}.
-        expr = get_expanded_part(arg, 1);
-        expr = accum_expanded(arg, expr);
+        expr = get_expanded_part(arg, 1, factory);
+        expr = accum_expanded(arg, expr, factory);
     }
 
     return expr;
 }
 
-EvalExpr* Evaluator::get_list(const char*& arg) {
+EvalExpr* get_list(const char*& arg, EvalFactory& factory) {
     Vector<EvalExpr*> exprs;
 
     arg = skipwhite(arg + 1);
     while (*arg != ']' && *arg != NUL) {
-        EvalExpr* expr = eval1(arg);
+        EvalExpr* expr = eval1(arg, factory);
         exprs.emplace(expr);
 
         if (*arg == ']') {
             break;
         }
         if (*arg != ',') {
-            throw "Missing comma in List";
+            throw msg(arg, "Missing comma in List");
         }
         arg = skipwhite(arg + 1);
     }
 
     if (*arg != ']') {
-        throw "Missing end of list";
+        throw msg(arg, "Missing end of list");
     }
 
     arg++;
-    return factory->create<ListNode>(std::move(exprs));
+    return factory.create<ListExpr>(std::move(exprs));
 }
 
-Vector<FStr> Evaluator::get_function_args(const char*& arg, char endchar) {
+Vector<FStr> get_function_args(const char*& arg, char endchar, EvalFactory& factory) {
     // TODO these two
     int default_args = false;
     int varargs = false;
@@ -426,14 +428,14 @@ Vector<FStr> Evaluator::get_function_args(const char*& arg, char endchar) {
             FStr a(arg, len);
             if (a.empty() || isdigit(*a.str()) || a == "firstline" || a == "lastline") {
                 if (any_args) {
-                    throw "Illegal argument";
+                    throw msg(arg, "Illegal argument");
                 } else {
                     return {}; // Not a function
                 }
             }
             for (int i = 0; i < res.count(); ++i) {
                 if (a == res[i]) {
-                    throw "Duplicate argument name";
+                    throw msg(arg, "Duplicate argument name");
                 }
             }
             res.emplace(std::move(a));
@@ -444,13 +446,13 @@ Vector<FStr> Evaluator::get_function_args(const char*& arg, char endchar) {
                 any_default = true;
                 arg = skipwhite(arg) + 1;
                 arg = skipwhite(arg);
-                EvalExpr* ret = eval1(arg);
+                EvalExpr* ret = eval1(arg, factory);
                 // Trim trailing whitespace
                 while (ascii_iswhite(arg[-1])) {
                     arg--;
                 }
             } else if (any_default) {
-                throw "Non-default argument follows default argument";
+                throw msg(arg, "Non-default argument follows default argument");
             }
 
             if (*arg == ',') {
@@ -458,7 +460,7 @@ Vector<FStr> Evaluator::get_function_args(const char*& arg, char endchar) {
                 any_args = true;
             } else {
                 if (ascii_iswhite(*arg) && *skipwhite(arg) == ',') {
-                    throw "No white space allowed before ','";
+                    throw msg(arg, "No white space allowed before ','");
                 } else {
                     mustend = true;
                 }
@@ -467,8 +469,11 @@ Vector<FStr> Evaluator::get_function_args(const char*& arg, char endchar) {
         arg = skipwhite(arg);
         if (mustend && *arg != endchar) {
             if (any_args) {
-                bool is_lambda = (endchar == '-');
-                throw (is_lambda ? "Expecting '->'" : "Expecting '('");
+                if (endchar == '-') {
+                    throw msg(arg, "Expecting '->'");
+                } else {
+                    throw msg(arg, "Expecting '{}'", endchar);
+                }
             } else {
                 return {}; // Not a function
             }
@@ -478,29 +483,29 @@ Vector<FStr> Evaluator::get_function_args(const char*& arg, char endchar) {
     return res;
 }
 
-EvalExpr* Evaluator::get_curly(const char*& arg) {
+EvalExpr* get_curly(const char*& arg, EvalFactory& factory) {
     // First, check if this is a lambda expression. "->" must exists.
     const char* orig_arg = arg;
     arg = skipwhite(arg + 1);
-    Vector<FStr> fargs = get_function_args(arg, '-');
+    Vector<FStr> fargs = get_function_args(arg, '-', factory);
     if (*arg != '-' || arg[1] != '>') {
         arg = orig_arg;
-        return get_dict_or_expand(arg, 0);
+        return get_dict_or_expand(arg, 0, factory);
     }
 
     // Get the start and the end of the expression.
     arg = skipwhite(arg + 2);
-    EvalExpr* body = eval1(arg);
+    EvalExpr* body = eval1(arg, factory);
     if (*arg != '}') {
-        throw "Expecting '}'";
+        throw msg(arg, "Expecting '}'");
     }
     ++arg;
-    return factory->create<LambdaNode>(std::move(fargs), body);
+    return factory.create<LambdaExpr>(std::move(fargs), body);
 }
 
-EvalExpr* Evaluator::get_dict_or_expand(const char*& arg, bool literal) {
+EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factory) {
     assert(*arg == '{');
-    Vector<DictNode::Pair> dict;
+    Vector<DictExpr::Pair> dict;
 
     // First check if it's not a curly-braces expression: {expr}.
     // This mens we need to call eval1 and branch the result into
@@ -509,19 +514,19 @@ EvalExpr* Evaluator::get_dict_or_expand(const char*& arg, bool literal) {
     // "#{abc}" is never a curly-braces expression.
     arg = skipwhite(arg + 1);
     if (*arg != '}' && !literal) {
-        EvalExpr* expr = eval1(arg);
+        EvalExpr* expr = eval1(arg, factory);
         if (*arg == '}') {
-            return accum_expanded(arg, expr);
+            return accum_expanded(arg, expr, factory);
         } else {
             if (*arg != ':') {
-                throw "Missing colon in Dictionary";
+                throw msg(arg, "Missing colon in Dictionary");
             }
             arg = skipwhite(arg + 1);
-            EvalExpr* val = eval1(arg);
+            EvalExpr* val = eval1(arg, factory);
             dict.emplace(expr, val);
             if (*arg != '}') {
                 if (*arg != ',') {
-                    throw "Missing comma in Dictionary";
+                    throw msg(arg, "Missing comma in Dictionary");
                 }
                 arg = skipwhite(arg + 1);
             }
@@ -533,69 +538,69 @@ EvalExpr* Evaluator::get_dict_or_expand(const char*& arg, bool literal) {
         if (literal) {
             int len = get_literal_key_len(arg);
             if (len > 0) {
-                key = factory->create<BaseNode>(VAR_STRING, FStr(arg, len));
+                key = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, len));
                 arg = skipwhite(arg + len);
             } else {
-                throw "Expecting Dictionary key";
+                throw msg(arg, "Expecting Dictionary key");
             }
         } else {
-            key = eval1(arg);
+            key = eval1(arg, factory);
         }
 
         if (*arg != ':') {
-            throw "Missing colon in Dictionary";
+            throw msg(arg, "Missing colon in Dictionary");
         }
         arg = skipwhite(arg + 1);
 
-        EvalExpr* val = eval1(arg);
+        EvalExpr* val = eval1(arg, factory);
         dict.emplace(key, val);
 
         if (*arg == '}') {
             break;
         }
         if (*arg != ',') {
-            throw "Missing comma in Dictionary";
+            throw msg(arg, "Missing comma in Dictionary");
         }
         arg = skipwhite(arg + 1);
     }
 
     if (*arg != '}') {
-        throw "Missing end of Dictionary '}'";
+        throw msg(arg, "Missing end of Dictionary '}'");
     }
 
     arg++;
-    return factory->create<DictNode>(std::move(dict));
+    return factory.create<DictExpr>(std::move(dict));
 }
 
-EvalExpr* Evaluator::get_expanded_part(const char*& arg, int allow_scope) {
+EvalExpr* get_expanded_part(const char*& arg, int allow_scope, EvalFactory& factory) {
     int len = get_id_len(arg, allow_scope);
     if (len > 0) {
-        EvalExpr* res = factory->create<BaseNode>(VAR_STRING, FStr(arg, len));
+        EvalExpr* res = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, len));
         arg += len;
         return res;
     }
     if (*arg == '{') {
-        EvalExpr* expr = eval1(arg);
+        EvalExpr* expr = eval1(arg, factory);
         if (*arg != '}') {
-            throw "Expecting end of curly braces name '}'";
+            throw msg(arg, "Expecting end of curly braces name '}'");
         }
         ++arg;
         return expr;
     }
-    throw "Expecting variable or function";
+    throw msg(arg, "Expecting variable or function");
 }
 
-EvalExpr* Evaluator::accum_expanded(const char*& arg, EvalExpr* res) {
+EvalExpr* accum_expanded(const char*& arg, EvalExpr* res, EvalFactory& factory) {
     if (eval_isnamec1(*arg) || *arg == '#' || *arg == '{') {
-        EvalExpr* part = get_expanded_part(arg, 0);
-        res = factory->create<ArithOpNode>(res, part, '.');
-        return accum_expanded(arg, res);
+        EvalExpr* part = get_expanded_part(arg, 0, factory);
+        res = factory.create<ArithOpExpr>(res, part, '.');
+        return accum_expanded(arg, res, factory);
     } else {
-        return factory->create<NameNode>(res);
+        return factory.create<NameExpr>(res);
     }
 }
 
-EvalExpr* Evaluator::get_func(const char*& arg, EvalExpr* name, EvalExpr* base) {
+EvalExpr* get_func(const char*& arg, EvalExpr* name, EvalExpr* base, EvalFactory& factory) {
     Vector<EvalExpr*> fargs;
     if (base) {
         fargs.emplace(base);
@@ -607,10 +612,7 @@ EvalExpr* Evaluator::get_func(const char*& arg, EvalExpr* name, EvalExpr* base) 
         if (*arg == ')' || *arg == ',' || *arg == NUL) {
             break;
         }
-        EvalExpr* expr = eval1(arg);
-        if (!expr) {
-            return 0; // < fail
-        }
+        EvalExpr* expr = eval1(arg, factory);
         fargs.emplace(expr);
         if (*arg != ',') {
             break;
@@ -619,14 +621,17 @@ EvalExpr* Evaluator::get_func(const char*& arg, EvalExpr* name, EvalExpr* base) 
 
     if (*arg == ')') {
         arg++;
+    } else if (*arg == ','){
+        arg++;
+        throw msg(arg, "Unexpected ','");
     } else {
-        return 0; // < fail
+        throw msg(arg, "Illegal argument");
     }
 
-    return factory->create<InvokeNode>(name, std::move(fargs));
+    return factory.create<InvokeExpr>(name, std::move(fargs));
 }
 
-EvalExpr* Evaluator::get_index(const char*& arg, EvalExpr* what) {
+EvalExpr* get_index(const char*& arg, EvalExpr* what, EvalFactory& factory) {
     if (*arg == '.') {
         // dict.name
         arg++;
@@ -635,11 +640,11 @@ EvalExpr* Evaluator::get_index(const char*& arg, EvalExpr* what) {
             ++p;
         }
         if (p == arg) {
-            throw "Expecting Dictionary key";
+            throw msg(arg, "Expecting Dictionary key");
         } else {
             FStr key(arg, p);
-            EvalExpr* idx = factory->create<BaseNode>(VAR_STRING, std::move(key));
-            return factory->create<IndexNode>(what, idx);
+            EvalExpr* idx = factory.create<LiteralExpr>(VAR_STRING, std::move(key));
+            return factory.create<IndexExpr>(what, idx);
         }
     } else {
         // something[idx]
@@ -649,7 +654,7 @@ EvalExpr* Evaluator::get_index(const char*& arg, EvalExpr* what) {
         bool range = false;
         arg = skipwhite(arg + 1);
         if (*arg != ':') {
-            idx1 = eval1(arg);
+            idx1 = eval1(arg, factory);
         }
 
         // Get the second variable from inside the [:].
@@ -657,20 +662,20 @@ EvalExpr* Evaluator::get_index(const char*& arg, EvalExpr* what) {
             range = true;
             arg = skipwhite(arg + 1);
             if (*arg != ']') {
-                idx2 = eval1(arg);
+                idx2 = eval1(arg, factory);
             }
         }
 
         // Check for the ']'.
         if (*arg != ']') {
-            throw "Missing ']'";
+            throw msg(arg, "Missing ']'");
         }
         arg++;
 
         if (range) {
-            return factory->create<IndexRangeNode>(what, idx1, idx2);
+            return factory.create<IndexRangeExpr>(what, idx1, idx2);
         } else {
-            return factory->create<IndexNode>(what, idx1);
+            return factory.create<IndexExpr>(what, idx1);
         }
     }
 }

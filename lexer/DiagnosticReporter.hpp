@@ -6,7 +6,7 @@
 #include <Vector.hpp>
 
 struct DiagnosticReporter {
-    void bindLocationResolver(const LocationMap& resolver) {
+    void bindLocationResolver(const Locator& resolver) {
         locMap = &resolver;
     }
 
@@ -16,33 +16,25 @@ struct DiagnosticReporter {
 
     bool empty() const { return diagnostics.empty(); }
 
-    void error(FStr msg, const LocationMap::Key& locKey, int first, int last) {
-        Range range = locMap->resolve(locKey, first, last);
-        diagnostics.emplace(msg, range);
-    }
-
-    void error(FStr msg, const LocationMap::Key& locKey, int pos) {
-        error(std::move(msg), locKey, pos, pos);
-    }
-
-    void error(FStr msg, const LocationMap::Key& locKey) {
-        Range range = locMap->resolve(locKey);
-        diagnostics.emplace(msg, range);
-    }
-
     void error(FStr msg, const ExLexem& lex, int first, int last) {
-        error(std::move(msg), lex.locationKey, first, last);
+        Range r = lex.locator.resolve(first, last);
+        diagnostics.emplace(msg, r);
     }
 
     void error(FStr msg, const ExLexem& lex, int pos) {
-        error(std::move(msg), lex.locationKey, pos, pos);
+        error(std::move(msg), lex, pos, pos);
     }
 
     void error(FStr msg, const ExLexem& lex) {
-        error(std::move(msg), lex.locationKey);
+        Range r = lex.locator.resolve();
+        diagnostics.emplace(msg, r);
+    }
+
+    void error(FStr msg, const ExLexem& lex, const char* pos) {
+        error(std::move(msg), lex, pos - lex.cmdline.begin);
     }
 
 private:
-    const LocationMap* locMap;
+    const Locator* locMap;
     Vector<Diagnostic> diagnostics;
 };

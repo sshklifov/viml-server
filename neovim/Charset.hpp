@@ -38,3 +38,11 @@ const char *skipwhite(const char *const p);
 ///
 /// @return Pointer to the character after the skipped digits.
 const char *skipdigits(const char *q);
+
+
+/// Skip over text until ' ' or '\t' or NUL
+///
+/// @param[in]  p  Text to skip over.
+///
+/// @return Pointer to the next whitespace or NUL character.
+const char *skiptowhite(const char *p);
