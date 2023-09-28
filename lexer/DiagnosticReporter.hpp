@@ -3,6 +3,7 @@
 #include "Diagnostic.hpp"
 #include "ExLexem.hpp"
 
+#include <Message.hpp>
 #include <Vector.hpp>
 
 struct DiagnosticReporter {
@@ -35,6 +36,25 @@ struct DiagnosticReporter {
     }
 
 private:
-    const Locator* locMap;
     Vector<Diagnostic> diagnostics;
+};
+
+struct BoundReporter {
+    BoundReporter(DiagnosticReporter& rep, const ExLexem& lex) : rep(rep), lex(lex) {}
+
+    void error(FStr msg, const char* pos) {
+        rep.error(std::move(msg), lex, pos);
+    }
+
+    void error(FStr msg) {
+        rep.error(std::move(msg), lex);
+    }
+
+    void error(msg& m) {
+        rep.error(std::move(m.message), lex, m.ppos);
+    }
+
+private:
+    DiagnosticReporter& rep;
+    const ExLexem& lex;
 };

@@ -23,6 +23,26 @@ const char* skip_expr(const char* arg) {
     return arg;
 }
 
+EvalExpr* check_and_eval(const char*& arg, BoundReporter& rep, EvalFactory& factory) {
+    try {
+        return eval1(arg, factory);
+    } catch (msg& m) {
+        rep.error(m);
+        return nullptr;
+    }
+}
+
+EvalExpr* check_and_eval_len(const char*& arg, int len, BoundReporter& rep, EvalFactory& factory) {
+    // Father, forgive me for I have sinned
+    char* end = const_cast<char*>(arg + len);
+    char oldchar = *end;
+    *end = NUL;
+
+    EvalExpr* res = check_and_eval(arg, rep, factory);
+    *end = oldchar;
+    return res;
+}
+
 EvalExpr* eval1(const char*& arg, EvalFactory& factory) {
     // Get the first variable.
     EvalExpr* expr = eval2(arg, factory);

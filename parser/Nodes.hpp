@@ -1,25 +1,32 @@
 #pragma once
 
-/* #include <ExLexer.hpp> */
-/* #include <ExConstants.hpp> */
-/* #include <EvalCommand.hpp> */
-
-#include <ExLexem.hpp>
 #include <ExCmdsEnum.hpp>
+#include <ExLexem.hpp>
+
+#include <Eval.hpp>
+#include <EvalUtil.hpp>
+
+#include <DiagnosticReporter.hpp>
 
 #include <functional>
 
-struct BaseExpr {
-    using EnumCallback = std::function<void(BaseExpr*)>;
+struct BaseNode {
+    using EnumCallback = std::function<void(BaseNode*)>;
 
-    BaseExpr(const ExLexem& lexem) : lexem(lexem) {}
-    virtual ~BaseExpr() {}
+    enum {PARSE_STOP, PARSE_NEXT};
+
+    BaseNode(const ExLexem& lexem) : lexem(lexem) {}
+    virtual ~BaseNode() {}
 
     virtual void enumerate(EnumCallback cb) {
         cb(this);
     }
 
     virtual int getId() { return lexem.cmdidx; }
+
+    virtual bool parse(DiagnosticReporter& rep) {
+        assert(false); // TODO make pure
+    }
 
     template <typename T>
     T* cast() {
@@ -34,17 +41,17 @@ struct BaseExpr {
     ExLexem lexem;
 };
 
-struct GroupNode : public BaseExpr {
-    GroupNode(const ExLexem& lexem) : BaseExpr(lexem) {}
+struct GroupNode : public BaseNode {
+    GroupNode(const ExLexem& lexem) : BaseNode(lexem) {}
 
     void enumerate(EnumCallback cb) override {
         cb(this);
-        for (BaseExpr* node : body) {
+        for (BaseNode* node : body) {
             node->enumerate(cb);
         }
     }
 
-    Vector<BaseExpr*> body;
+    Vector<BaseNode*> body;
 };
 
 struct RootNode : GroupNode {
@@ -54,14 +61,19 @@ struct RootNode : GroupNode {
         assert(false);
         return CMD_SIZE;
     }
+
+    bool parse(DiagnosticReporter& rep) override {
+        assert(false);
+        return PARSE_STOP;
+    }
 };
 
-struct ExNode : BaseExpr {
-    ExNode(const ExLexem& lexem) : BaseExpr(lexem) {}
+struct ExNode : BaseNode {
+    ExNode(const ExLexem& lexem) : BaseNode(lexem) {}
 };
 
 struct IfNode : public GroupNode {
-    IfNode(const ExLexem& lexem) : GroupNode(lexem), elseIfNode(nullptr) {}
+    IfNode(const ExLexem& lexem) : GroupNode(lexem), cond(nullptr), elseIfNode(nullptr) {}
 
     void enumerate(EnumCallback cb) override {
         GroupNode::enumerate(cb);
@@ -70,7 +82,19 @@ struct IfNode : public GroupNode {
         }
     }
 
+    bool parse(DiagnosticReporter& rep) override {
+        // const char* p = lexem.qargs.begin;
+        // BoundReporter boundRep(rep, lexem);
+        // cond = check_and_eval(p, lexem.qargs.length(), boundRep, f);
+        // TODO how is the hierarchy?
+        // ex_if?
+        return PARSE_STOP;
+    }
+
     static const int id = CMD_if;
+
+    EvalFactory f;
+    EvalExpr* cond;
 
     GroupNode* elseIfNode;
 };

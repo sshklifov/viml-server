@@ -18,20 +18,19 @@ bool ExLexer::reload(const char* str) {
 bool ExLexer::lexNext(DiagnosticReporter& rep, ExLexem& res) {
     if (res.nextcmd) {
         // "res" is a command that should be continued
-        StringView origCmdline = res.cmdline;
-        StringView cmdline(res.nextcmd, origCmdline.end);
+        StringView cmdline = res.cmdline;
         try {
-            if (do_one_cmd(cmdline, res)) {
-                res.cmdline = origCmdline; //< Use original
+            if (do_one_cmd(res.nextcmd, res)) {
+                res.cmdline = cmdline;
                 return true;
             }
         } catch (msg& m) {
-            int pos = m.ppos - origCmdline.begin;
+            int pos = m.ppos - cmdline.begin;
             Range range = res.locator.resolve(pos, pos);
             rep.error(std::move(m.message), range);
         }
     }
-    // Treat res as an empty command and store the result there
+    // Parse a new ExLexem
     while (!program.empty()) {
         Locator locator;
         CmdlineCreator cmdlineCreator(contStorage, locator);
@@ -60,7 +59,8 @@ bool ExLexer::lexNext(DiagnosticReporter& rep, ExLexem& res) {
 
         StringView cmdline = cmdlineCreator.finish();
         try {
-            if (do_one_cmd(cmdline, res)) {
+            if (do_one_cmd(cmdline.begin, res)) {
+                res.cmdline = cmdline;
                 res.locator = locator;
                 return true;
             }

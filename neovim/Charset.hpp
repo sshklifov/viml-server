@@ -32,6 +32,13 @@ const char *skipwhite_len(const char *p, std::size_t len);
 /// @return Pointer to character after the skipped whitespace.
 const char *skipwhite(const char *const p);
 
+/// Skip over text until '\n' or NUL.
+///
+/// @param[in]  p  Text to skip over.
+///
+/// @return Pointer to the next '\n' or NUL character.
+const char *skip_to_newline(const char* p);
+
 /// Skip over digits
 ///
 /// @param[in]  q  String to skip digits in.

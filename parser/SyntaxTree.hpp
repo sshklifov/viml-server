@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Nodes.hpp>
+
 #include <ExLexer.hpp>
 #include <DiagnosticReporter.hpp>
 
@@ -14,7 +15,7 @@ struct NodeFactory {
     }
 
     void clear() {
-        for (BaseExpr* node : nodes) {
+        for (BaseNode* node : nodes) {
             delete node;
         }
         nodes.clear();
@@ -22,14 +23,14 @@ struct NodeFactory {
 
     template <typename T, typename ... Args>
     T* create(Args&&... args) {
-        static_assert(std::is_base_of<BaseExpr, T>::value, "Bad template argument");
+        static_assert(std::is_base_of<BaseNode, T>::value, "Bad template argument");
 
         T* res = new T(std::forward<Args>(args)...);
         nodes.emplace(res);
         return res;
     }
 
-    Vector<BaseExpr*> nodes;
+    Vector<BaseNode*> nodes;
 };
 
 struct SyntaxTree {

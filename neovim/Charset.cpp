@@ -13,7 +13,7 @@ bool vim_iswordc(const int c) {
     return vim_isIDc(c);
 }
 
-const char* skipwhite_len(const char *p, size_t len) {
+const char* skipwhite_len(const char* p, size_t len) {
     while (len > 0 && ascii_iswhite(*p)) {
         p++;
         len--;
@@ -28,8 +28,15 @@ const char* skipwhite(const char* p) {
     return p;
 }
 
-const char *skipdigits(const char *q) {
-    const char *p = q;
+const char* skip_to_newline(const char* p) {
+  while (*p && *p != NUL) {
+      ++p;
+  }
+  return p;
+}
+
+const char* skipdigits(const char* q) {
+    const char* p = q;
     while (ascii_isdigit(*p)) {
         // skip to next non-digit
         p++;
@@ -37,7 +44,7 @@ const char *skipdigits(const char *q) {
     return p;
 }
 
-const char *skiptowhite(const char *p) {
+const char* skiptowhite(const char* p) {
     while (*p != ' ' && *p != '\t' && *p != NUL) {
         p++;
     }

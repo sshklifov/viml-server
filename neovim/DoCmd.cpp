@@ -687,9 +687,7 @@ const char* separate_nextcmd(const char*& cmdline, int cmdidx) {
     return NULL;
 }
 
-int do_one_cmd(StringView cmdView, ExLexem& lexem) {
-    const char* cmdline = cmdView.begin;
-    
+int do_one_cmd(const char* cmdline, ExLexem& lexem) {
     int has_range;
     const char* range_pos;
     for (;;) {
@@ -812,13 +810,14 @@ int do_one_cmd(StringView cmdView, ExLexem& lexem) {
 
     // Check for '|' to separate commands and '"' to start comments.
     // Don't do this for ":read !cmd" and ":write !cmd".
-    const char* cmdend = NULL;
-    const char* nextcmd = NULL;
+    const char* endcmd;
+    const char* nextcmd;
     if ((cmd_argt & EX_TRLBAR) && !usefilter) {
-        cmdend = cmdline;
-        nextcmd = separate_nextcmd(cmdend, cmdidx);
+        endcmd = cmdline;
+        nextcmd = separate_nextcmd(endcmd, cmdidx);
     } else {
-        cmdend = cmdView.end;
+        endcmd = skip_to_newline(cmdline);
+        nextcmd = NULL;
     }
 
     // 6.9. Fill in ExLexem attributes
@@ -826,9 +825,8 @@ int do_one_cmd(StringView cmdView, ExLexem& lexem) {
     lexem.range = has_range;
     lexem.cmdidx = cmdidx;
     lexem.nextcmd = nextcmd;
-    lexem.cmdline = cmdView;
     lexem.name = StringView(name_pos, name_len);
-    lexem.qargs = StringView(cmdline, cmdend);
+    lexem.qargs = StringView(cmdline, endcmd);
     return true;
 
 #if 0

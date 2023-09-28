@@ -61,6 +61,14 @@ private:
 /// @return  pointer to after expression.
 const char* skip_expr(const char* arg);
 
+/// Parse an expression and report any thrown errors
+/// Advance "arg" past the expression, on success
+EvalExpr* check_and_eval(const char*& arg, BoundReporter& rep, EvalFactory& factory);
+
+/// Parse an expression (up to len) and report any thrown errors
+/// Advance "arg" past the expression, on success
+EvalExpr* check_and_eval_len(const char*& arg, int len, BoundReporter& rep, EvalFactory& factory);
+
 /// Handle top level expression:
 ///      expr2 ? expr1 : expr1
 ///
