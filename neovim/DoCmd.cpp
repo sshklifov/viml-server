@@ -689,32 +689,40 @@ const char* separate_nextcmd(const char*& cmdline, int cmdidx) {
 
 int do_one_cmd(StringView cmdView, ExLexem& lexem) {
     const char* cmdline = cmdView.begin;
+    
+    int has_range;
+    const char* range_pos;
+    for (;;) {
+        // "#!anything" is handled like a comment.
+        if (cmdline[0] == '#' && cmdline[1] == '!') {
+            return false;
+        }
 
-    // "#!anything" is handled like a comment.
-    if (cmdline[0] == '#' && cmdline[1] == '!') {
-        return false;
-    }
+        // 1. Skip comment lines and leading white space and colons.
+        // 2. Handle command modifiers.
+        cmdline = skip_command_modifiers(cmdline);
 
-    // 1. Skip comment lines and leading white space and colons.
-    // 2. Handle command modifiers.
-    cmdline = skip_command_modifiers(cmdline);
-
-    // 3. Skip over the range to find the command.
-    int has_range = 0;
-    const char* range_pos = NULL;
-    if (*skip_colon_white(cmdline) == '*') { // Reuse visual area as range
-        has_range = 1;
-        range_pos = skip_colon_white(cmdline);
-        cmdline = skipwhite(range_pos + 1);
-    } else {
-        range_pos = skipwhite(cmdline);
-        cmdline = skip_range(range_pos, has_range);
-        cmdline = skip_colon_white(cmdline);
-    }
-
-    // ignore comment and empty lines
-    if (ends_excmd(*skipwhite(cmdline))) {
-        return false; // TODO!
+        // 3. Skip over the range to find the command.
+        has_range = 0;
+        range_pos = NULL;
+        if (*skip_colon_white(cmdline) == '*') { // Reuse visual area as range
+            has_range = 1;
+            range_pos = skip_colon_white(cmdline);
+            cmdline = skipwhite(range_pos + 1);
+        } else {
+            range_pos = skipwhite(cmdline);
+            cmdline = skip_range(range_pos, has_range);
+            cmdline = skip_colon_white(cmdline);
+        }
+        // ignore comment and empty lines
+        const char* p = skipwhite(cmdline);
+        if (ends_excmd(*p) && *p != '|') {
+            return false;
+        }
+        // Loop back for next command
+        if (*p != '|') {
+            break;
+        }
     }
 
     const char* name_pos = cmdline;
