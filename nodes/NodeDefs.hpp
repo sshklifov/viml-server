@@ -15,7 +15,7 @@ struct RootNode : GroupNode {
         return CMD_SIZE;
     }
 
-    void parse(DiagnosticReporter& rep) override { assert(false); }
+    void parse(DiagnosticReporter& rep, const char*& nextcmd) override { assert(false); }
 };
 
 struct ExNode : BaseNode {

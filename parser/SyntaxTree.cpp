@@ -14,8 +14,9 @@ void SyntaxTree::reload(const char* str) {
     Stack<GroupNode*> nodes;
     nodes.emplace(root); //< Guarantees that stack is never empty
 
+    const char* nextcmd = nullptr;
     ExLexem lexem;
-    while (lexer.lexNext(rep, lexem)) {
+    while (lexer.lexNext(lexem, nextcmd, rep)) {
         GroupNode* node = nullptr;
         switch (lexem.cmdidx) {
         case CMD_if:
@@ -162,11 +163,7 @@ void SyntaxTree::reload(const char* str) {
         }
 
         if (node) {
-#if 0
-            node->parse(rep);
-            lexem->.nextcmd = node->parse(rep);
-            lexem = node->lex; // TODO?
-#endif
+            node->parse(rep, nextcmd);
         }
     }
 

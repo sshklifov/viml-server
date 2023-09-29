@@ -20,7 +20,7 @@ struct BaseNode {
 
     virtual int getId() { return lex.cmdidx; }
 
-    virtual void parse(DiagnosticReporter& rep) {
+    virtual void parse(DiagnosticReporter& rep, const char*& nextcmd) {
         BoundReporter boundRep(rep, lex);
         const char* p = parseInternal(boundRep);
         if (!p) {
@@ -31,7 +31,8 @@ struct BaseNode {
         if (!(cmd_argt & EX_TRLBAR)) {
             if (ends_excmd(*p)) {
                 if (*p == '|') {
-                    lex.nextcmd = p + 1;
+                    assert(!nextcmd && "Overwriting result from do_one_cmd");
+                    nextcmd = p + 1;
                 }
             } else {
                 boundRep.error("Trailing characters", p);
