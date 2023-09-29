@@ -1,4 +1,5 @@
 #include "DoCmd.hpp"
+#include "DoCmdUtil.hpp"
 
 #include "ExCmdsDefs.hpp"
 #include "ExCmdsEnum.hpp"
@@ -17,131 +18,6 @@
 // Whether a command index indicates a user command.
 #define IS_USER_CMDIDX(idx) ((int)(idx) < 0)
 
-/// Check for class item. "pp" points to the '['.
-// Returns a pointer to after the item.
-// If no item is found, skip the '['.
-const char* skip_class(const char* pp) {
-    /// Check for a character class name "[:name:]".
-    const char* class_names[] = {
-        "alnum:]",
-        "alpha:]",
-        "blank:]",
-        "cntrl:]",
-        "digit:]",
-        "graph:]",
-        "lower:]",
-        "print:]",
-        "punct:]",
-        "space:]",
-        "upper:]",
-        "xdigit:]",
-        "tab:]",
-        "return:]",
-        "backspace:]",
-        "escape:]",
-        "ident:]",
-        "keyword:]",
-        "fname:]",
-    };
-    if (pp[1] == ':') {
-        for (int i = 0; i < 19; i++) {
-            int n = strlen(class_names[i]);
-            if (strncmp(pp + 2, class_names[i], n) == 0) {
-                return pp + n + 2;
-            }
-        }
-    }
-
-    // Check for an equivalence class name "[=a=]".
-    if (pp[1] == '=' && pp[2] != NUL) {
-        if (pp[3] == '=' && pp[4] == ']')
-        return pp += 5;
-    }
-
-    // Check for a collating element "[.a.]".  "pp" points to the '['.
-    if (pp[1] == '.' && pp[2] != NUL) {
-        if (pp[3] == '.' && pp[4] == ']') {
-            return pp + 5;
-        }
-    }
-
-    return pp + 1;
-}
-
-/// Skip over a "[]" range.
-/// "p" must point to the character after the '['.
-const char* skip_anyof(const char* p) {
-    // REGEXP_INRANGE contains all characters which are always special in a []
-    // range after '\'.
-    // REGEXP_ABBR contains all characters which act as abbreviations after '\'.
-    // These are:
-    //  \n  - New line (NL).
-    //  \r  - Carriage Return (CR).
-    //  \t  - Tab (TAB).
-    //  \e  - Escape (ESC).
-    //  \b  - Backspace (Ctrl_H).
-    //  \d  - Character code in decimal, eg \d123
-    //  \o  - Character code in octal, eg \o80
-    //  \x  - Character code in hex, eg \x4a
-    //  \u  - Multibyte character code, eg \u20ac
-    //  \U  - Long multibyte character code, eg \U12345678
-    char REGEXP_INRANGE[] = "]^-n\\";
-    char REGEXP_ABBR[] = "nrtebdoxuU";
-
-    if (*p == '^') {  // Complement of range.
-        p++;
-    }
-    if (*p == ']' || *p == '-') {
-        p++;
-    }
-    while (*p != NUL && *p != ']') {
-        if (*p == '-') {
-            p++;
-            if (*p != ']' && *p != NUL) {
-                p++;
-            }
-        } else if (*p == '\\'
-            && (strchr(REGEXP_INRANGE, p[1]) != NULL
-                || (!reg_cpo_lit && strchr(REGEXP_ABBR, p[1]) != NULL))) {
-            p += 2;
-        } else if (*p == '[') {
-            p = skip_class(p);
-        } else {
-            p++;
-        }
-    }
-
-    if (*p == NUL) {
-        throw msg("Expecting ]", p);
-    }
-    return p;
-}
-
-/// Skip past regular expression.
-/// Stop at end of "startp" or where "delim" is found ('/', '?', etc).
-/// Take care of characters with a backslash in front of it.
-/// Skip strings inside [ and ].
-const char* skip_regexp(const char* p, int delim) {
-    magic_T mymagic = MAGIC_ON;
-    while (*p != NUL && *p != delim) {
-        if ((p[0] == '[' && mymagic >= MAGIC_ON) || (p[0] == '\\' && p[1] == '[' && mymagic <= MAGIC_OFF)) {
-            p = skip_anyof(p + 1);
-        } else if (p[0] == '\\' && p[1] != NUL) {
-            p++; // skip next character
-            if (*p == 'v') {
-                mymagic = MAGIC_ALL;
-            } else if (*p == 'V') {
-                mymagic = MAGIC_NONE;
-            }
-        }
-        p++;
-    }
-    if (*p == NUL) {
-        throw msg(p, "Expecting {}", delim);
-    }
-    return p;
-}
-
 /// Skip over the pattern argument of ":vimgrep /pat/[g][j]".
 const char* skip_vimgrep_pat(const char* p) {
     if (vim_isIDc(*p)) {
@@ -149,8 +25,7 @@ const char* skip_vimgrep_pat(const char* p) {
         p = skiptowhite(p);
     } else {
         // ":vimgrep /pattern/[g][j] fname"
-        int delim = *p;
-        p = skip_regexp(p + 1, delim);
+        p = skip_regexp_err(p + 1, *p);
         p++;
         // Find the flags
         while (*p == 'g' || *p == 'j' || *p == 'f') {
@@ -210,30 +85,6 @@ const char* skip_range(const char* cmd, int& has_range) {
     }
 
     return cmd;
-}
-
-/// Check for an Ex command with optional tail.
-/// If there is a match advance "pp" to the argument and return true.
-///
-/// @param pp   start of command
-/// @param cmd  name of command
-/// @param len  required length
-bool checkforcmd(const char*& pp, const char* cmd, int len) {
-    int i;
-    for (i = 0; cmd[i] != NUL; i++) {
-        if (cmd[i] != pp[i]) {
-            break;
-        }
-    }
-    if (i >= len && !ASCII_ISALPHA(pp[i])) {
-        pp = skipwhite(pp + i);
-        return true;
-    }
-    return false;
-}
-
-int ends_excmd(int c) {
-    return c == NUL || c == '|' || c == '"' || c == '\n';
 }
 
 const char* skip_command_modifiers(const char* cmd) {
@@ -630,8 +481,7 @@ const char* skip_flags(const char* cmdline, int cmdidx) {
 }
 
 /// Check for '|' to separate commands and '"' to start comments.
-/// "cmdline" is advanced to the end of the command
-const char* separate_nextcmd(const char*& cmdline, int cmdidx) {
+const char* separate_nextcmd(const char* cmdline, int cmdidx) {
     int isgrep = cmdidx == CMD_vimgrep 
         || cmdidx == CMD_lvimgrep
         || cmdidx == CMD_vimgrepadd
@@ -672,9 +522,8 @@ const char* separate_nextcmd(const char*& cmdline, int cmdidx) {
                 // We remove the '\' before the '|', unless EX_CTRLV is used
                 // AND 'b' is present in 'cpoptions'.
                 if (p[-1] != '\\' || (cpo_bar && (cmd_argt & EX_CTRLV))) {
-                    cmdline = p;
                     if (*p == '|') {
-                        return cmdline + 1;
+                        return p + 1;
                     } else {
                         return NULL;
                     }
@@ -683,13 +532,12 @@ const char* separate_nextcmd(const char*& cmdline, int cmdidx) {
         }
     }
     assert(*p == NUL);
-    cmdline = p;
     return NULL;
 }
 
 int do_one_cmd(const char* cmdline, ExLexem& lexem) {
-    int has_range;
-    const char* range_pos;
+    int hasrange;
+    const char* rangep;
     for (;;) {
         // "#!anything" is handled like a comment.
         if (cmdline[0] == '#' && cmdline[1] == '!') {
@@ -701,15 +549,15 @@ int do_one_cmd(const char* cmdline, ExLexem& lexem) {
         cmdline = skip_command_modifiers(cmdline);
 
         // 3. Skip over the range to find the command.
-        has_range = 0;
-        range_pos = NULL;
+        hasrange = 0;
+        rangep = NULL;
         if (*skip_colon_white(cmdline) == '*') { // Reuse visual area as range
-            has_range = 1;
-            range_pos = skip_colon_white(cmdline);
-            cmdline = skipwhite(range_pos + 1);
+            hasrange = 1;
+            rangep = skip_colon_white(cmdline);
+            cmdline = skipwhite(rangep + 1);
         } else {
-            range_pos = skipwhite(cmdline);
-            cmdline = skip_range(range_pos, has_range);
+            rangep = skipwhite(cmdline);
+            cmdline = skip_range(rangep, hasrange);
             cmdline = skip_colon_white(cmdline);
         }
         // ignore comment and empty lines
@@ -723,9 +571,9 @@ int do_one_cmd(const char* cmdline, ExLexem& lexem) {
         }
     }
 
-    const char* name_pos = cmdline;
-    int name_len = 0;
-    int cmdidx = find_ex_command(cmdline, name_len);
+    const char* namep = cmdline;
+    int namelen = 0;
+    int cmdidx = find_ex_command(cmdline, namelen);
     if (cmdidx < 0) {
         // ignore user commands
         return false;
@@ -733,18 +581,18 @@ int do_one_cmd(const char* cmdline, ExLexem& lexem) {
 
     // 6. Parse arguments.  Then check for errors.
     int cmd_argt = cmdnames[cmdidx].cmd_argt;
-    if (!(cmd_argt & EX_RANGE) && has_range) {
-        throw msg(range_pos, "No range allowed");
+    if (!(cmd_argt & EX_RANGE) && hasrange) {
+        throw msg(rangep, "No range allowed");
     }
 
     // Forced commands.
-    const char* bang_pos = NULL;
+    const char* bangp = NULL;
     int forceit = *cmdline == '!'
         && cmdidx != CMD_substitute
         && cmdidx != CMD_smagic
         && cmdidx != CMD_snomagic;
     if (forceit) {
-        bang_pos = cmdline;
+        bangp = cmdline;
         cmdline++;
     }
 
@@ -787,7 +635,7 @@ int do_one_cmd(const char* cmdline, ExLexem& lexem) {
         cmdline = skipwhite(cmdline);
     }
     if (!(cmd_argt & EX_BANG) && forceit) {
-        throw msg(bang_pos, "No ! allowed");
+        throw msg(bangp, "No ! allowed");
     }
 
     // Check for "+command" argument, before checking for next command.
@@ -810,23 +658,19 @@ int do_one_cmd(const char* cmdline, ExLexem& lexem) {
 
     // Check for '|' to separate commands and '"' to start comments.
     // Don't do this for ":read !cmd" and ":write !cmd".
-    const char* endcmd;
-    const char* nextcmd;
+    const char* nextcmd = NULL;
     if ((cmd_argt & EX_TRLBAR) && !usefilter) {
-        endcmd = cmdline;
-        nextcmd = separate_nextcmd(endcmd, cmdidx);
-    } else {
-        endcmd = skip_to_newline(cmdline);
-        nextcmd = NULL;
+        nextcmd = separate_nextcmd(cmdline, cmdidx);
     }
 
     // 6.9. Fill in ExLexem attributes
     lexem.bang = forceit;
-    lexem.range = has_range;
+    lexem.range = hasrange;
     lexem.cmdidx = cmdidx;
+    lexem.namelen = namelen;
     lexem.nextcmd = nextcmd;
-    lexem.name = StringView(name_pos, name_len);
-    lexem.qargs = StringView(cmdline, endcmd);
+    lexem.name = namep;
+    lexem.qargs = cmdline;
     return true;
 
 #if 0

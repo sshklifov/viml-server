@@ -61,14 +61,6 @@ private:
 /// @return  pointer to after expression.
 const char* skip_expr(const char* arg);
 
-/// Parse an expression and report any thrown errors
-/// Advance "arg" past the expression, on success
-EvalExpr* check_and_eval(const char*& arg, BoundReporter& rep, EvalFactory& factory);
-
-/// Parse an expression (up to len) and report any thrown errors
-/// Advance "arg" past the expression, on success
-EvalExpr* check_and_eval_len(const char*& arg, int len, BoundReporter& rep, EvalFactory& factory);
-
 /// Handle top level expression:
 ///      expr2 ? expr1 : expr1
 ///
@@ -205,3 +197,10 @@ EvalExpr* get_func(const char*& arg, EvalExpr* name, EvalExpr* base, EvalFactory
 /// Evaluate an "[expr]" or "[expr:expr]" index.    Also "dict.key".
 /// "*arg" points to the '[' or '.'.
 EvalExpr* get_index(const char*& arg, EvalExpr* what, EvalFactory& factory);
+
+/// Parse one (assignable) variable name
+EvalExpr* parse_var_one(const char*& arg, int allow_scope, EvalFactory& factory);
+
+/// Skip over assignable variable "var" or list of variables "[var, var]".
+/// Used for ":let varvar = expr" and ":for varvar in expr".
+Vector<EvalExpr*> parse_var_list(const char*& arg, int& semicolon, EvalFactory& factory);

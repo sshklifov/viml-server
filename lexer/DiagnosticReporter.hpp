@@ -32,7 +32,7 @@ struct DiagnosticReporter {
     }
 
     void error(FStr msg, const ExLexem& lex, const char* pos) {
-        error(std::move(msg), lex, pos - lex.cmdline.begin);
+        error(std::move(msg), lex, pos - lex.cmdline);
     }
 
 private:

@@ -160,6 +160,14 @@ void SyntaxTree::reload(const char* str) {
         default:
             nodes.top()->body.emplace(factory.create<ExNode>(lexem));
         }
+
+        if (node) {
+#if 0
+            node->parse(rep);
+            lexem->.nextcmd = node->parse(rep);
+            lexem = node->lex; // TODO?
+#endif
+        }
     }
 
     while (nodes.top() != root) {
@@ -167,15 +175,15 @@ void SyntaxTree::reload(const char* str) {
         int id = node->getId();
         nodes.pop();
         if (id == CMD_if || id == CMD_elseif || id == CMD_else) {
-            rep.error("missing endif", node->lexem);
+            rep.error("missing endif", node->lex);
         } else if (id == CMD_while) {
-            rep.error("missing endwhile", node->lexem);
+            rep.error("missing endwhile", node->lex);
         } else if (id == CMD_for) {
-            rep.error("missing endfor", node->lexem);
+            rep.error("missing endfor", node->lex);
         } else if (id == CMD_function) {
-            rep.error("missing endfunction", node->lexem);
+            rep.error("missing endfunction", node->lex);
         } else if (id == CMD_try || id == CMD_finally || id == CMD_catch) {
-            rep.error("missing endtry", node->lexem);
+            rep.error("missing endtry", node->lex);
         } else {
             assert(false);
         }

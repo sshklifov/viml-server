@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Nodes.hpp>
+#include <NodeDefs.hpp>
 
 #include <ExLexer.hpp>
 #include <DiagnosticReporter.hpp>

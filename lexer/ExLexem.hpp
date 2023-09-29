@@ -1,21 +1,30 @@
 #pragma once
 
-#include "StringView.hpp"
 #include "Locator.hpp"
 
 #include <ExCmdsEnum.hpp>
 
 struct ExLexem {
-    ExLexem() : bang(false), range(false), cmdidx(CMD_SIZE), nextcmd(NULL) {}
+    ExLexem() {
+        cmdline = nullptr;
+        name = nullptr;
+        qargs = nullptr;
+        nextcmd = nullptr;
+        namelen = 0;
+        bang = 0;
+        range = 0;
+        cmdidx = CMD_SIZE;
+    }
 
-    StringView cmdline;
-    StringView name;
-    StringView qargs;
+    const char* cmdline;
+    const char* name;
+    const char* qargs;
+    const char* nextcmd;
 
     Locator locator;
 
-    bool bang;
+    int namelen;
+    int bang;
     int range;
     int cmdidx;
-    const char* nextcmd;
 };

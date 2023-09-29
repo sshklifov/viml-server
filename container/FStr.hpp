@@ -4,8 +4,6 @@
 #include <functional>
 #include <cassert>
 
-struct StringView;
-
 struct FStr {
     FStr();
     FStr(const char* s);
@@ -26,7 +24,6 @@ struct FStr {
     void append(const char* s);
     void append(const char* s, int n);
     void append(const FStr& other);
-    void append(const StringView& other);
 
     template <typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = true>
     void append(T en) {

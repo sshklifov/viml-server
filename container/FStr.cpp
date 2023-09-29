@@ -1,8 +1,6 @@
 #include "FStr.hpp"
 #include "BitTwiddle.hpp"
 
-#include <StringView.hpp>
-
 #include <cstring>
 
 FStr::FStr() : s(nullptr), len(0), allocLen(0) {}
@@ -133,10 +131,6 @@ void FStr::append(unsigned u) {
 
 void FStr::append(const FStr& other) {
     append(other.s, other.len);
-}
-
-void FStr::append(const StringView& other) {
-    append(other.begin, other.length());
 }
 
 FStr& FStr::operator+=(char c) {

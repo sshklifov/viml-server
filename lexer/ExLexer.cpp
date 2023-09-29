@@ -1,5 +1,6 @@
 #include <ExLexer.hpp>
 
+#include <EvalUtil.hpp>
 #include <DoCmd.hpp>
 #include <OptionDefs.hpp>
 #include <Message.hpp>
@@ -8,7 +9,7 @@
 
 bool ExLexer::reload(const char* str) {
     int n = strlen(str);
-    program.set(str, n);
+    program.set(str);
     contStorage.realloc(n);
     return true;
 }
@@ -18,14 +19,14 @@ bool ExLexer::reload(const char* str) {
 bool ExLexer::lexNext(DiagnosticReporter& rep, ExLexem& res) {
     if (res.nextcmd) {
         // "res" is a command that should be continued
-        StringView cmdline = res.cmdline;
+        const char* cmdline = res.cmdline;
         try {
             if (do_one_cmd(res.nextcmd, res)) {
                 res.cmdline = cmdline;
                 return true;
             }
         } catch (msg& m) {
-            int pos = m.ppos - cmdline.begin;
+            int pos = m.ppos - cmdline;
             Range range = res.locator.resolve(pos, pos);
             rep.error(std::move(m.message), range);
         }
@@ -40,32 +41,31 @@ bool ExLexer::lexNext(DiagnosticReporter& rep, ExLexem& res) {
 
         if (!cpo_no_cont) {
             while (!program.empty()) {
-                StringView origLine = program.top();
-                // Determine if origLine is a continuation
-                StringView line = origLine.trimLeftSpace();
+                // Check if continued
+                const char* line = skipwhite(program.top());
                 int codeCont = (line[0] == '\\');
                 int commentCont = (line[0] == '"' && line[1] == '\\' && line[2] == ' ');
                 if (!codeCont && !commentCont) {
                     break;
                 }
                 if (codeCont) {
-                    line = line.popLeft(); //< Remove continuation character
-                    int col = line.begin - origLine.begin;
-                    cmdlineCreator.concat(origLine, program.lineNumber(), col);
+                    ++line; //< Remove continuation character
+                    int col = line - program.top();
+                    cmdlineCreator.concat(program.top(), program.lineNumber(), col);
                 }
                 program.pop();
             }
         }
 
-        StringView cmdline = cmdlineCreator.finish();
+        const char* cmdline = cmdlineCreator.finish();
         try {
-            if (do_one_cmd(cmdline.begin, res)) {
+            if (do_one_cmd(cmdline, res)) {
                 res.cmdline = cmdline;
                 res.locator = locator;
                 return true;
             }
         } catch (msg& m) {
-            int pos = m.ppos - cmdline.begin;
+            int pos = m.ppos - cmdline;
             Range range = locator.resolve(pos, pos);
             rep.error(std::move(m.message), range);
         }

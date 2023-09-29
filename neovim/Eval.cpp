@@ -5,7 +5,7 @@
 
 #include "Eval.hpp"
 #include "EvalUtil.hpp"
-#include "Charset.hpp"
+#include "DoCmdUtil.hpp"
 #include "Options.hpp"
 
 #include <cassert>
@@ -21,26 +21,6 @@ const char* skip_expr(const char* arg) {
     dummy.setEvaluate(0);
     eval1(arg, dummy);
     return arg;
-}
-
-EvalExpr* check_and_eval(const char*& arg, BoundReporter& rep, EvalFactory& factory) {
-    try {
-        return eval1(arg, factory);
-    } catch (msg& m) {
-        rep.error(m);
-        return nullptr;
-    }
-}
-
-EvalExpr* check_and_eval_len(const char*& arg, int len, BoundReporter& rep, EvalFactory& factory) {
-    // Father, forgive me for I have sinned
-    char* end = const_cast<char*>(arg + len);
-    char oldchar = *end;
-    *end = NUL;
-
-    EvalExpr* res = check_and_eval(arg, rep, factory);
-    *end = oldchar;
-    return res;
 }
 
 EvalExpr* eval1(const char*& arg, EvalFactory& factory) {
@@ -239,15 +219,13 @@ EvalExpr* eval8(const char*& arg, EvalFactory& factory) {
                     arg = skip_luafunc_name(lua_funcname);
                     if (arg > lua_funcname) {
                         FStr s(lua_funcname, arg);
-                        // TODO
-                        /* name = factory.create<BaseNode>(VAR_STRING, std::move(s)); */
-                        /* name = factory.create<NameNode>(expr); */
+                        name = factory.create<LiteralExpr>(VAR_STRING, std::move(s));
+                        name = factory.create<NameExpr>(name);
                     } else {
                         throw msg(arg, "Missing name after ->");
                     }
                 } else {
-                    name = get_expanded_part(arg, 1, factory);
-                    name = accum_expanded(arg, name, factory);
+                    name = parse_var_one(arg, 1, factory);
                 }
             }
             // Common code for both methods
@@ -291,8 +269,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     case '9': {
         int type = VAR_UNKNOWN;
         const char* p = skip_numerical(arg, &type);
-        // TODO
-        /* expr = factory.create<BaseNode>(type, FStr(arg, p)); */
+        expr = factory.create<LiteralExpr>(type, FStr(arg, p));
         arg = p;
         break;
     }
@@ -300,8 +277,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     // String constant: "string".
     case '"': {
         const char* p = skip_string(arg);
-        // TODO
-        /* expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p)); */
+        expr = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, p));
         arg = p;
         break;
     }
@@ -309,8 +285,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     // Literal string constant: 'str''ing'.
     case '\'': {
         const char* p = skip_lit_string(arg);
-        // TODO
-        /* expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p)); */
+        expr = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, p));
         arg = p;
         break;
     }
@@ -344,8 +319,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
         if (type == VAR_UNKNOWN) {
             throw msg(arg, "Unknown option");
         }
-        // TODO
-        /* expr = factory->create<BaseNode>(type, FStr(arg, p + len)); */
+        expr = factory.create<LiteralExpr>(type, FStr(arg, p + len));
         arg = p + len;
         break;
     }
@@ -357,8 +331,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
         if (len == 0) {
             throw msg(arg, "Expecting environment name");
         }
-        // TODO
-        /* expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, p + len)); */
+        expr = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, p + len));
         arg = p + len;
         break;
     }
@@ -366,8 +339,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     // Register contents: @r.
     case '@': {
         int len = 1 + valid_yank_reg(arg[1]);
-        // TODO
-        /* expr = factory->create<BaseNode>(VAR_STRING, FStr(arg, len)); */
+        expr = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, len));
         arg += len;
         break;
     }
@@ -391,8 +363,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     if (not_done) {
         // Must be a variable or function name.
         // Can also be a curly-braces kind of name: {expr}.
-        expr = get_expanded_part(arg, 1, factory);
-        expr = accum_expanded(arg, expr, factory);
+        expr = parse_var_one(arg, 1, factory);
     }
 
     return expr;
@@ -698,4 +669,35 @@ EvalExpr* get_index(const char*& arg, EvalExpr* what, EvalFactory& factory) {
             return factory.create<IndexExpr>(what, idx1);
         }
     }
+}
+
+EvalExpr* parse_var_one(const char*& arg, int allow_scope, EvalFactory& factory) {
+    EvalExpr* part = get_expanded_part(arg, allow_scope, factory);
+    return accum_expanded(arg, part, factory);
+}
+
+Vector<EvalExpr*> parse_var_list(const char*& arg, int& semicolon, EvalFactory& factory) {
+    semicolon = 0;
+    Vector<EvalExpr*> vars;
+    if (*arg == '[') {
+        // "[var, var]": find the matching ']'.
+        for (;;) {
+            arg = skipwhite(arg + 1); // skip whites after '[', ';' or ','
+            vars.emplace(parse_var_one(arg, 0, factory));
+            arg = skipwhite(arg);
+            if (*arg == ']') {
+                break;
+            } else if (*arg == ';') {
+                if (semicolon == 1) {
+                    throw msg(arg, "Double ; in list of variables");
+                }
+                semicolon = 1;
+            } else if (*arg != ',') {
+                throw msg(arg, "Invalid argument");
+            }
+        }
+        arg++;
+    }
+    vars.emplace(parse_var_one(arg, 0, factory));
+    return vars;
 }

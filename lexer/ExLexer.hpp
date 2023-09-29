@@ -51,41 +51,29 @@ struct CmdlineCreator {
     CmdlineCreator(CmdlineStorage& storage, Locator& loc) : storage(storage), loc(loc) {
         beginPtr = storage.buf + storage.len;
         writePtr = beginPtr;
-        availableStorage = storage.maxlen - storage.len;
     }
 
-    void concat(StringView lineNoBackslash, int line, int col) {
-        // Remove trailing newline
-        if (lineNoBackslash.endsWith('\n')) {
-            --lineNoBackslash.end;
+    void concat(const char* lineNoBackslash, int line, int col) {
+        int len = 0;
+        const char* p = lineNoBackslash;
+        while (*p && *p != '\n') {
+            *writePtr++ = *p++;
+            ++len;
         }
-        int n = lineNoBackslash.length();
-        assert(n <= availableStorage);
-        if (n <= availableStorage) {
-            memcpy(writePtr, lineNoBackslash.begin, n);
-
-            int fragLen = lineNoBackslash.length();
-            loc.addFragment(line, col, fragLen);
-
-            writePtr += n;
-            availableStorage -= n;
-        }
+        loc.addFragment(line, col, len);
     }
 
-    StringView finish() {
-        assert(availableStorage >= 1);
-
+    const char* finish() {
         *writePtr = '\n';
         ++writePtr;
 
         int numWritten = writePtr - beginPtr;
         storage.len += numWritten;
         assert(storage.len <= storage.maxlen);
-        StringView res(beginPtr, writePtr);
+        const char* res = beginPtr;
 
         writePtr = nullptr;
         beginPtr = nullptr;
-        availableStorage = 0;
         return res;
     }
 
@@ -95,44 +83,39 @@ private:
 
     char* beginPtr;
     char* writePtr;
-    int availableStorage;
-    int fragmentsBegin;
 };
 
 /// Internal helper for parsing program line by line
 struct Program {
-    void set(const char* s, int n) {
-        program.begin = s;
-        program.end = s + n;
+    Program() {
+        set(nullptr);
+    }
 
-        splitPos = findSplitPos();
+    void set(const char* s) {
+        program = s;
         lineCounter = 0;
     }
 
-    bool empty() const { return program.empty(); }
+    bool empty() const { return *program == '\0'; }
 
-    StringView top() const { return StringView(program.begin, splitPos); }
+    const char* top() const { return program; }
 
     int lineNumber() const { return lineCounter; }
 
     void pop() {
         assert(!empty());
-        program.begin = splitPos;
-        splitPos = findSplitPos();
+        while (*program && *program != '\n') {
+            if (*program == '\n') {
+                ++program;
+                break;
+            }
+            ++program;
+        }
         ++lineCounter;
     }
 
 private:
-    const char* findSplitPos() {
-        const char* res = program.find('\n');
-        if (res < program.end) {
-            ++res; // Include the new line
-        }
-        return res;
-    }
-
-    StringView program;
-    const char* splitPos;
+    const char* program;
     int lineCounter;
 };
 
