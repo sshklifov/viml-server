@@ -258,6 +258,9 @@ int find_ex_command(const char*& cmd, int& len) {
             p++;
         }
         len = p - cmd;
+        if (len == 0) {
+            throw msg(p, "Not an editor command");
+        }
         // The "d" command can directly be followed by 'l' or 'p' flag.
         if (*cmd == 'd' && (p[-1] == 'l' || p[-1] == 'p')) {
             // Check for ":dl", ":dell", etc. to ":deletel": that's
@@ -648,13 +651,6 @@ int do_one_cmd(const char* cmdline, const char*& nextcmd, ExLexem& lexem) {
     cmdline = skip_register(cmdline, cmdidx);
     cmdline = skip_count(cmdline, cmdidx);
     cmdline = skip_flags(cmdline, cmdidx);
-
-    if (!(cmd_argt & EX_EXTRA) && !ends_excmd(*cmdline)) {
-        throw msg(cmdline, "Trailing characters");
-    }
-    if ((cmd_argt & EX_NEEDARG) && ends_excmd(*cmdline)) {
-        throw msg(cmdline, "Argument required");
-    }
 
     // Check for '|' to separate commands and '"' to start comments.
     // Don't do this for ":read !cmd" and ":write !cmd".

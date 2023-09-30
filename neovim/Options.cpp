@@ -7,8 +7,8 @@
 // TODO see Mbyte.cpp
 
 int OptionsMap::findVarType(const char* name, int n) const {
-    if (name[0] < 'a' || name[0] > 'z') {
-        return VAR_UNKNOWN;
+    if (n == 4 && name[0] == 't' && name[1] == '_' && name[2] != NUL && name[3] != NUL) {
+        return VAR_STRING; // t_xx/termcap option
     }
 
     int quickIdx = name[0] - 'a';

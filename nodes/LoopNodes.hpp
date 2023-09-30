@@ -38,7 +38,7 @@ struct ForNode : public GroupNode {
     const char* parseInternal(BoundReporter& rep) override {
         try {
             const char* arg = lex.qargs;
-            vars = parse_var_list(arg, semicolon, f);
+            vars = get_var_list(arg, 1, semicolon, f);
             arg = skipwhite(arg);
             if (arg[0] != 'i' || arg[1] != 'n' || !ascii_iswhite(arg[2])) {
                 throw msg(arg, "Missing \"in\" after :for");

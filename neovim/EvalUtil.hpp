@@ -74,7 +74,7 @@ static int get_option_len(const char *arg) {
         return 4; // t_xx/termcap option
     } else {
         int len = 0;
-        while (ASCII_ISALPHA(*arg)) {
+        while (ASCII_ISALPHA(arg[len])) {
             len++;
         }
         return len;
@@ -128,8 +128,8 @@ static const char* skip_blob(const char *arg) {
 /// Skip a number constant.
 ///
 /// @return  NULL for error
-static const char* skip_number(const char *arg, int* maybe_float) {
-    *maybe_float = 0;
+static const char* skip_number(const char *arg, int& maybe_float) {
+    maybe_float = 0;
     bool (*is_digit)(int);
     if (arg[0] == '0' && tolower(arg[1]) == 'x') {
         // Detect hexadecimal: 0x or 0X followed by hex digit.
@@ -147,7 +147,7 @@ static const char* skip_number(const char *arg, int* maybe_float) {
         // Detect old octal format: 0 followed by octal digits.
         // Or float or decimal, doesn't matter which it is.
         is_digit = ascii_isdigit;
-        *maybe_float = 1;
+        maybe_float = 1;
     }
 
     while (is_digit(*arg)) {
@@ -162,14 +162,14 @@ static const char* skip_number(const char *arg, int* maybe_float) {
 }
 
 /// Skip a Number, Float or Blob
-static const char* skip_numerical(const char* arg, int* type) {
+static const char* skip_numerical(const char* arg, int& type) {
     if (*arg == '0' && (arg[1] == 'z' || arg[1] == 'Z')) {
-        *type = VAR_BLOB;
+        type = VAR_BLOB;
         return skip_blob(arg);
     } else {
         // float, decimal, binary, hex or octal number
         int maybe_float;
-        arg = skip_number(arg, &maybe_float);
+        arg = skip_number(arg, maybe_float);
         // We accept a float when the format matches
         // "[0-9]\+\.[0-9]\+\([eE][+-]\?[0-9]\+\)\?".  This is very
         // strict to avoid backwards compatibility problems.
@@ -184,7 +184,7 @@ static const char* skip_numerical(const char* arg, int* type) {
                 }
                 if (!ascii_isdigit(*p)) {
                     // Was number, not float
-                    *type = VAR_NUMBER;
+                    type = VAR_NUMBER;
                     return arg;
                 } else {
                     p = skipdigits(p + 1);
@@ -192,14 +192,14 @@ static const char* skip_numerical(const char* arg, int* type) {
             }
             if (ASCII_ISALPHA(*p) || *p == '.') {
                 // Was number, not float
-                *type = VAR_NUMBER;
+                type = VAR_NUMBER;
                 return arg;
             } else {
-                *type = VAR_FLOAT;
+                type = VAR_FLOAT;
                 return p;
             }
         } else {
-            *type = VAR_NUMBER;
+            type = VAR_NUMBER;
             return arg;
         }
     }
@@ -245,6 +245,15 @@ static const char* skip_luafunc_name(const char *p) {
     return p;
 }
 
+/// Skips one character past the end of the dictionary key.
+static int get_dict_key_len(const char* arg) {
+    const char* p = arg;
+    while (eval_isdictc(*p)) {
+        ++p;
+    }
+    return p - arg;
+}
+
 /// @return  5 if "p" starts with "<SID>" or "<SNR>" (ignoring case).
 ///          2 if "p" starts with "s:".
 ///          0 otherwise.
@@ -269,7 +278,7 @@ static int get_fname_script_len(const char* p) {
 /// @param allow_scope  name can be preceded by a scope
 ///
 /// @return  0 if something is wrong.
-static int get_id_len(const char* arg, int allow_scope = 1) {
+static int get_id_len(const char* arg, int allow_scope) {
     const char* p = arg;
     if (allow_scope) {
         int len = get_fname_script_len(p);
@@ -278,18 +287,21 @@ static int get_id_len(const char* arg, int allow_scope = 1) {
             p += len;
         }
     }
-    // Find the end of the name.
-    for (p = arg; eval_isnamec(*p); p++) {
-        if (*p == ':') {
-            if (!allow_scope) {
-                break;
-            }
-            const char* namespace_char = "abglstvw";
-            // "s:" is start of "s:var", but "n:" is not and can be used in
-            // slice "[n:]". Also "xx:" is not a namespace.
-            int len = p - arg;
-            if (len > 1 || (len == 1 && strchr(namespace_char, *arg) == NULL)) {
-                break;
+    if (eval_isnamec1(*p)) {
+        p++;
+        // Find the end of the name.
+        for (; eval_isnamec(*p); p++) {
+            if (*p == ':') {
+                if (!allow_scope) {
+                    break;
+                }
+                const char* namespace_char = "abglstvw";
+                // "s:" is start of "s:var", but "n:" is not and can be used in
+                // slice "[n:]". Also "xx:" is not a namespace.
+                int len = p - arg;
+                if (len > 1 || (len == 1 && strchr(namespace_char, *arg) == NULL)) {
+                    break;
+                }
             }
         }
     }

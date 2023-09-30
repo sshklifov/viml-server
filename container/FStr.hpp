@@ -43,6 +43,7 @@ struct FStr {
     bool operator!=(const FStr& other);
 
     void replace(int begin, int end, const char* s);
+    void clear();
 
     const char* str() const;
 

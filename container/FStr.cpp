@@ -180,6 +180,10 @@ void FStr::replace(int begin, int end, const char* sub) {
     }
 }
 
+void FStr::clear() {
+    len = 0;
+}
+
 const char* FStr::str() const { return s; }
 
 int FStr::length() const {

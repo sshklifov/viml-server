@@ -1,6 +1,8 @@
 #include "ExCmdsDefs.hpp"
 #include "ExCmdsEnum.hpp"
 
+#include <NodeDefs.hpp>
+
 #include <cinttypes>
 
 CommandDefinition cmdnames[549] = {
@@ -330,7 +332,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_call] = {
     .cmd_name = "call",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<CallNode>,
     .cmd_argt = 17565829L,
     .cmd_addr_type = ADDR_LINES
   },
@@ -600,7 +602,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_const] = {
     .cmd_name = "const",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<ConstNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -804,13 +806,13 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_echo] = {
     .cmd_name = "echo",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<EchoNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
   [CMD_echoerr] = {
     .cmd_name = "echoerr",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<EchoNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -822,13 +824,13 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_echomsg] = {
     .cmd_name = "echomsg",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<EchoNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
   [CMD_echon] = {
     .cmd_name = "echon",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<EchoNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -888,7 +890,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_eval] = {
     .cmd_name = "eval",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<EvalNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -900,7 +902,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_execute] = {
     .cmd_name = "execute",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<ExecuteNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -1368,7 +1370,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_let] = {
     .cmd_name = "let",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<LetNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -1518,7 +1520,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_lockvar] = {
     .cmd_name = "lockvar",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<LockvarNode>,
     .cmd_argt = 17563782L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -2190,7 +2192,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_return] = {
     .cmd_name = "return",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<ReturnNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -2802,7 +2804,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_throw] = {
     .cmd_name = "throw",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<ThrowNode>,
     .cmd_argt = 17563780L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -2946,13 +2948,13 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_unlet] = {
     .cmd_name = "unlet",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<UnletNode>,
     .cmd_argt = 17563782L,
     .cmd_addr_type = ADDR_NONE
   },
   [CMD_unlockvar] = {
     .cmd_name = "unlockvar",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<LockvarNode>,
     .cmd_argt = 17563782L,
     .cmd_addr_type = ADDR_NONE
   },

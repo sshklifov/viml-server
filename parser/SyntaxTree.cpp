@@ -16,44 +16,46 @@ void SyntaxTree::reload(const char* str) {
 
     const char* nextcmd = nullptr;
     ExLexem lexem;
+    BoundReporter boundRep(rep, lexem);
     while (lexer.lexNext(lexem, nextcmd, rep)) {
-        GroupNode* node = nullptr;
+        GroupNode* grpNode = nullptr;
+        int not_done = 0;
         switch (lexem.cmdidx) {
         case CMD_if:
-            node = factory.create<IfNode>(lexem);
-            nodes.top()->body.emplace(node);
-            nodes.emplace(node);
+            grpNode = factory.create<IfNode>(lexem);
+            nodes.top()->body.emplace(grpNode);
+            nodes.emplace(grpNode);
             break;
 
         case CMD_elseif:
             if (nodes.top()->getId() == CMD_if || nodes.top()->getId() == CMD_elseif) {
-                node = factory.create<ElseIfNode>(lexem);
+                grpNode = factory.create<ElseIfNode>(lexem);
                 if (nodes.top()->getId() == CMD_if) {
-                    nodes.top()->cast<IfNode>()->elseIfNode = node;
+                    nodes.top()->cast<IfNode>()->elseIfNode = grpNode;
                 } else {
-                    nodes.top()->cast<ElseIfNode>()->elseIfNode = node;
+                    nodes.top()->cast<ElseIfNode>()->elseIfNode = grpNode;
                 }
-                nodes.top() = node;
+                nodes.top() = grpNode;
             } else if (nodes.top()->getId() == CMD_else) {
-                rep.error("elseif after else", lexem);
+                boundRep.errorName("elseif after else");
             } else {
-                rep.error("elseif without if", lexem);
+                boundRep.errorName("elseif without if");
             }
             break;
 
         case CMD_else:
             if (nodes.top()->getId() == CMD_if || nodes.top()->getId() == CMD_elseif) {
-                node = factory.create<ElseNode>(lexem);
+                grpNode = factory.create<ElseNode>(lexem);
                 if (nodes.top()->getId() == CMD_if) {
-                    nodes.top()->cast<IfNode>()->elseIfNode = node;
+                    nodes.top()->cast<IfNode>()->elseIfNode = grpNode;
                 } else {
-                    nodes.top()->cast<ElseIfNode>()->elseIfNode = node;
+                    nodes.top()->cast<ElseIfNode>()->elseIfNode = grpNode;
                 }
-                nodes.top() = node;
+                nodes.top() = grpNode;
             } else if (nodes.top()->getId() == CMD_else) {
-                rep.error("multiple else", lexem);
+                boundRep.errorName("multiple else");
             } else {
-                rep.error("else without if", lexem);
+                boundRep.errorName("else without if");
             }
             break;
 
@@ -61,60 +63,60 @@ void SyntaxTree::reload(const char* str) {
             if (nodes.top()->getId() == CMD_if || nodes.top()->getId() == CMD_elseif || nodes.top()->getId() == CMD_else) {
                 nodes.pop();
             } else {
-                rep.error("endif without if", lexem);
+                boundRep.errorName("endif without if");
             }
             break;
 
         case CMD_while:
-            node = factory.create<WhileNode>(lexem);
-            nodes.top()->body.emplace(node);
-            nodes.emplace(node);
+            grpNode = factory.create<WhileNode>(lexem);
+            nodes.top()->body.emplace(grpNode);
+            nodes.emplace(grpNode);
             break;
 
         case CMD_endwhile:
             if (nodes.top()->getId() == CMD_while) {
                 nodes.pop();
             } else if (nodes.top()->getId() == CMD_for) {
-                rep.error("using endwhile with for", lexem);
+                boundRep.errorName("using endwhile with for");
             } else {
-                rep.error("endwhile without while", lexem);
+                boundRep.errorName("endwhile without while");
             }
             break;
 
         case CMD_for:
-            node = factory.create<ForNode>(lexem);
-            nodes.top()->body.emplace(node);
-            nodes.emplace(node);
+            grpNode = factory.create<ForNode>(lexem);
+            nodes.top()->body.emplace(grpNode);
+            nodes.emplace(grpNode);
             break;
 
         case CMD_endfor:
             if (nodes.top()->getId() == CMD_for) {
                 nodes.pop();
             } else if (nodes.top()->getId() == CMD_while) {
-                rep.error("using endfor with while", lexem);
+                boundRep.errorName("using endfor with while");
             } else {
-                rep.error("endfor without for", lexem);
+                boundRep.errorName("endfor without for");
             }
             break;
 
         case CMD_function:
-            node = factory.create<FunctionNode>(lexem);
-            nodes.top()->body.emplace(node);
-            nodes.emplace(node);
+            grpNode = factory.create<FunctionNode>(lexem);
+            nodes.top()->body.emplace(grpNode);
+            nodes.emplace(grpNode);
             break;
 
         case CMD_endfunction:
             if (nodes.top()->getId() != CMD_function) {
-                rep.error("endfunction not inside a function", lexem);
+                boundRep.errorName("endfunction not inside a function");
             } else {
                 nodes.pop();
             }
             break;
 
         case CMD_try:
-            node = factory.create<TryNode>(lexem);
-            nodes.top()->body.emplace(node);
-            nodes.emplace(node);
+            grpNode = factory.create<TryNode>(lexem);
+            nodes.top()->body.emplace(grpNode);
+            nodes.emplace(grpNode);
             break;
 
          case CMD_catch:
@@ -122,13 +124,13 @@ void SyntaxTree::reload(const char* str) {
                 nodes.pop(); // end catch node
             }
             if (nodes.top()->getId() == CMD_try) {
-                node = factory.create<CatchNode>(lexem);
-                nodes.top()->cast<TryNode>()->catchNodes.emplace(node);
-                nodes.emplace(node);
+                grpNode = factory.create<CatchNode>(lexem);
+                nodes.top()->cast<TryNode>()->catchNodes.emplace(grpNode);
+                nodes.emplace(grpNode);
             } else if (nodes.top()->getId() == CMD_finally) {
-                rep.error("catch after finally", lexem);
+                boundRep.errorName("catch after finally");
             } else {
-                rep.error("catch without try", lexem);
+                boundRep.errorName("catch without try");
             }
             break;
 
@@ -137,13 +139,13 @@ void SyntaxTree::reload(const char* str) {
                 nodes.pop(); // end catch node
             }
             if (nodes.top()->getId() == CMD_try) {
-                node = factory.create<FinallyNode>(lexem);
-                nodes.top()->cast<TryNode>()->finally = node;
-                nodes.emplace(node);
+                grpNode = factory.create<FinallyNode>(lexem);
+                nodes.top()->cast<TryNode>()->finally = grpNode;
+                nodes.emplace(grpNode);
             } else if (nodes.top()->getId() == CMD_finally) {
-                rep.error("multiple finally", lexem);
+                boundRep.errorName("multiple finally");
             } else if (nodes.top()->getId() == CMD_finally) {
-                rep.error("finally without try", lexem);
+                boundRep.errorName("finally without try");
             }
             break;
 
@@ -152,18 +154,29 @@ void SyntaxTree::reload(const char* str) {
                 nodes.pop();
             }
             if (nodes.top()->getId() != CMD_try) {
-                rep.error("endtry without try", lexem);
+                boundRep.errorName("endtry without try");
             } else {
                 nodes.pop();
             }
             break;
 
         default:
-            nodes.top()->body.emplace(factory.create<ExNode>(lexem));
+            not_done = 1;
+            break;
         }
 
-        if (node) {
-            node->parse(rep, nextcmd);
+        if (grpNode) {
+            grpNode->parse(rep, nextcmd);
+        } else if (not_done) {
+            ex_func_T func = cmdnames[lexem.cmdidx].cmd_func;
+            if (func) {
+                BaseNode* exNode = (BaseNode*)func(&lexem);
+                if (exNode) {
+                    factory.add(exNode);
+                    nodes.top()->body.emplace(exNode);
+                    exNode->parse(rep, nextcmd);
+                }
+            }
         }
     }
 
@@ -172,15 +185,15 @@ void SyntaxTree::reload(const char* str) {
         int id = node->getId();
         nodes.pop();
         if (id == CMD_if || id == CMD_elseif || id == CMD_else) {
-            rep.error("missing endif", node->lex);
+            boundRep.errorName("missing endif");
         } else if (id == CMD_while) {
-            rep.error("missing endwhile", node->lex);
+            boundRep.errorName("missing endwhile");
         } else if (id == CMD_for) {
-            rep.error("missing endfor", node->lex);
+            boundRep.errorName("missing endfor");
         } else if (id == CMD_function) {
-            rep.error("missing endfunction", node->lex);
+            boundRep.errorName("missing endfunction");
         } else if (id == CMD_try || id == CMD_finally || id == CMD_catch) {
-            rep.error("missing endtry", node->lex);
+            boundRep.errorName("missing endtry");
         } else {
             assert(false);
         }

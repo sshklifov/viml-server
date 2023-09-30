@@ -26,7 +26,7 @@ bool ExLexer::lexNext(ExLexem& res, const char*& nextcmd, DiagnosticReporter& re
             }
         } catch (msg& m) {
             int pos = m.ppos - cmdline;
-            Range range = res.locator.resolve(pos, pos);
+            Range range = res.locator.resolve(pos, pos + 1);
             rep.error(std::move(m.message), range);
         }
     }
@@ -50,7 +50,7 @@ bool ExLexer::lexNext(ExLexem& res, const char*& nextcmd, DiagnosticReporter& re
                 if (codeCont) {
                     ++line; //< Remove continuation character
                     int col = line - program.top();
-                    cmdlineCreator.concat(program.top(), program.lineNumber(), col);
+                    cmdlineCreator.concat(line, program.lineNumber(), col);
                 }
                 program.pop();
             }
@@ -65,7 +65,7 @@ bool ExLexer::lexNext(ExLexem& res, const char*& nextcmd, DiagnosticReporter& re
             }
         } catch (msg& m) {
             int pos = m.ppos - cmdline;
-            Range range = locator.resolve(pos, pos);
+            Range range = locator.resolve(pos, pos + 1);
             rep.error(std::move(m.message), range);
         }
     }

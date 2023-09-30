@@ -55,6 +55,7 @@
                                    // buffer when curbuf->b_ro_locked is set
 #define EX_KEEPSCRIPT  0x4000000u  // keep sctx of where command was invoked
 #define EX_PREVIEW     0x8000000u  // allow incremental command preview
+
 #define EX_FILES (EX_XFILE | EX_EXTRA)  // multiple extra files allowed
 #define EX_FILE1 (EX_FILES | EX_NOSPC)  // 1 file, defaults to current file
 #define EX_WORD1 (EX_EXTRA | EX_NOSPC)  // one extra word allowed
@@ -82,12 +83,12 @@ typedef struct exarg exarg_T;
 #define BAD_KEEP        (-1)    // leave it
 #define BAD_DROP        (-2)    // erase it
 
-typedef void (*ex_func_T)(exarg_T* eap);
+typedef void* (*ex_func_T)(void* user);
 
 /// Structure for command definition.
 typedef struct cmdname {
   const char* cmd_name;                   ///< Name of the command.
-  ex_func_T cmd_func;                     ///< Function with implementation of this command.
+  ex_func_T cmd_func;                     ///< Function creator
   unsigned cmd_argt;                      ///< Relevant flags from the declared above.
   cmd_addr_T cmd_addr_type;               ///< Flag for address type.
 } CommandDefinition;

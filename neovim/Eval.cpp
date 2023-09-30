@@ -159,7 +159,7 @@ EvalExpr* eval5(const char*& arg, EvalFactory& factory) {
         }
         arg = skipwhite(arg + 1);
         EvalExpr* rhs = eval6(arg, factory);
-        expr = factory.create<ArithOpExpr>(expr, rhs, op);
+        expr = factory.create<BinOpExpr>(expr, rhs, op);
     }
     return expr;
 }
@@ -178,7 +178,7 @@ EvalExpr* eval6(const char*& arg, EvalFactory& factory) {
         // Get the second variable.
         arg = skipwhite(arg + 1);
         EvalExpr* rhs = eval7(arg, factory);
-        expr = factory.create<ArithOpExpr>(expr, rhs, op);
+        expr = factory.create<BinOpExpr>(expr, rhs, op);
     }
 
     return expr;
@@ -204,28 +204,26 @@ EvalExpr* eval7(const char*& arg, EvalFactory& factory) {
 
 EvalExpr* eval8(const char*& arg, EvalFactory& factory) {
     EvalExpr* expr = eval9(arg, factory);
-    // "." is ".name" lookup when we found a dict.
     for (;;) {
         if (*arg == '-' && arg[1] == '>') {
             arg += 2;
             EvalExpr* name;
             if (*arg == '{') {
                 // expr->{lambda}()
-                name = get_curly(arg, factory);
+                name = get_lambda(arg, 0, factory);
             } else {
                 // expr->name()
                 if (strncmp(arg, "v:lua.", 6) == 0) {
                     const char* lua_funcname = arg + 6;
                     arg = skip_luafunc_name(lua_funcname);
                     if (arg > lua_funcname) {
-                        FStr s(lua_funcname, arg);
-                        name = factory.create<LiteralExpr>(VAR_STRING, std::move(s));
+                        name = factory.create<LiteralExpr>(VAR_STRING, lua_funcname, arg);
                         name = factory.create<NameExpr>(name);
                     } else {
                         throw msg(arg, "Missing name after ->");
                     }
                 } else {
-                    name = parse_var_one(arg, 1, factory);
+                    name = get_name(arg, 1, factory);
                 }
             }
             // Common code for both methods
@@ -239,9 +237,20 @@ EvalExpr* eval8(const char*& arg, EvalFactory& factory) {
             expr = get_func(arg, name, expr, factory);
         } else if (*arg == '(') {
             expr = get_func(arg, expr, nullptr, factory);
-        } else if (*arg == '[' || *arg == '.') {
-            // TODO assume it is always dict
+        } else if (*arg == '[') {
             expr = get_index(arg, expr, factory);
+        } else if (*arg == '.') {
+            const char* p = arg + 1;
+            while (eval_isdictc(*p)) {
+                ++p;
+            }
+            if (p - arg <= 1) {
+                break;
+            } else {
+                EvalExpr* idx = factory.create<LiteralExpr>(VAR_STRING, arg + 1, p);
+                expr = factory.create<IndexExpr>(expr, idx);
+                arg = p;
+            }
         } else {
             break;
         }
@@ -268,8 +277,8 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     case '8':
     case '9': {
         int type = VAR_UNKNOWN;
-        const char* p = skip_numerical(arg, &type);
-        expr = factory.create<LiteralExpr>(type, FStr(arg, p));
+        const char* p = skip_numerical(arg, type);
+        expr = factory.create<LiteralExpr>(type, arg, p);
         arg = p;
         break;
     }
@@ -277,7 +286,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     // String constant: "string".
     case '"': {
         const char* p = skip_string(arg);
-        expr = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, p));
+        expr = factory.create<LiteralExpr>(VAR_STRING, arg, p);
         arg = p;
         break;
     }
@@ -285,7 +294,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     // Literal string constant: 'str''ing'.
     case '\'': {
         const char* p = skip_lit_string(arg);
-        expr = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, p));
+        expr = factory.create<LiteralExpr>(VAR_STRING, arg, p);
         arg = p;
         break;
     }
@@ -308,41 +317,17 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     // Lambda: {arg, arg -> expr}
     // Dictionary: {'key': val, 'key': val}
     case '{':
-        expr = get_curly(arg, factory);
+        expr = get_lambda(arg, 1, factory);
         break;
 
     // Option value: &name
-    case '&': {
-        const char* p = skip_option_scope(arg);
-        int len = get_option_len(p);
-        int type = OptionsMap::getSingleton().findVarType(p, len);
-        if (type == VAR_UNKNOWN) {
-            throw msg(arg, "Unknown option");
-        }
-        expr = factory.create<LiteralExpr>(type, FStr(arg, p + len));
-        arg = p + len;
-        break;
-    }
-
+    case '&':
     // Environment variable: $VAR.
-    case '$': {
-        const char* p = arg + 1; // Skip $
-        int len = get_env_len(p);
-        if (len == 0) {
-            throw msg(arg, "Expecting environment name");
-        }
-        expr = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, p + len));
-        arg = p + len;
-        break;
-    }
-
+    case '$':
     // Register contents: @r.
-    case '@': {
-        int len = 1 + valid_yank_reg(arg[1]);
-        expr = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, len));
-        arg += len;
+    case '@':
+        expr = get_var_special(arg, factory);
         break;
-    }
 
     // nested expression: (expression).
     case '(': {
@@ -363,7 +348,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     if (not_done) {
         // Must be a variable or function name.
         // Can also be a curly-braces kind of name: {expr}.
-        expr = parse_var_one(arg, 1, factory);
+        expr = get_name(arg, 1, factory);
     }
 
     return expr;
@@ -394,21 +379,20 @@ EvalExpr* get_list(const char*& arg, EvalFactory& factory) {
     return factory.create<ListExpr>(std::move(exprs));
 }
 
-Vector<FStr> get_function_args(const char*& arg, char endchar, EvalFactory& factory) {
+Vector<FStr> get_function_args(const char*& arg, char endchar, bool maybe_dict, EvalFactory& factory) {
     // TODO these two
     int default_args = false;
     int varargs = false;
 
     Vector<FStr> res;
     bool any_default = false;
-    bool any_args = false;
     bool mustend = false;
 
     // Isolate the arguments: "arg1, arg2, ...)"
     while (*arg != endchar) {
         if (arg[0] == '.' && arg[1] == '.' && arg[2] == '.') {
             varargs = true;
-            any_args = true;
+            maybe_dict = false;
             mustend = true;
             arg += 3;
         } else {
@@ -418,10 +402,10 @@ Vector<FStr> get_function_args(const char*& arg, char endchar, EvalFactory& fact
             }
             FStr a(arg, len);
             if (a.empty() || isdigit(*a.str()) || a == "firstline" || a == "lastline") {
-                if (any_args) {
-                    throw msg(arg, "Illegal argument");
+                if (maybe_dict) {
+                    return {};
                 } else {
-                    return {}; // Not a function
+                    throw msg(arg, "Illegal argument");
                 }
             }
             for (int i = 0; i < res.count(); ++i) {
@@ -434,7 +418,7 @@ Vector<FStr> get_function_args(const char*& arg, char endchar, EvalFactory& fact
 
             // Skip default args
             if (default_args && *skipwhite(arg) == '=') {
-                any_default = true;
+                maybe_dict = false;
                 arg = skipwhite(arg) + 1;
                 arg = skipwhite(arg);
                 EvalExpr* ret = eval1(arg, factory);
@@ -442,28 +426,28 @@ Vector<FStr> get_function_args(const char*& arg, char endchar, EvalFactory& fact
                 while (ascii_iswhite(arg[-1])) {
                     arg--;
                 }
-            } else if (any_default) {
+            } else if (default_args && !maybe_dict) {
                 throw msg(arg, "Non-default argument follows default argument");
             }
 
             if (*arg == ',') {
                 arg++;
-                any_args = true;
+                maybe_dict = false;
             } else {
                 if (ascii_iswhite(*arg) && *skipwhite(arg) == ',') {
                     throw msg(arg, "No white space allowed before ','");
                 } else {
-                    mustend = true;
+                    mustend = false;
                 }
             }
         }
         arg = skipwhite(arg);
         if (mustend && *arg != endchar) {
-            if (any_args) {
+            if (!maybe_dict) {
                 if (endchar == '-') {
                     throw msg(arg, "Expecting '->'");
                 } else {
-                    throw msg(arg, "Expecting '{}'", endchar);
+                    throw msg(arg, "Expecting '}'");
                 }
             } else {
                 return {}; // Not a function
@@ -474,14 +458,18 @@ Vector<FStr> get_function_args(const char*& arg, char endchar, EvalFactory& fact
     return res;
 }
 
-EvalExpr* get_curly(const char*& arg, EvalFactory& factory) {
+EvalExpr* get_lambda(const char*& arg, bool maybe_dict, EvalFactory& factory) {
     // First, check if this is a lambda expression. "->" must exists.
     const char* orig_arg = arg;
     arg = skipwhite(arg + 1);
-    Vector<FStr> fargs = get_function_args(arg, '-', factory);
+    Vector<FStr> fargs = get_function_args(arg, '-', maybe_dict, factory);
     if (*arg != '-' || arg[1] != '>') {
-        arg = orig_arg;
-        return get_dict_or_expand(arg, 0, factory);
+        if (maybe_dict) {
+            arg = orig_arg;
+            return get_dict_or_expand(arg, 0, factory);
+        } else {
+            throw msg(arg, "Expecting ->");
+        }
     }
 
     // Get the start and the end of the expression.
@@ -507,6 +495,7 @@ EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factor
     if (*arg != '}' && !literal) {
         EvalExpr* expr = eval1(arg, factory);
         if (*arg == '}') {
+            ++arg;
             return accum_expanded(arg, expr, factory);
         } else {
             if (*arg != ':') {
@@ -529,7 +518,7 @@ EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factor
         if (literal) {
             int len = get_literal_key_len(arg);
             if (len > 0) {
-                key = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, len));
+                key = factory.create<LiteralExpr>(VAR_STRING, arg, len);
                 arg = skipwhite(arg + len);
             } else {
                 throw msg(arg, "Expecting Dictionary key");
@@ -563,28 +552,29 @@ EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factor
     return factory.create<DictExpr>(std::move(dict));
 }
 
-EvalExpr* get_expanded_part(const char*& arg, int allow_scope, EvalFactory& factory) {
+EvalExpr* get_expanded_part(const char*& arg, bool allow_scope, EvalFactory& factory) {
     int len = get_id_len(arg, allow_scope);
     if (len > 0) {
-        EvalExpr* res = factory.create<LiteralExpr>(VAR_STRING, FStr(arg, len));
+        EvalExpr* res = factory.create<LiteralExpr>(VAR_STRING, arg, len);
         arg += len;
         return res;
-    }
-    if (*arg == '{') {
+    } else if (*arg == '{') {
+        arg++;
         EvalExpr* expr = eval1(arg, factory);
         if (*arg != '}') {
             throw msg(arg, "Expecting end of curly braces name '}'");
         }
-        ++arg;
+        arg++;
         return expr;
+    } else {
+        throw msg(arg, "Bad name");
     }
-    throw msg(arg, "Expecting variable or function");
 }
 
 EvalExpr* accum_expanded(const char*& arg, EvalExpr* res, EvalFactory& factory) {
     if (eval_isnamec1(*arg) || *arg == '#' || *arg == '{') {
         EvalExpr* part = get_expanded_part(arg, 0, factory);
-        res = factory.create<ArithOpExpr>(res, part, '.');
+        res = factory.create<BinOpExpr>(res, part, '.');
         return accum_expanded(arg, res, factory);
     } else {
         return factory.create<NameExpr>(res);
@@ -600,90 +590,128 @@ EvalExpr* get_func(const char*& arg, EvalExpr* name, EvalExpr* base, EvalFactory
     // Get the remaining arguments.
     do {
         arg = skipwhite(arg + 1); // skip the '(' or ','
-        if (*arg == ')' || *arg == ',' || *arg == NUL) {
+        if (*arg == NUL || *arg == ',' || *arg == ')') {
             break;
         }
         EvalExpr* expr = eval1(arg, factory);
         fargs.emplace(expr);
-        if (*arg != ',') {
-            break;
-        }
     } while (*arg == ',');
 
-    if (*arg == ')') {
-        arg++;
-    } else if (*arg == ','){
-        arg++;
+    if (*arg == ',') {
         throw msg(arg, "Unexpected ','");
-    } else {
-        throw msg(arg, "Illegal argument");
+    } else if (*arg != ')') {
+        throw msg(arg, "Expecting argument");
     }
-
+    arg++;
     return factory.create<InvokeExpr>(name, std::move(fargs));
 }
 
-EvalExpr* get_index(const char*& arg, EvalExpr* what, EvalFactory& factory) {
-    if (*arg == '.') {
-        // dict.name
-        arg++;
-        const char* p = arg;
-        while (eval_isdictc(*p)) {
-            ++p;
-        }
-        if (p == arg) {
-            throw msg(arg, "Expecting Dictionary key");
-        } else {
-            FStr key(arg, p);
-            EvalExpr* idx = factory.create<LiteralExpr>(VAR_STRING, std::move(key));
-            return factory.create<IndexExpr>(what, idx);
-        }
-    } else {
-        // something[idx]
-        //
-        // Get the (first) variable from inside the [].
-        EvalExpr *idx1 = nullptr, *idx2 = nullptr;
-        bool range = false;
+EvalExpr* get_index(const char*& arg, EvalExpr* var, EvalFactory& factory) {
+    // Get the (first) variable from inside the [].
+    EvalExpr *idx1 = nullptr, *idx2 = nullptr;
+    bool range = false;
+    arg = skipwhite(arg + 1);
+    if (*arg != ':') {
+        idx1 = eval1(arg, factory);
+    }
+
+    // Get the second variable from inside the [:].
+    if (*arg == ':') {
+        range = true;
         arg = skipwhite(arg + 1);
-        if (*arg != ':') {
-            idx1 = eval1(arg, factory);
-        }
-
-        // Get the second variable from inside the [:].
-        if (*arg == ':') {
-            range = true;
-            arg = skipwhite(arg + 1);
-            if (*arg != ']') {
-                idx2 = eval1(arg, factory);
-            }
-        }
-
-        // Check for the ']'.
         if (*arg != ']') {
-            throw msg(arg, "Missing ']'");
+            idx2 = eval1(arg, factory);
         }
-        arg++;
+    }
 
-        if (range) {
-            return factory.create<IndexRangeExpr>(what, idx1, idx2);
-        } else {
-            return factory.create<IndexExpr>(what, idx1);
-        }
+    // Check for the ']'.
+    if (*arg != ']') {
+        throw msg(arg, "Missing ']'");
+    }
+    arg++;
+
+    if (range) {
+        return factory.create<IndexRangeExpr>(var, idx1, idx2);
+    } else {
+        return factory.create<IndexExpr>(var, idx1);
     }
 }
 
-EvalExpr* parse_var_one(const char*& arg, int allow_scope, EvalFactory& factory) {
+EvalExpr* get_name(const char*& arg, bool allow_scope, EvalFactory& factory) {
     EvalExpr* part = get_expanded_part(arg, allow_scope, factory);
     return accum_expanded(arg, part, factory);
 }
 
-Vector<EvalExpr*> parse_var_list(const char*& arg, int& semicolon, EvalFactory& factory) {
-    semicolon = 0;
+EvalExpr* get_var_indexed(const char*& p, EvalFactory& f) {
+    EvalExpr* res = get_name(p, 1, f);
+    while (*p == '[' || *p == '.') {
+        if (*p == '[') {
+            res = get_index(p, res, f);
+        } else {
+            int len = get_dict_key_len(p + 1);
+            if (len <= 0) {
+                break;
+            }
+            p++;
+            EvalExpr* idx = f.create<LiteralExpr>(VAR_STRING, p, len);
+            res = f.create<IndexExpr>(res, idx);
+            p += len;
+        }
+    }
+    return res;
+}
+
+EvalExpr* get_var_special(const char*& arg, EvalFactory& factory) {
+    EvalExpr* expr;
+    if (*arg == '&') {
+        const char* p = skip_option_scope(arg);
+        int len = get_option_len(p);
+        int type = OptionsMap::getSingleton().findVarType(p, len);
+        if (type == VAR_UNKNOWN) {
+            throw msg(arg, "Unknown option");
+        }
+        expr = factory.create<LiteralExpr>(type, arg, p + len);
+        arg = p + len;
+    } else if (*arg == '$') {
+        const char* p = arg + 1; // Skip $
+        int len = get_env_len(p);
+        if (len == 0) {
+            throw msg(arg, "Expecting environment name");
+        }
+        expr = factory.create<LiteralExpr>(VAR_STRING, arg, p + len);
+        arg = p + len;
+    } else {
+        int len = valid_yank_reg(arg[1]);
+        if (eval_isnamec1(arg[1]) && eval_isnamec(arg[2])) {
+            throw msg(arg, "Invalid register name");
+        }
+        len++; // include the "@"
+        expr = factory.create<LiteralExpr>(VAR_STRING, arg, len);
+        arg += len;
+    }
+    return expr;
+}
+
+EvalExpr* get_var_one(const char*& arg, bool allow_special, EvalFactory& factory) {
+    if (*arg == '@' || *arg == '$' || *arg == '&') {
+        if (!allow_special) {
+            throw msg(arg, "Options, settings and env variables not allowed");
+        }
+        return get_var_special(arg, factory);
+    } else {
+        return get_var_indexed(arg, factory);
+    }
+}
+
+Vector<EvalExpr*> get_var_list(const char*& arg, bool allow_special, int& semicolon, EvalFactory& factory) {
     Vector<EvalExpr*> vars;
+
+    semicolon = 0;
     if (*arg == '[') {
         // "[var, var]": find the matching ']'.
         for (;;) {
             arg = skipwhite(arg + 1); // skip whites after '[', ';' or ','
-            vars.emplace(parse_var_one(arg, 0, factory));
+            vars.emplace(get_var_one(arg, allow_special, factory));
             arg = skipwhite(arg);
             if (*arg == ']') {
                 break;
@@ -697,7 +725,8 @@ Vector<EvalExpr*> parse_var_list(const char*& arg, int& semicolon, EvalFactory& 
             }
         }
         arg++;
+    } else {
+        vars.emplace(get_var_one(arg, allow_special, factory));
     }
-    vars.emplace(parse_var_one(arg, 0, factory));
     return vars;
 }

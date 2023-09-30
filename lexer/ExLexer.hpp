@@ -60,6 +60,7 @@ struct CmdlineCreator {
             *writePtr++ = *p++;
             ++len;
         }
+        assert(len > 0);
         loc.addFragment(line, col, len);
     }
 
@@ -104,14 +105,13 @@ struct Program {
 
     void pop() {
         assert(!empty());
-        while (*program && *program != '\n') {
-            if (*program == '\n') {
+        do {
+            while (*program != 0 && *program != '\n') {
                 ++program;
-                break;
             }
+            ++lineCounter;
             ++program;
-        }
-        ++lineCounter;
+        } while (*program == '\n');
     }
 
 private:

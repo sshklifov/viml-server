@@ -67,7 +67,7 @@ struct FunctionNode : public GroupNode {
         // s:func      script-local function name
         // g:func      global function name, same as "func"
         try {
-            name = parse_var_one(p, 1, f);
+            name = get_var_indexed(p, f);
             p = skipwhite(p);
             if (*p != '(') {
                 if (ends_excmd(*p)) {
@@ -77,7 +77,7 @@ struct FunctionNode : public GroupNode {
                 }
             }
             p = skipwhite(p + 1);
-            fargs = get_function_args(p, ')', f);
+            fargs = get_function_args(p, ')', 1, f);
             p++;
         } catch (msg& m) {
             rep.error(m);

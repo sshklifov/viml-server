@@ -6,18 +6,19 @@
 #include "LoopNodes.hpp"
 #include "FunctionNodes.hpp"
 #include "ExceptionNodes.hpp"
+#include "EvalNodes.hpp"
+#include "LetNodes.hpp"
+#include "EchoNodes.hpp"
 
 struct RootNode : GroupNode {
     RootNode() : GroupNode(ExLexem()) {}
 
-    int getId() override {
-        assert(false);
-        return CMD_SIZE;
-    }
+    int getId() override { return CMD_SIZE; }
 
     void parse(DiagnosticReporter& rep, const char*& nextcmd) override { assert(false); }
 };
 
-struct ExNode : BaseNode {
-    ExNode(const ExLexem& lexem) : BaseNode(lexem) {}
-};
+template <typename T>
+void* defaultNodeCreator(void* user) {
+    return new T(*(ExLexem*)user);
+}

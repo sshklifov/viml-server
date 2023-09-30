@@ -17,24 +17,6 @@ struct DiagnosticReporter {
         diagnostics.emplace(msg, range);
     }
 
-    void error(FStr msg, const ExLexem& lex, int first, int last) {
-        Range range = lex.locator.resolve(first, last);
-        error(std::move(msg), range);
-    }
-
-    void error(FStr msg, const ExLexem& lex, int pos) {
-        error(std::move(msg), lex, pos, pos);
-    }
-
-    void error(FStr msg, const ExLexem& lex) {
-        Range range = lex.locator.resolve();
-        error(std::move(msg), range);
-    }
-
-    void error(FStr msg, const ExLexem& lex, const char* pos) {
-        error(std::move(msg), lex, pos - lex.cmdline);
-    }
-
 private:
     Vector<Diagnostic> diagnostics;
 };
@@ -42,16 +24,27 @@ private:
 struct BoundReporter {
     BoundReporter(DiagnosticReporter& rep, const ExLexem& lex) : rep(rep), lex(lex) {}
 
-    void error(FStr msg, const char* pos) {
-        rep.error(std::move(msg), lex, pos);
+    void error(FStr msg, const char* arg) {
+        int pos = arg - lex.cmdline;
+        Range range = lex.locator.resolve(pos);
+        rep.error(std::move(msg), range);
     }
 
     void error(FStr msg) {
-        rep.error(std::move(msg), lex);
+        Range range = lex.locator.resolve();
+        rep.error(std::move(msg), range);
     }
 
     void error(msg& m) {
-        rep.error(std::move(m.message), lex, m.ppos);
+        int pos = m.ppos - lex.cmdline;
+        Range range = lex.locator.resolve(pos);
+        rep.error(std::move(m.message), range);
+    }
+
+    void errorName(FStr msg) {
+        int start = lex.name - lex.cmdline;
+        Range range = lex.locator.resolve(start, start + lex.namelen);
+        rep.error(std::move(msg), range);
     }
 
 private:

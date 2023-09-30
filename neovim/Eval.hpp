@@ -42,7 +42,7 @@ struct EvalFactory {
 
     template <typename T, typename ... Args>
     T* create(Args&&... args) {
-        if (!evaluate) {
+        if (evaluate) {
             T* res = new T(std::forward<Args>(args)...);
             exprs.emplace(res);
             return res;
@@ -132,9 +132,9 @@ EvalExpr* eval7(const char*& arg, EvalFactory& factory);
 
 /// Handle eight level expression:
 ///  trailing []  subscript in String or List
-///  trailing .name entry in Dictionary
 ///  function()  function call
 ///  trailing ->name()  method call
+/// NB: NO trailing .name entry in Dictionary
 EvalExpr* eval8(const char*& arg, EvalFactory& factory);
 
 /// Handle ninth level expression:
@@ -159,19 +159,10 @@ EvalExpr* get_list(const char*& arg, EvalFactory& factory);
 
 /// Get function arguments.
 /// Advances "arg" to "endchar" on success.
-Vector<FStr> get_function_args(const char*& arg, char endchar, EvalFactory& factory);
+Vector<FStr> get_function_args(const char*& arg, char endchar, bool force, EvalFactory& factory);
 
-/// Parse an expression starting with curly bracket
-/// The parse flow is as follows:
-///   get_curly:          Try to parse as lambda, if
-///                       failed, call get_dict_or_expand.
-///
-///   get_dict_or_expand: Try to parse as dict, if failed,
-///                       call accum_expanded
-///
-///   accum_expanded:     Call get_expanded_part and
-///                       accumulate parts
-EvalExpr* get_curly(const char*& arg, EvalFactory& factory);
+/// Parse a lambda expression and get a Funcref from "arg".
+EvalExpr* get_lambda(const char*& arg, bool force, EvalFactory& factory);
 
 /// Allocate a variable for a Dictionary and fill it from "arg".
 /// "literal" is true for #{key: val}.
@@ -181,7 +172,7 @@ EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factor
 
 /// Generates one expansion of 'magic' {}'.
 /// Must be called multiple times while to expand all 'magic's.
-EvalExpr* get_expanded_part(const char*& arg, int allow_scope, EvalFactory& factory);
+EvalExpr* get_expanded_part(const char*& arg, bool allow_scope, EvalFactory& factory);
 
 /// Expands out the 'magic' {}'s in a variable/function name.
 /// Accumulates the expanded parts from get_expanded_part.
@@ -194,13 +185,22 @@ EvalExpr* accum_expanded(const char*& arg, EvalExpr* res, EvalFactory& factory);
 /// @param base  first function argument (optional, used for methods)
 EvalExpr* get_func(const char*& arg, EvalExpr* name, EvalExpr* base, EvalFactory& factory);
 
-/// Evaluate an "[expr]" or "[expr:expr]" index.    Also "dict.key".
-/// "*arg" points to the '[' or '.'.
-EvalExpr* get_index(const char*& arg, EvalExpr* what, EvalFactory& factory);
+/// Evaluate an "[expr]" or "[expr:expr]" index.
+/// "*arg" points to the '['.
+EvalExpr* get_index(const char*& arg, EvalExpr* var, EvalFactory& factory);
 
-/// Parse one (assignable) variable name
-EvalExpr* parse_var_one(const char*& arg, int allow_scope, EvalFactory& factory);
+/// Parse one variable/function name
+EvalExpr* get_name(const char*& arg, bool allow_scope, EvalFactory& factory);
+
+/// Parse one name with trailing indices
+EvalExpr* get_var_indexed(const char*& arg, EvalFactory& factory);
+
+/// Parse one (register, env or option) variable
+EvalExpr* get_var_special(const char*& arg, EvalFactory& factory);
+
+/// Parse one variable
+EvalExpr* get_var_one(const char*& arg, bool allow_special, EvalFactory& factory);
 
 /// Skip over assignable variable "var" or list of variables "[var, var]".
 /// Used for ":let varvar = expr" and ":for varvar in expr".
-Vector<EvalExpr*> parse_var_list(const char*& arg, int& semicolon, EvalFactory& factory);
+Vector<EvalExpr*> get_var_list(const char*& arg, bool allow_special, int& semicolon, EvalFactory& factory);

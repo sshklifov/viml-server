@@ -8,8 +8,7 @@ enum { MAXLNUM = 0x7fffffff, };
 enum { MAXCOL = 0x7fffffff, };
 
 struct Position {
-    Position() = default;
-    Position(int line, int col) : line(line), character(col) {}
+    Position(int line = MAXLNUM, int col = MAXCOL) : line(line), character(col) {}
 
     /**
      * Line position in a document (zero-based).

@@ -32,10 +32,9 @@ struct CatchNode : public GroupNode {
                 pat = ".*";
                 return p;
             } else {
-                const char* patBegin = p + 1;
-                p = skip_regexp_err(patBegin + 1, *patBegin);
-                pat = FStr(patBegin, p + 1);
-                return p + 1;
+                const char* q = skip_regexp_err(p + 1, *p);
+                pat = FStr(p + 1, q);
+                return q + 1;
             }
         } catch (msg& m) {
             rep.error(m);
@@ -53,4 +52,25 @@ struct FinallyNode : public GroupNode {
     FinallyNode(const ExLexem& lexem) : GroupNode(lexem) {}
 
     static const int id = CMD_finally;
+};
+
+struct ThrowNode : public BaseNode {
+    ThrowNode(const ExLexem& lexem) : BaseNode(lexem) { expr = nullptr; }
+
+    const char* parseInternal(BoundReporter& rep) override {
+        const char* p = lex.qargs;
+        try {
+            expr = eval1(p, f);
+            return p;
+        } catch (msg& m) {
+            rep.error(m);
+            return nullptr;
+        }
+    }
+
+    static const int id = CMD_throw;
+
+private:
+    EvalFactory f;
+    EvalExpr* expr;
 };

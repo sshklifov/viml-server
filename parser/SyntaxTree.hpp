@@ -21,6 +21,10 @@ struct NodeFactory {
         nodes.clear();
     }
 
+    void add(BaseNode* node) {
+        nodes.emplace(node);
+    }
+
     template <typename T, typename ... Args>
     T* create(Args&&... args) {
         static_assert(std::is_base_of<BaseNode, T>::value, "Bad template argument");
@@ -30,6 +34,7 @@ struct NodeFactory {
         return res;
     }
 
+private:
     Vector<BaseNode*> nodes;
 };
 

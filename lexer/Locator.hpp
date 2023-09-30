@@ -21,27 +21,34 @@ struct Locator {
         fragments.clear();
     }
 
-    Range resolve(int first, int last) const {
-        assert(first <= last);
+    Range resolve(int begin) const {
+        return resolve(begin, begin + 1);
+    }
+
+    Range resolve(int begin, int end) const {
+        assert(begin < end);
         Range res;
         int strBegin = 0;
         for (int i = 0; i < fragments.count(); ++i) {
             int strEnd = strBegin + fragments[i].fragLen;
-            if (first >= strBegin && first < strEnd) {
+            if (begin >= strBegin && begin < strEnd) {
                 res.start.line = fragments[i].line;
-                res.start.character = fragments[i].col + (first - strBegin);
+                res.start.character = fragments[i].col + (begin - strBegin);
             }
-            if (last >= strBegin && last < strEnd) {
+            if (end > strBegin && end <= strEnd) {
                 res.end.line = fragments[i].line;
-                res.end.character = fragments[i].col + (last - strBegin);
+                res.end.character = fragments[i].col + (end - strBegin);
                 return res;
             }
             strBegin = strEnd;
         }
-
-        assert(false);
-        Position bad(MAXLNUM, MAXCOL);
-        return Range(bad);
+        if (res.start.line == MAXLNUM) {
+            res.start.line = fragments.last().line;
+            res.start.character = fragments.last().col + fragments.last().fragLen - 1;
+        }
+        res.end.line = fragments.last().line;
+        res.end.character = fragments.last().col + fragments.last().fragLen;
+        return res;
     }
 
     Range resolve() const {
