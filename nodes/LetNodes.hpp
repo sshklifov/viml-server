@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BaseNode.hpp"
-#include <Eval.hpp>
 #include <EvalUtil.hpp>
 
 struct LetNode : public BaseNode {
@@ -27,7 +26,7 @@ struct LetNode : public BaseNode {
             vars = get_var_list(p, 1, semicolon, f);
             p = skipwhite(p);
 
-            if (strchr("=+-*/%.", *p) == NULL) {
+            if (!ascii_haschar("=+-*/%.", *p)) {
                 /// ":let var1 var2" list variable values
                 if (first_char == '[')  {
                     throw msg(p, "Expecting operator");
@@ -63,8 +62,7 @@ struct LetNode : public BaseNode {
     static const int id = CMD_let;
 
 private:
-    EvalFactory f;
-    Vector<EvalExpr*> vars; //< Element might be indexed!
+    Vector<EvalExpr*> vars;
     int semicolon;
     int op;
     EvalExpr* expr;
@@ -113,7 +111,6 @@ struct ConstNode : public BaseNode {
     static const int id = CMD_const;
 
 private:
-    EvalFactory f;
     Vector<EvalExpr*> vars;
     int semicolon;
     EvalExpr* expr;
@@ -148,7 +145,6 @@ struct UnletNode : public BaseNode {
     static const int id = CMD_unlet;
 
 private:
-    EvalFactory f;
     Vector<EvalExpr*> vars;
 };
 
@@ -186,7 +182,6 @@ struct LockvarNode : public BaseNode {
     static const int id = CMD_lockvar;
 
 private:
-    EvalFactory f;
     FStr depth;
     Vector<EvalExpr*> vars;
 };

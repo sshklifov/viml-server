@@ -7,10 +7,10 @@ void SyntaxTree::reload(const char* str) {
     if (!lexer.reload(str)) {
         return;
     }
-    factory.clear();
+    f.clear();
     rep.clear();
 
-    root = factory.create<RootNode>();
+    root = f.create<RootNode>();
     Stack<GroupNode*> nodes;
     nodes.emplace(root); //< Guarantees that stack is never empty
 
@@ -21,14 +21,14 @@ void SyntaxTree::reload(const char* str) {
         int not_done = 0;
         switch (lexem.cmdidx) {
         case CMD_if:
-            grpNode = factory.create<IfNode>(lexem);
+            grpNode = f.create<IfNode>(lexem);
             nodes.top()->body.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
 
         case CMD_elseif:
             if (nodes.top()->getId() == CMD_if || nodes.top()->getId() == CMD_elseif) {
-                grpNode = factory.create<ElseIfNode>(lexem);
+                grpNode = f.create<ElseIfNode>(lexem);
                 if (nodes.top()->getId() == CMD_if) {
                     nodes.top()->cast<IfNode>()->elseIfNode = grpNode;
                 } else {
@@ -44,7 +44,7 @@ void SyntaxTree::reload(const char* str) {
 
         case CMD_else:
             if (nodes.top()->getId() == CMD_if || nodes.top()->getId() == CMD_elseif) {
-                grpNode = factory.create<ElseNode>(lexem);
+                grpNode = f.create<ElseNode>(lexem);
                 if (nodes.top()->getId() == CMD_if) {
                     nodes.top()->cast<IfNode>()->elseIfNode = grpNode;
                 } else {
@@ -67,7 +67,7 @@ void SyntaxTree::reload(const char* str) {
             break;
 
         case CMD_while:
-            grpNode = factory.create<WhileNode>(lexem);
+            grpNode = f.create<WhileNode>(lexem);
             nodes.top()->body.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
@@ -83,7 +83,7 @@ void SyntaxTree::reload(const char* str) {
             break;
 
         case CMD_for:
-            grpNode = factory.create<ForNode>(lexem);
+            grpNode = f.create<ForNode>(lexem);
             nodes.top()->body.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
@@ -99,7 +99,7 @@ void SyntaxTree::reload(const char* str) {
             break;
 
         case CMD_function:
-            grpNode = factory.create<FunctionNode>(lexem);
+            grpNode = f.create<FunctionNode>(lexem);
             nodes.top()->body.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
@@ -113,7 +113,7 @@ void SyntaxTree::reload(const char* str) {
             break;
 
         case CMD_try:
-            grpNode = factory.create<TryNode>(lexem);
+            grpNode = f.create<TryNode>(lexem);
             nodes.top()->body.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
@@ -123,7 +123,7 @@ void SyntaxTree::reload(const char* str) {
                 nodes.pop(); // end catch node
             }
             if (nodes.top()->getId() == CMD_try) {
-                grpNode = factory.create<CatchNode>(lexem);
+                grpNode = f.create<CatchNode>(lexem);
                 nodes.top()->cast<TryNode>()->catchNodes.emplace(grpNode);
                 nodes.emplace(grpNode);
             } else if (nodes.top()->getId() == CMD_finally) {
@@ -138,7 +138,7 @@ void SyntaxTree::reload(const char* str) {
                 nodes.pop(); // end catch node
             }
             if (nodes.top()->getId() == CMD_try) {
-                grpNode = factory.create<FinallyNode>(lexem);
+                grpNode = f.create<FinallyNode>(lexem);
                 nodes.top()->cast<TryNode>()->finally = grpNode;
                 nodes.emplace(grpNode);
             } else if (nodes.top()->getId() == CMD_finally) {
@@ -171,7 +171,7 @@ void SyntaxTree::reload(const char* str) {
             if (func) {
                 BaseNode* exNode = (BaseNode*)func(&lexem);
                 if (exNode) {
-                    factory.add(exNode);
+                    f.add(exNode);
                     nodes.top()->body.emplace(exNode);
                     exNode->parse(rep, lexem.nextcmd);
                 }

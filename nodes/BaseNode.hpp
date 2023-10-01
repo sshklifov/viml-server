@@ -3,6 +3,7 @@
 #include <ExLexem.hpp>
 #include <ExCmdsDefs.hpp>
 #include <DoCmdUtil.hpp>
+#include <Eval.hpp>
 
 #include <DiagnosticReporter.hpp>
 
@@ -26,8 +27,6 @@ struct BaseNode {
         parseErrors = (p == nullptr);
         if (!parseErrors) {
             // Check for trailing bar
-            assert(!(cmdnames[lex.cmdidx].cmd_argt & EX_TRLBAR));
-            assert(lex.nextcmd == nullptr);
             lex.nextcmd = p;
             if (ends_excmd(*p)) {
                 if (*p == '|') {
@@ -72,12 +71,11 @@ struct BaseNode {
     }
 
     ExLexem lex;
+    EvalFactory f;
     int parseErrors;
 
 protected:
-    virtual const char* parseArgs(BoundReporter& rep) {
-        return lex.qargs;
-    }
+    virtual const char* parseArgs(BoundReporter& rep) { return lex.qargs; }
 };
 
 struct GroupNode : public BaseNode {

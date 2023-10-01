@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BaseNode.hpp"
-#include <Eval.hpp>
 #include <EvalUtil.hpp>
 
 struct WhileNode : public GroupNode {
@@ -21,7 +20,6 @@ struct WhileNode : public GroupNode {
     static const int id = CMD_while;
 
 private:
-    EvalFactory f;
     EvalExpr* cond;
 };
 
@@ -56,7 +54,6 @@ struct ForNode : public GroupNode {
     static const int id = CMD_for;
 
 private:
-    EvalFactory f;
     int semicolon;
     Vector<EvalExpr*> vars;
     EvalExpr* elems;

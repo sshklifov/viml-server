@@ -142,3 +142,14 @@ static inline bool ascii_isodigit(int c)
 {
   return (c >= '0' && c <= '7');
 }
+
+/// Safe version of strchr. Handles NUL values
+static inline bool ascii_haschar(const char* s, char c) {
+    while (*s) {
+        if (*s == c) {
+            return true;
+        }
+        s++;
+    }
+    return false;
+}

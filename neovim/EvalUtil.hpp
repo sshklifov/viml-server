@@ -30,7 +30,7 @@ typedef enum {
 /// @param writing allow only writable registers
 static bool valid_yank_reg(int regname, bool writing = false) {
     if ((regname > 0 && isalnum(regname))
-        || (!writing && strchr("/.%:=", regname) != NULL)
+        || (!writing && ascii_haschar("/.%:=", regname))
         || regname == '#'
         || regname == '"'
         || regname == '-'
@@ -238,11 +238,12 @@ static bool eval_isdictc(int c) {
 /// Skips one character past the end of the name of a v:lua function.
 /// @param p    Pointer to the char AFTER the "v:lua." prefix.
 /// @return Pointer to the char one past the end of the function's name.
-static const char* skip_luafunc_name(const char *p) {
+static int get_luafunc_name_len(const char* arg) {
+    const char* p = arg;
     while (ASCII_ISALNUM(*p) || *p == '_' || *p == '-' || *p == '.' || *p == '\'') {
         p++;
     }
-    return p;
+    return p - arg;
 }
 
 /// Skips one character past the end of the dictionary key.
@@ -299,7 +300,7 @@ static int get_id_len(const char* arg, int allow_scope) {
                 // "s:" is start of "s:var", but "n:" is not and can be used in
                 // slice "[n:]". Also "xx:" is not a namespace.
                 int len = p - arg;
-                if (len > 1 || (len == 1 && strchr(namespace_char, *arg) == NULL)) {
+                if (len > 1 || (len == 1 && !ascii_haschar(namespace_char, *arg))) {
                     break;
                 }
             }

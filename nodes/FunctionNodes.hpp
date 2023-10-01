@@ -2,9 +2,6 @@
 
 #include "BaseNode.hpp"
 
-#include <DoCmdUtil.hpp>
-#include <Eval.hpp>
-
 // flags used in uf_flags
 #define FC_ABORT    0x01          // abort function on error
 #define FC_RANGE    0x02          // function accepts range
@@ -111,7 +108,6 @@ struct FunctionNode : public GroupNode {
     static const int id = CMD_function;
 
 private:
-    EvalFactory f;
     EvalExpr* name;
     Vector<FStr> fargs;
     int flags;

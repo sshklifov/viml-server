@@ -1,7 +1,6 @@
 #pragma once
 
-#include "NodeDefs.hpp"
-#include "DoCmdUtil.hpp"
+#include "BaseNode.hpp"
 
 struct TryNode : public GroupNode {
     TryNode(const ExLexem& lexem) : GroupNode(lexem), finally(nullptr) {}
@@ -71,6 +70,5 @@ struct ThrowNode : public BaseNode {
     static const int id = CMD_throw;
 
 private:
-    EvalFactory f;
     EvalExpr* expr;
 };

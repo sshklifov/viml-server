@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BaseNode.hpp"
-#include <Eval.hpp>
 
 struct CallNode : public BaseNode {
     CallNode(const ExLexem& lexem) : BaseNode(lexem) { expr = nullptr; }
@@ -23,7 +22,6 @@ struct CallNode : public BaseNode {
     static const int id = CMD_call;
 
 private:
-    EvalFactory f;
     EvalExpr* expr;
 };
 
@@ -47,7 +45,6 @@ struct ReturnNode : public BaseNode {
     static const int id = CMD_call;
 
 private:
-    EvalFactory f;
     EvalExpr* expr;
 };
 
@@ -70,7 +67,6 @@ struct EvalNode : public BaseNode {
     static const int id = CMD_eval;
 
 private:
-    EvalFactory f;
     EvalExpr* expr;
 };
 
@@ -98,6 +94,5 @@ struct ExecuteNode : public BaseNode {
     static const int id = CMD_call;
 
 private:
-    EvalFactory f;
     EvalExpr* expr;
 };

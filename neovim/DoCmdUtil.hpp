@@ -92,8 +92,8 @@ static const char* skip_anyof(const char* p) {
                 p++;
             }
         } else if (*p == '\\'
-            && (strchr(REGEXP_INRANGE, p[1]) != NULL
-                || (!reg_cpo_lit && strchr(REGEXP_ABBR, p[1]) != NULL))) {
+            && (ascii_haschar(REGEXP_INRANGE, p[1])
+                || (!reg_cpo_lit && ascii_haschar(REGEXP_ABBR, p[1])))) {
             p += 2;
         } else if (*p == '[') {
             p = skip_class(p);

@@ -25,6 +25,9 @@ struct NodeFactory {
         nodes.emplace(node);
     }
 
+    BaseNode** begin() { return nodes.begin(); }
+    BaseNode** end() { return nodes.end(); }
+
     template <typename T, typename ... Args>
     T* create(Args&&... args) {
         static_assert(std::is_base_of<BaseNode, T>::value, "Bad template argument");
@@ -48,9 +51,9 @@ struct SyntaxTree {
 
     BaseNode* findNode(const Position& pos);
 
-public:
+private:
     DiagnosticReporter rep; //< Diagnostics found during parse of AST
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
-    NodeFactory factory; //< Holds memory for the created nodes
+    NodeFactory f; //< Holds memory for the created nodes
     RootNode* root; //< AST root
 };

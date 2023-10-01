@@ -214,11 +214,12 @@ EvalExpr* eval8(const char*& arg, EvalFactory& factory) {
             } else {
                 // expr->name()
                 if (strncmp(arg, "v:lua.", 6) == 0) {
-                    const char* lua_funcname = arg + 6;
-                    arg = skip_luafunc_name(lua_funcname);
-                    if (arg > lua_funcname) {
-                        name = factory.create<LiteralExpr>(VAR_STRING, lua_funcname, arg);
-                        name = factory.create<SymbolExpr>(name);
+                    int len = get_luafunc_name_len(arg + 6);
+                    if (len > 0) {
+                        const char* p = arg + 6 + len;
+                        name = factory.create<LiteralExpr>(VAR_STRING, arg, p);
+                        name = factory.create<SymbolExpr>(name, arg, p);
+                        arg = p;
                     } else {
                         throw msg(arg, "Missing name after ->");
                     }
@@ -491,12 +492,13 @@ EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factor
     // either an expansion or the first dictionary item.
     // "{}" is an empty Dictionary.
     // "#{abc}" is never a curly-braces expression.
+    const char* start = arg;
     arg = skipwhite(arg + 1);
     if (*arg != '}' && !literal) {
         EvalExpr* expr = eval1(arg, factory);
         if (*arg == '}') {
             ++arg;
-            return accum_expanded(arg, expr, factory);
+            return accum_expanded(arg, start, expr, factory);
         } else {
             if (*arg != ':') {
                 throw msg(arg, "Missing colon in Dictionary");
@@ -571,13 +573,13 @@ EvalExpr* get_expanded_part(const char*& arg, bool allow_scope, EvalFactory& fac
     }
 }
 
-EvalExpr* accum_expanded(const char*& arg, EvalExpr* res, EvalFactory& factory) {
+EvalExpr* accum_expanded(const char*& arg, const char* start, EvalExpr* res, EvalFactory& factory) {
     if (eval_isnamec1(*arg) || *arg == '#' || *arg == '{') {
         EvalExpr* part = get_expanded_part(arg, 0, factory);
         res = factory.create<BinOpExpr>(res, part, '.');
-        return accum_expanded(arg, res, factory);
+        return accum_expanded(arg, start, res, factory);
     } else {
-        return factory.create<SymbolExpr>(res);
+        return factory.create<SymbolExpr>(res, start, arg);
     }
 }
 
@@ -638,8 +640,9 @@ EvalExpr* get_index(const char*& arg, EvalExpr* var, EvalFactory& factory) {
 }
 
 EvalExpr* get_name(const char*& arg, bool allow_scope, EvalFactory& factory) {
+    const char* start = arg;
     EvalExpr* part = get_expanded_part(arg, allow_scope, factory);
-    return accum_expanded(arg, part, factory);
+    return accum_expanded(arg, start, part, factory);
 }
 
 EvalExpr* get_var_indexed(const char*& p, EvalFactory& f) {

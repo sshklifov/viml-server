@@ -59,7 +59,7 @@ const char* skip_colon_white(const char *p) {
 /// @return the "cmd" pointer advanced to beyond the range.
 const char* skip_range(const char* cmd, int& has_range) {
     has_range = 0;
-    while (strchr(" \t0123456789.$%'/?-+,;\\", (*cmd)) != NULL) {
+    while (*cmd && ascii_haschar(" \t0123456789.$%'/?-+,;\\", (*cmd))) {
         if (*cmd != ' ' && *cmd != '\t') {
             has_range = 1;
         }
@@ -254,7 +254,7 @@ int find_ex_command(const char*& cmd, int& len) {
         }
 
         // check for non-alpha command
-        if (p == cmd && strchr("@!=><&~#", *p) != NULL) {
+        if (p == cmd && ascii_haschar("@!=><&~#", *p)) {
             p++;
         }
         len = p - cmd;
@@ -473,7 +473,7 @@ const char* skip_flags(const char* cmdline, int cmdidx) {
         return cmdline;
     }
 
-    while (strchr("lp#", *cmdline) != NULL) {
+    while (ascii_haschar("lp#", *cmdline)) {
         cmdline++;
         if (ascii_iswhite(*cmdline)) {
             throw msg(cmdline, "Trailing whitespace");
@@ -539,39 +539,40 @@ const char* separate_nextcmd(const char* cmdline, int cmdidx) {
 }
 
 int do_one_cmd(const char* cmdline, ExLexem& lexem) {
+start:
     int hasrange;
     const char* rangep;
-    for (;;) {
-        // "#!anything" is handled like a comment.
-        if (cmdline[0] == '#' && cmdline[1] == '!') {
-            return false;
-        }
 
-        // 1. Skip comment lines and leading white space and colons.
-        // 2. Handle command modifiers.
-        cmdline = skip_command_modifiers(cmdline);
+    // "#!anything" is handled like a comment.
+    if (cmdline[0] == '#' && cmdline[1] == '!') {
+        return false;
+    }
 
-        // 3. Skip over the range to find the command.
-        hasrange = 0;
-        rangep = NULL;
-        if (*skip_colon_white(cmdline) == '*') { // Reuse visual area as range
-            hasrange = 1;
-            rangep = skip_colon_white(cmdline);
-            cmdline = skipwhite(rangep + 1);
-        } else {
-            rangep = skipwhite(cmdline);
-            cmdline = skip_range(rangep, hasrange);
-            cmdline = skip_colon_white(cmdline);
-        }
-        // ignore comment and empty lines
-        const char* p = skipwhite(cmdline);
-        if (ends_excmd(*p) && *p != '|') {
-            return false;
-        }
+    // 1. Skip comment lines and leading white space and colons.
+    // 2. Handle command modifiers.
+    cmdline = skip_command_modifiers(cmdline);
+
+    // 3. Skip over the range to find the command.
+    hasrange = 0;
+    rangep = NULL;
+    if (*skip_colon_white(cmdline) == '*') { // Reuse visual area as range
+        hasrange = 1;
+        rangep = skip_colon_white(cmdline);
+        cmdline = skipwhite(rangep + 1);
+    } else {
+        rangep = skipwhite(cmdline);
+        cmdline = skip_range(rangep, hasrange);
+        cmdline = skip_colon_white(cmdline);
+    }
+
+    if (*cmdline == '|') {
         // Loop back for next command
-        if (*p != '|') {
-            break;
-        }
+        ++cmdline;
+        goto start;
+    }
+    if (ends_excmd(*cmdline)) {
+        // Ignore comment and empty lines
+        return false;
     }
 
     const char* namep = cmdline;

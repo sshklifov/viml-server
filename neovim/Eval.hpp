@@ -36,6 +36,9 @@ struct EvalFactory {
         exprs.clear();
     }
 
+    EvalExpr** begin() { return exprs.begin(); }
+    EvalExpr** end() { return exprs.end(); }
+
     void setEvaluate(int state) {
         evaluate = state;
     }
@@ -176,7 +179,7 @@ EvalExpr* get_expanded_part(const char*& arg, bool allow_scope, EvalFactory& fac
 
 /// Expands out the 'magic' {}'s in a variable/function name.
 /// Accumulates the expanded parts from get_expanded_part.
-EvalExpr* accum_expanded(const char*& arg, EvalExpr* res, EvalFactory& factory);
+EvalExpr* accum_expanded(const char*& arg, const char* start, EvalExpr* res, EvalFactory& factory);
 
 /// Allocate an expression invoking the function.
 ///

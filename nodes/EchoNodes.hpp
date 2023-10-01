@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BaseNode.hpp"
-#include <Eval.hpp>
 
 struct EchoNode : public BaseNode {
     EchoNode(const ExLexem& lexem) : BaseNode(lexem) {}
@@ -23,6 +22,5 @@ struct EchoNode : public BaseNode {
     static const int id = CMD_echo;
 
 private:
-    EvalFactory f;
     Vector<EvalExpr*> exprs;
 };

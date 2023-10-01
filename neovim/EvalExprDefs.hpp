@@ -9,7 +9,6 @@ struct TernaryExpr : public EvalExpr {
 
     int getId() override { return expr_ternary; }
 
-private:
     EvalExpr* cond;
     EvalExpr* left;
     EvalExpr* right;
@@ -22,7 +21,6 @@ struct LogicOpExpr : public EvalExpr {
 
     int getId() override { return expr_logic; }
 
-private:
     EvalExpr* lhs;
     EvalExpr* rhs;
     Type op;
@@ -34,7 +32,6 @@ struct CmpOpExpr : public EvalExpr {
 
     int getId() override { return expr_compare; }
 
-private:
     EvalExpr* lhs;
     EvalExpr* rhs;
     int enumOp;
@@ -47,7 +44,6 @@ struct BinOpExpr : public EvalExpr {
 
     int getId() override { return expr_arith; }
 
-private:
     EvalExpr* lhs;
     EvalExpr* rhs;
     char op;
@@ -58,7 +54,6 @@ struct PrefixOpExpr : public EvalExpr {
 
     int getId() override { return expr_prefix; }
 
-private:
     EvalExpr* val;
     char op;
 };
@@ -68,7 +63,6 @@ struct IndexExpr : public EvalExpr {
 
     int getId() override { return expr_index; }
 
-private:
     EvalExpr* what;
     EvalExpr* index;
 };
@@ -79,7 +73,6 @@ struct IndexRangeExpr : public EvalExpr {
 
     int getId() override { return expr_index2; }
 
-private:
     EvalExpr* what;
     EvalExpr* from;
     EvalExpr* to;
@@ -90,18 +83,19 @@ struct InvokeExpr : public EvalExpr {
 
     int getId() override { return expr_invoke; }
 
-private:
     EvalExpr* name;
     Vector<EvalExpr*> args;
 };
 
 struct SymbolExpr : public EvalExpr {
-    SymbolExpr(EvalExpr* name) : name(name) {}
+    SymbolExpr(EvalExpr* name, const char* s, int n) : name(name), begin(s), end(s + n) {}
+    SymbolExpr(EvalExpr* name, const char* begin, const char* end) : name(name), begin(begin), end(end) {}
 
-    int getId() override { return expr_name; }
+    int getId() override { return expr_symbol; }
 
-private:
     EvalExpr* name;
+    const char* begin;
+    const char* end;
 };
 
 struct LiteralExpr : public EvalExpr {
@@ -111,7 +105,6 @@ struct LiteralExpr : public EvalExpr {
 
     int getId() override { return expr_literal; }
 
-private:
     int type;
     FStr lit;
 };
@@ -121,7 +114,6 @@ struct ListExpr : public EvalExpr {
 
     int getId() override { return expr_list; }
 
-private:
     Vector<EvalExpr*> elems;
 };
 
@@ -138,7 +130,6 @@ struct DictExpr : public EvalExpr {
 
     int getId() override { return expr_dict; }
 
-private:
     Vector<Pair> entries;
 };
 
@@ -147,7 +138,6 @@ struct NestedExpr : public EvalExpr {
 
     int getId() override { return expr_nest; }
 
-private:
     EvalExpr* expr;
 };
 
@@ -156,7 +146,6 @@ struct LambdaExpr : public EvalExpr {
 
     int getId() override { return expr_lambda; }
 
-private:
     Vector<FStr> args;
     EvalExpr* body;
 };

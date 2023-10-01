@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BaseNode.hpp"
-#include <Eval.hpp>
 
 struct IfNode : public GroupNode {
     IfNode(const ExLexem& lexem) : GroupNode(lexem), cond(nullptr), elseIfNode(nullptr) {}
@@ -28,7 +27,6 @@ struct IfNode : public GroupNode {
 
     GroupNode* elseIfNode;
 private:
-    EvalFactory f;
     EvalExpr* cond;
 };
 

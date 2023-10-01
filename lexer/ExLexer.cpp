@@ -31,7 +31,15 @@ bool ExLexer::lexNext(ExLexem& res, DiagnosticReporter& rep) {
         }
     }
     // Parse a new ExLexem
-    while (!program.empty()) {
+    for (;;) {
+        // Skip empty lines. NB top() will return '\0' if empty
+        while (*program.top() == '\n') {
+            program.pop();
+        }
+        if (program.empty()) {
+            return false;
+        }
+
         Locator locator;
         CmdlineCreator cmdlineCreator(contStorage, locator);
 
@@ -69,5 +77,4 @@ bool ExLexer::lexNext(ExLexem& res, DiagnosticReporter& rep) {
             rep.error(std::move(m.message), range);
         }
     }
-    return false;
 }

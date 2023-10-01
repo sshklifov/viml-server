@@ -10,7 +10,7 @@ struct EvalExpr {
         expr_index,
         expr_index2,
         expr_invoke,
-        expr_name,
+        expr_symbol,
         expr_literal,
         expr_list,
         expr_dict,
