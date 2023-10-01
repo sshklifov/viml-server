@@ -591,16 +591,50 @@ int otherMain(int argc, char** argv) {
     return 0;
 }
 
-int main(int argc, char** argv) {
-    otherMain(argc, argv);
+#include <sys/stat.h>
+
+int test(const char* file) {
+    /* printf("Processing %s\n", file); */
+    /* fflush(stdout); */
+
+    struct stat st;
+    stat(file, &st);
+    int len = st.st_size;
+    char* buf = new char[len + 1];
+
+    FILE* fp = fopen(file, "r");
+    fread(buf, 1, len, fp);
+    buf[len] = 0;
+    fclose(fp);
+
+    SyntaxTree ast;
+    ast.reload(buf);
+
+    for (BaseNode* node : ast.f) {
+        for (EvalExpr* expr : node->f) {
+            if (expr->getId() == EvalExpr::expr_symbol) {
+                SymbolExpr* sym = static_cast<SymbolExpr*>(expr);
+                bool special = false;
+                for (const char* p = sym->begin; p != sym->end; ++p) {
+                    if (*p == '{') {
+                        special = true;
+                        break;
+                    }
+                }
+                if (special) {
+                    int len = sym->end - sym->begin;
+                    printf("%.*s\n", len, sym->begin);
+                }
+            }
+        }
+    }
+
+    delete[] buf;
     return 0;
 }
 
-int test() {
-    /* SyntaxTree ast; */
-    /* ast.reloadFromFile(TEST_FILE, digs); */
-    /* Block* letBlock = root->body[0]; */
-    /* EvalFactory factory; */
-    /* EvalCommand* result = parse(letBlock->lexem, factory); */
+int main(int argc, char** argv) {
+    test(argv[1]);
+    /* otherMain(argc, argv); */
     return 0;
 }

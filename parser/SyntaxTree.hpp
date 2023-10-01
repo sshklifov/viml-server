@@ -51,7 +51,7 @@ struct SyntaxTree {
 
     BaseNode* findNode(const Position& pos);
 
-private:
+public:
     DiagnosticReporter rep; //< Diagnostics found during parse of AST
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations
     NodeFactory f; //< Holds memory for the created nodes
