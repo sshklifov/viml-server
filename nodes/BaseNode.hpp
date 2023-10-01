@@ -1,11 +1,10 @@
 #pragma once
 
 #include <ExLexem.hpp>
-#include <ExCmdsDefs.hpp>
-#include <DoCmdUtil.hpp>
-#include <Eval.hpp>
-
 #include <DiagnosticReporter.hpp>
+
+#include <DoCmd.hpp>
+#include <Eval.hpp>
 
 #include <functional>
 
@@ -39,12 +38,12 @@ struct BaseNode {
     }
     
     virtual Range range() {
-        if (parseErrors) {
-            return lex.locator.resolve();
+        if (!parseErrors) {
+            // Use a smaller range in case of '|' separation
+            return lex.locator.resolve(lex.name, lex.nextcmd);
         } else {
-            int start = lex.name - lex.cmdline;
-            int end = lex.nextcmd - lex.cmdline;
-            return lex.locator.resolve(start, end);
+            // Fallback to full range, no commands after '|' separator
+            return lex.locator.resolve();
         }
     }
 

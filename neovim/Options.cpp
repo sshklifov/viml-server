@@ -1,12 +1,12 @@
 #include "Options.hpp"
-#include "EvalUtil.hpp"
+
 #include <cstring>
 
 #define NUM_OPTIONS 683
 
 struct OptionDefinition {
     const char* name;
-    int type;
+    VarType type;
 };
 
 extern OptionDefinition options[NUM_OPTIONS];
@@ -14,7 +14,7 @@ extern OptionDefinition options[NUM_OPTIONS];
 int quickTab[23] = {0, 20, 53, 115, 133, 161, 213, 231, 249, 285, 289,
     295, 322, 370, 376, 382, 410, 414, 438, 550, 600, 612, 632, };
 
-int get_option_type(const char* name, int n) {
+VarType get_option_type(const char* name, int n) {
     if (n == 4 && name[0] == 't' && name[1] == '_' && name[2] != NUL && name[3] != NUL) {
         return VAR_STRING; // t_xx/termcap option
     }

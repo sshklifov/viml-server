@@ -4,8 +4,7 @@
 // eval.c: Expression evaluation.
 
 #include "Eval.hpp"
-#include "EvalUtil.hpp"
-#include "DoCmdUtil.hpp"
+#include "SkipFuncs.hpp"
 #include "Options.hpp"
 
 #include <cassert>
@@ -18,7 +17,7 @@
 
 const char* skip_expr(const char* arg) {
     EvalFactory dummy;
-    dummy.setEvaluate(0);
+    dummy.setEvaluate(EvalFactory::EVAL_NONE);
     eval1(arg, dummy);
     return arg;
 }
@@ -125,11 +124,14 @@ EvalExpr* eval4(const char*& arg, EvalFactory& factory) {
 
     // If there is a comparative operator, use it.
     if (type != EXPR_UNKNOWN) {
-        int mod = 0;
+        exprcase_T mod = CASE_OPTION;
         // extra '?' appended: ignore case
         // extra '#' appended: match case
-        if (arg[len] == '?' || arg[len] == '#') {
-            mod = arg[len];
+        if (arg[len] == '?') {
+            mod = CASE_IGNORE;
+            len++;
+        } else if (arg[len] == '#') {
+            mod = CASE_MATCH;
             len++;
         }
 
@@ -217,14 +219,13 @@ EvalExpr* eval8(const char*& arg, EvalFactory& factory) {
                     int len = get_luafunc_name_len(arg + 6);
                     if (len > 0) {
                         const char* p = arg + 6 + len;
-                        name = factory.create<LiteralExpr>(VAR_STRING, arg, p);
-                        name = factory.create<SymbolExpr>(name, arg, p);
+                        name = factory.create<SymbolExpr>(arg, p);
                         arg = p;
                     } else {
                         throw msg(arg, "Missing name after ->");
                     }
                 } else {
-                    name = get_name(arg, 1, factory);
+                    name = get_id(arg, factory);
                 }
             }
             // Common code for both methods
@@ -263,7 +264,6 @@ EvalExpr* eval8(const char*& arg, EvalFactory& factory) {
 
 EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     EvalExpr* expr;
-
     int not_done = false;
     switch (*arg) {
     // Number constant.
@@ -277,7 +277,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     case '7':
     case '8':
     case '9': {
-        int type = VAR_UNKNOWN;
+        VarType type = VAR_UNKNOWN;
         const char* p = skip_numerical(arg, type);
         expr = factory.create<LiteralExpr>(type, arg, p);
         arg = p;
@@ -349,7 +349,11 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     if (not_done) {
         // Must be a variable or function name.
         // Can also be a curly-braces kind of name: {expr}.
-        expr = get_name(arg, 1, factory);
+        if (eval_isnamec1(*arg) || *arg == '{') {
+            expr = get_id(arg, factory);
+        } else {
+            throw msg(arg, "Invalid expression");
+        }
     }
 
     return expr;
@@ -497,8 +501,11 @@ EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factor
     if (*arg != '}' && !literal) {
         EvalExpr* expr = eval1(arg, factory);
         if (*arg == '}') {
+            throw msg(arg, "TODO: Hard case to solve");
+#if 0
             ++arg;
             return accum_expanded(arg, start, expr, factory);
+#endif
         } else {
             if (*arg != ':') {
                 throw msg(arg, "Missing colon in Dictionary");
@@ -554,33 +561,45 @@ EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factor
     return factory.create<DictExpr>(std::move(dict));
 }
 
-EvalExpr* get_expanded_part(const char*& arg, bool allow_scope, EvalFactory& factory) {
-    int len = get_id_len(arg, allow_scope);
-    if (len > 0) {
-        EvalExpr* res = factory.create<LiteralExpr>(VAR_STRING, arg, len);
-        arg += len;
-        return res;
-    } else if (*arg == '{') {
-        arg++;
-        EvalExpr* expr = eval1(arg, factory);
-        if (*arg != '}') {
-            throw msg(arg, "Expecting end of curly braces name '}'");
-        }
-        arg++;
-        return expr;
-    } else {
-        throw msg(arg, "Bad name");
+EvalExpr* get_id(const char*& arg, EvalFactory& factory) {
+    const char* start = arg;
+    if (*start == AUTOLOAD_CHAR) {
+        throw msg(start, "Expecting path");
+    } else if (*start == ':') {
+        throw msg(start, "Expecting scope");
+    } else if (ascii_isdigit(*start)) {
+        throw msg(start, "Bad name");
     }
-}
 
-EvalExpr* accum_expanded(const char*& arg, const char* start, EvalExpr* res, EvalFactory& factory) {
-    if (eval_isnamec1(*arg) || *arg == '#' || *arg == '{') {
-        EvalExpr* part = get_expanded_part(arg, 0, factory);
-        res = factory.create<BinOpExpr>(res, part, '.');
-        return accum_expanded(arg, start, res, factory);
-    } else {
-        return factory.create<SymbolExpr>(res, start, arg);
+    // No curly expansions
+    int has_scope = 0;
+    int len = get_id_part_len(start, arg, has_scope);
+    if (len > 0 && start[len] != '{') {
+        arg += len;
+        EvalExpr* res = factory.create<SymbolExpr>(start, arg);
+        return res;
     }
+    arg += len;
+
+    FStr pattern(start, arg);
+    EvalFactory depNames(EvalFactory::EVAL_SYMBOLS_ONLY);
+    while (eval_isnamec(*arg) || *arg == '{') {
+        if (*arg == '{') {
+            pattern.append("{}");
+            arg++; //< Skip the '{'
+            eval1(arg, depNames);
+            if (*arg != '}') {
+                throw msg(arg, "Expecting end of curly braces name '}'");
+            }
+            arg++; //< Skip the '}'
+        } else {
+            int len = get_id_part_len(start, arg, has_scope);
+            pattern.append(arg, len);
+            arg += len;
+        }
+    }
+    // TODO
+    return factory.create<SymbolExpr>(start, arg, std::move(pattern), std::move(depNames));
 }
 
 EvalExpr* get_func(const char*& arg, EvalExpr* name, EvalExpr* base, EvalFactory& factory) {
@@ -639,14 +658,8 @@ EvalExpr* get_index(const char*& arg, EvalExpr* var, EvalFactory& factory) {
     }
 }
 
-EvalExpr* get_name(const char*& arg, bool allow_scope, EvalFactory& factory) {
-    const char* start = arg;
-    EvalExpr* part = get_expanded_part(arg, allow_scope, factory);
-    return accum_expanded(arg, start, part, factory);
-}
-
 EvalExpr* get_var_indexed(const char*& p, EvalFactory& f) {
-    EvalExpr* res = get_name(p, 1, f);
+    EvalExpr* res = get_id(p, f);
     while (*p == '[' || *p == '.') {
         if (*p == '[') {
             res = get_index(p, res, f);
@@ -669,7 +682,7 @@ EvalExpr* get_var_special(const char*& arg, EvalFactory& factory) {
     if (*arg == '&') {
         const char* p = skip_option_scope(arg);
         int len = get_option_len(p);
-        int type = get_option_type(p, len);
+        VarType type = get_option_type(p, len);
         if (type == VAR_UNKNOWN) {
             throw msg(arg, "Unknown option");
         }

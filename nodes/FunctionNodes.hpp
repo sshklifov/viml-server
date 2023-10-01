@@ -1,6 +1,7 @@
 #pragma once
 
 #include "BaseNode.hpp"
+#include "SkipFuncs.hpp"
 
 // flags used in uf_flags
 #define FC_ABORT    0x01          // abort function on error

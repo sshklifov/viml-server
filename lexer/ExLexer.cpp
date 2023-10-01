@@ -1,10 +1,11 @@
 #include <ExLexer.hpp>
 
-#include <EvalUtil.hpp>
+#include <Eval.hpp>
 #include <DoCmd.hpp>
-#include <OptionDefs.hpp>
+#include <Config.hpp>
 #include <Message.hpp>
 
+#include <cstring>
 #include <cassert>
 
 bool ExLexer::reload(const char* str) {
@@ -40,10 +41,8 @@ bool ExLexer::lexNext(ExLexem& res, DiagnosticReporter& rep) {
             return false;
         }
 
-        Locator locator;
-        CmdlineCreator cmdlineCreator(contStorage, locator);
-
-        cmdlineCreator.concat(program.top(), program.lineNumber(), 0);
+        CmdlineCreator creator(contStorage);
+        creator.concat(program.top(), program.lineNumber(), 0);
         program.pop();
 
         if (!cpo_no_cont) {
@@ -58,22 +57,22 @@ bool ExLexer::lexNext(ExLexem& res, DiagnosticReporter& rep) {
                 if (codeCont) {
                     ++line; //< Remove continuation character
                     int col = line - program.top();
-                    cmdlineCreator.concat(line, program.lineNumber(), col);
+                    creator.concat(line, program.lineNumber(), col);
                 }
                 program.pop();
             }
         }
 
-        const char* cmdline = cmdlineCreator.finish();
+        CmdlineResolver resolver;
+        const char* cmdline = creator.finish(resolver);
         try {
             if (do_one_cmd(cmdline, res)) {
-                res.cmdline = cmdline;
-                res.locator = locator;
+                res.locator = std::move(resolver);
                 return true;
             }
         } catch (msg& m) {
             int pos = m.ppos - cmdline;
-            Range range = locator.resolve(pos, pos + 1);
+            Range range = resolver.resolve(pos, pos + 1);
             rep.error(std::move(m.message), range);
         }
     }

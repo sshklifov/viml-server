@@ -1,8 +1,7 @@
 #pragma once
 
-#include <NodeDefs.hpp>
-
 #include <ExLexer.hpp>
+#include <NodeDefs.hpp>
 #include <DiagnosticReporter.hpp>
 
 struct NodeFactory {

@@ -95,37 +95,14 @@ typedef struct cmdname {
 
 /// Arguments used for Ex commands.
 struct exarg {
-  char *arg;                    ///< argument of the command
-  char **args;                  ///< starting position of command arguments
-  size_t *arglens;              ///< length of command arguments
-  size_t argc;                  ///< number of command arguments
-  char *nextcmd;                ///< next command (NULL if none)
-  char *cmd;                    ///< the name of the command (except for :make)
-  char **cmdlinep;              ///< pointer to pointer of allocated cmdline
-  int cmdidx;                   ///< the index for the command
-  unsigned argt;                ///< flags for the command
-  int skip;                     ///< don't execute the command, only parse it
-  int forceit;                  ///< true if ! present
-  int addr_count;               ///< the number of addresses given
-  int line1;                    ///< the first line number
-  int line2;                    ///< the second line number or count
-  cmd_addr_T addr_type;         ///< type of the count/range
-  int flags;                    ///< extra flags after count: EXFLAG_
-  char *do_ecmd_cmd;            ///< +command arg to be used in edited file
-  int do_ecmd_lnum;             ///< the line number in an edited file
-  int append;                   ///< true with ":w >>file" command
-  int usefilter;                ///< true with ":w !command" and ":r!command"
-  int amount;                   ///< number of '>' or '<' for shift command
-  int regname;                  ///< register name (NUL if none)
-  int force_bin;                ///< 0, FORCE_BIN or FORCE_NOBIN
-  int read_edit;                ///< ++edit argument
-  int mkdir_p;                  ///< ++p argument
-  int force_ff;                 ///< ++ff= argument (first char of argument)
-  int force_enc;                ///< ++enc= argument (index in cmd[])
-  int bad_char;                 ///< BAD_KEEP, BAD_DROP or replacement byte
-  int useridx;                  ///< user command index
-  char *errmsg;                 ///< returned error message
-  void *cookie;                 ///< argument for getline()
+    const char* name;
+    const char* qargs;
+    const char* nextcmd;
+
+    int namelen;
+    int bang;
+    int range;
+    int cmdidx;
 };
 
 #define FORCE_BIN 1             // ":edit ++bin file"
@@ -163,18 +140,6 @@ enum {
 #define WSP_BELOW       0x40    // put new window below/right
 #define WSP_ABOVE       0x80    // put new window above/left
 #define WSP_NEWLOC      0x100   // don't copy location list
-
-/// Magicness of a pattern, used by regexp code.
-/// The order and values matter:
-///  magic <= MAGIC_OFF includes MAGIC_NONE
-///  magic >= MAGIC_ON  includes MAGIC_ALL
-typedef enum {
-  MAGIC_NONE = 1,  ///< "\V" very unmagic
-  MAGIC_OFF = 2,   ///< "\M" or 'magic' off
-  MAGIC_ON = 3,    ///< "\m" or 'magic'
-  MAGIC_ALL = 4,   ///< "\v" very magic
-} magic_T;
-
 
 extern CommandDefinition cmdnames[549];
 

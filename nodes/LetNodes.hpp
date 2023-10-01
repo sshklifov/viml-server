@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BaseNode.hpp"
-#include <EvalUtil.hpp>
+#include "SkipFuncs.hpp"
 
 struct LetNode : public BaseNode {
     LetNode(const ExLexem& lexem) : BaseNode(lexem) { reset(); }
@@ -156,7 +156,7 @@ struct LockvarNode : public BaseNode {
 
         try {
             if (*p >= '0' && *p <= '9') {
-                int type = VAR_UNKNOWN;
+                VarType type = VAR_UNKNOWN;
                 const char* q = skip_numerical(p, type);
                 depth = FStr(p, q);
                 p = skipwhite(q);

@@ -1,6 +1,7 @@
 #include "SyntaxTree.hpp"
 
 #include <Stack.hpp>
+#include <ExCmdsDefs.hpp>
 #include <ExCmdsEnum.hpp>
 
 void SyntaxTree::reload(const char* str) {

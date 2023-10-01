@@ -48,7 +48,7 @@ struct CmdlineCreator {
     CmdlineCreator(const CmdlineCreator&) = delete;
     CmdlineCreator(CmdlineCreator&&) = delete;
 
-    CmdlineCreator(CmdlineStorage& storage, Locator& loc) : storage(storage), loc(loc) {
+    CmdlineCreator(CmdlineStorage& storage) : storage(storage) {
         beginPtr = storage.buf + storage.len;
         writePtr = beginPtr;
     }
@@ -64,23 +64,24 @@ struct CmdlineCreator {
         loc.addFragment(line, col, len);
     }
 
-    const char* finish() {
+    const char* finish(CmdlineResolver& res) {
         *writePtr = '\n';
         ++writePtr;
 
         int numWritten = writePtr - beginPtr;
         storage.len += numWritten;
         assert(storage.len <= storage.maxlen);
-        const char* res = beginPtr;
+        const char* cmdline = beginPtr;
 
+        res = std::move(loc);
         writePtr = nullptr;
         beginPtr = nullptr;
-        return res;
+        return cmdline;
     }
 
 private:
     CmdlineStorage& storage;
-    Locator& loc;
+    CmdlineResolver loc;
 
     char* beginPtr;
     char* writePtr;

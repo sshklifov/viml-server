@@ -1,8 +1,84 @@
 #pragma once
 
-#include <EvalExpr.hpp>
 #include <Vector.hpp>
 #include <FStr.hpp>
+
+#include <NeovimBase.hpp>
+
+struct EvalExpr {
+    enum {
+        expr_ternary,
+        expr_logic,
+        expr_compare,
+        expr_arith,
+        expr_prefix,
+        expr_index,
+        expr_index2,
+        expr_invoke,
+        expr_symbol,
+        expr_literal,
+        expr_list,
+        expr_dict,
+        expr_nest,
+        expr_lambda
+    };
+
+    virtual ~EvalExpr() {}
+
+    virtual int getId() = 0;
+};
+
+struct SymbolExpr;
+
+struct EvalFactory {
+    enum Mode { EVAL_ALL, EVAL_SYMBOLS_ONLY, EVAL_NONE };
+
+    EvalFactory() : evaluate(EVAL_ALL) {}
+    EvalFactory(Mode mode) : evaluate(mode)  {}
+
+    EvalFactory(const EvalFactory&) = delete;
+
+    ~EvalFactory() {
+        clear();
+    }
+
+    void clear() {
+        for (EvalExpr* expr : exprs) {
+            delete expr;
+        }
+        exprs.clear();
+    }
+
+    int count() const { return exprs.count(); }
+    EvalExpr* operator[](int i) { return exprs[i]; }
+
+    Mode setEvaluate(Mode mode) {
+        Mode old = evaluate;
+        evaluate = mode;
+        return old;
+    }
+
+    template <typename T, typename ... Args>
+    T* create(Args&&... args) {
+        if (evaluate == EVAL_ALL) {
+            T* res = new T(std::forward<Args>(args)...);
+            exprs.emplace(res);
+            return res;
+        } else {
+            return nullptr;
+        }
+    }
+
+    // Regular symbol construction
+    SymbolExpr* create(const char* begin, const char* end);
+
+    // Curly expansion construction TODO change or remove
+    SymbolExpr* create(const char* begin, const char* end, FStr pat, EvalFactory&& dep);
+
+private:
+    Mode evaluate;
+    Vector<EvalExpr*> exprs;
+};
 
 struct TernaryExpr : public EvalExpr {
     TernaryExpr(EvalExpr* cond, EvalExpr* left, EvalExpr* right) : cond(cond), left(left), right(right) {}
@@ -27,15 +103,15 @@ struct LogicOpExpr : public EvalExpr {
 };
 
 struct CmpOpExpr : public EvalExpr {
-    CmpOpExpr(EvalExpr* lhs, EvalExpr* rhs, int enumOp, char mod = 0) :
+    CmpOpExpr(EvalExpr* lhs, EvalExpr* rhs, exprtype_T enumOp, exprcase_T mod = CASE_OPTION) :
         lhs(lhs), rhs(rhs), enumOp(enumOp), mod(mod) {}
 
     int getId() override { return expr_compare; }
 
     EvalExpr* lhs;
     EvalExpr* rhs;
-    int enumOp;
-    char mod;
+    exprtype_T enumOp;
+    exprcase_T mod;
 };
 
 struct BinOpExpr : public EvalExpr {
@@ -88,24 +164,30 @@ struct InvokeExpr : public EvalExpr {
 };
 
 struct SymbolExpr : public EvalExpr {
-    SymbolExpr(EvalExpr* name, const char* s, int n) : name(name), begin(s), end(s + n) {}
-    SymbolExpr(EvalExpr* name, const char* begin, const char* end) : name(name), begin(begin), end(end) {}
+    SymbolExpr(const char* begin, const char* end) : begin(begin), end(end) {}
+    SymbolExpr(const char* begin, const char* end, FStr pat, EvalFactory&& f) :
+        begin(begin), end(end), pat(std::move(pat)) {
+            depSyms = std::move(f);
+        }
 
     int getId() override { return expr_symbol; }
 
-    EvalExpr* name;
-    const char* begin;
-    const char* end;
+    const char* begin; //< Start of symbol
+    const char* end; //< End of symbol
+    FStr pat; //< Pattern of curly expansion. Empty for regular symbols
+    // TODO factory
+    EvalFactory depSyms; //< Dependent symbols if curly expansion occured
 };
 
+// TODO redo
 struct LiteralExpr : public EvalExpr {
-    LiteralExpr(int type, FStr tok) : lit(std::move(tok)), type(type) {}
-    LiteralExpr(int type, const char* begin, const char* end) : lit(begin, end), type(type) {}
-    LiteralExpr(int type, const char* lit, int len) : lit(lit, len), type(type) {}
+    LiteralExpr(VarType type, FStr tok) : lit(std::move(tok)), type(type) {}
+    LiteralExpr(VarType type, const char* begin, const char* end) : lit(begin, end), type(type) {}
+    LiteralExpr(VarType type, const char* lit, int len) : lit(lit, len), type(type) {}
 
     int getId() override { return expr_literal; }
 
-    int type;
+    VarType type;
     FStr lit;
 };
 

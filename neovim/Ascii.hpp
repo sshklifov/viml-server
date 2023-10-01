@@ -2,6 +2,8 @@
 
 #include <cctype>
 
+#define AUTOLOAD_CHAR '#'
+
 #define CHAR_ORD_LOW(x)   ((uint8_t)(x) - 'a')
 #define CHAR_ORD_UP(x)    ((uint8_t)(x) - 'A')
 

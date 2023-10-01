@@ -1,63 +1,6 @@
 #pragma once
 
-#include "Ascii.hpp"
-
-#include <EvalExprDefs.hpp>
-#include <DiagnosticReporter.hpp>
-
-/// types for expressions.
-typedef enum {
-  EXPR_UNKNOWN = 0,
-  EXPR_EQUAL,         ///< ==
-  EXPR_NEQUAL,        ///< !=
-  EXPR_GREATER,       ///< >
-  EXPR_GEQUAL,        ///< >=
-  EXPR_SMALLER,       ///< <
-  EXPR_SEQUAL,        ///< <=
-  EXPR_MATCH,         ///< =~
-  EXPR_NOMATCH,       ///< !~
-  EXPR_IS,            ///< is
-  EXPR_ISNOT,         ///< isnot
-} exprtype_T;
-
-struct EvalFactory {
-    EvalFactory() : evaluate(1) {}
-    EvalFactory(const EvalFactory&) = delete;
-    EvalFactory(EvalFactory&&) = delete;
-
-    ~EvalFactory() {
-        clear();
-    }
-
-    void clear() {
-        for (EvalExpr* expr : exprs) {
-            delete expr;
-        }
-        exprs.clear();
-    }
-
-    EvalExpr** begin() { return exprs.begin(); }
-    EvalExpr** end() { return exprs.end(); }
-
-    void setEvaluate(int state) {
-        evaluate = state;
-    }
-
-    template <typename T, typename ... Args>
-    T* create(Args&&... args) {
-        if (evaluate) {
-            T* res = new T(std::forward<Args>(args)...);
-            exprs.emplace(res);
-            return res;
-        } else {
-            return nullptr;
-        }
-    }
-
-private:
-    Vector<EvalExpr*> exprs;
-    int evaluate;
-};
+#include "EvalExprDefs.hpp"
 
 /// Skip over an expression at "arg".
 ///
@@ -173,13 +116,8 @@ EvalExpr* get_lambda(const char*& arg, bool force, EvalFactory& factory);
 /// will be expanded.
 EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factory);
 
-/// Generates one expansion of 'magic' {}'.
-/// Must be called multiple times while to expand all 'magic's.
-EvalExpr* get_expanded_part(const char*& arg, bool allow_scope, EvalFactory& factory);
-
 /// Expands out the 'magic' {}'s in a variable/function name.
-/// Accumulates the expanded parts from get_expanded_part.
-EvalExpr* accum_expanded(const char*& arg, const char* start, EvalExpr* res, EvalFactory& factory);
+EvalExpr* get_id(const char*& arg, EvalFactory& factory);
 
 /// Allocate an expression invoking the function.
 ///
@@ -191,9 +129,6 @@ EvalExpr* get_func(const char*& arg, EvalExpr* name, EvalExpr* base, EvalFactory
 /// Evaluate an "[expr]" or "[expr:expr]" index.
 /// "*arg" points to the '['.
 EvalExpr* get_index(const char*& arg, EvalExpr* var, EvalFactory& factory);
-
-/// Parse one variable/function name
-EvalExpr* get_name(const char*& arg, bool allow_scope, EvalFactory& factory);
 
 /// Parse one name with trailing indices
 EvalExpr* get_var_indexed(const char*& arg, EvalFactory& factory);

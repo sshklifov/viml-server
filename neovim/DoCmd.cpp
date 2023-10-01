@@ -1,16 +1,9 @@
 #include "DoCmd.hpp"
-#include "DoCmdUtil.hpp"
-
+#include "SkipFuncs.hpp"
 #include "ExCmdsDefs.hpp"
-#include "ExCmdsEnum.hpp"
-#include "OptionDefs.hpp"
 
-#include "Ascii.hpp"
-#include "Charset.hpp"
-#include "Eval.hpp"
-#include "EvalUtil.hpp"
-#include "Message.hpp"
 #include "Mbyte.hpp"
+#include "Eval.hpp" //< skip_expr
 
 #include <cstring>
 #include <cassert>
@@ -536,6 +529,28 @@ const char* separate_nextcmd(const char* cmdline, int cmdidx) {
     }
     assert(*p == NUL);
     return NULL;
+}
+
+bool checkforcmd(const char*& pp, const char* cmd, int len) {
+    int i;
+    for (i = 0; cmd[i] != NUL; i++) {
+        if (cmd[i] != pp[i]) {
+            break;
+        }
+    }
+    if (i >= len && !ASCII_ISALPHA(pp[i])) {
+        pp = skipwhite(pp + i);
+        return true;
+    }
+    return false;
+}
+
+int ends_excmd(int c) {
+    return c == '"' || c == NUL || c == '|' || c == '\n';
+}
+
+int ends_notrlcom(int c) {
+    return c == NUL || c == '|' || c == '\n';
 }
 
 int do_one_cmd(const char* cmdline, ExLexem& lexem) {

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "BaseNode.hpp"
-#include <EvalUtil.hpp>
 
 struct WhileNode : public GroupNode {
     WhileNode(const ExLexem& lexem) : GroupNode(lexem), cond(nullptr) {}

@@ -1,25 +1,8 @@
 #pragma once
 
-#include "Ascii.hpp"
-#include "Charset.hpp"
-#include "Message.hpp"
+#include "NeovimBase.hpp"
 
 #include <cstring>
-
-/// VimL variable types, for use in typval_T.v_type
-typedef enum {
-  VAR_UNKNOWN = 0,  ///< Unknown (unspecified) value.
-  VAR_NUMBER,       ///< Number, .v_number is used.
-  VAR_STRING,       ///< String, .v_string is used.
-  VAR_FUNC,         ///< Function reference, .v_string is used as function name.
-  VAR_LIST,         ///< List, .v_list is used.
-  VAR_DICT,         ///< Dictionary, .v_dict is used.
-  VAR_FLOAT,        ///< Floating-point value, .v_float is used.
-  VAR_BOOL,         ///< true, false
-  VAR_SPECIAL,      ///< Special value (null), .v_special is used.
-  VAR_PARTIAL,      ///< Partial, .v_partial is used.
-  VAR_BLOB,         ///< Blob, .v_blob is used.
-} VarType;
 
 /// @return  whether `regname` is a valid name of a yank register.
 ///
@@ -162,7 +145,7 @@ static const char* skip_number(const char *arg, int& maybe_float) {
 }
 
 /// Skip a Number, Float or Blob
-static const char* skip_numerical(const char* arg, int& type) {
+static const char* skip_numerical(const char* arg, VarType& type) {
     if (*arg == '0' && (arg[1] == 'z' || arg[1] == 'Z')) {
         type = VAR_BLOB;
         return skip_blob(arg);
@@ -219,7 +202,6 @@ static int get_literal_key_len(const char* arg) {
 /// @return  true if character "c" can be used in a variable or function name.
 ///                  Does not include '{' or '}' for magic braces.
 static bool eval_isnamec(int c) {
-    const char AUTOLOAD_CHAR = '#';
     return ASCII_ISALNUM(c) || c == '_' || c == ':' || c == AUTOLOAD_CHAR;
 }
 
@@ -275,36 +257,174 @@ static int get_fname_script_len(const char* p) {
 
 /// Get the length of the name of a function or internal variable.
 ///
-/// @param arg          is advanced to the first non-white character after the name.
-/// @param allow_scope  name can be preceded by a scope
+/// @param id           Original start of the identifier
+/// @param part         Current identifier position (following curly expansion)
+/// @param has_scope    Scope was found in a previous call
 ///
-/// @return  0 if something is wrong.
-static int get_id_len(const char* arg, int allow_scope) {
-    const char* p = arg;
-    if (allow_scope) {
-        int len = get_fname_script_len(p);
-        if (len > 0) {
-            // literal "<SID>", "s:" or "<SNR>"
-            p += len;
+/// @return  The length of the name
+static int get_id_part_len(const char* id, const char* part, int& has_scope) {
+    // TODO heavy tests / debugging
+    const char* p = part;
+    if (!has_scope && id == part) {
+        if (get_fname_script_len(p) == 5) {
+            // literal "<SID>" or "<SNR>"
+            p += 5;
+            has_scope = true;
         }
     }
-    if (eval_isnamec1(*p)) {
-        p++;
-        // Find the end of the name.
-        for (; eval_isnamec(*p); p++) {
-            if (*p == ':') {
-                if (!allow_scope) {
-                    break;
-                }
-                const char* namespace_char = "abglstvw";
-                // "s:" is start of "s:var", but "n:" is not and can be used in
-                // slice "[n:]". Also "xx:" is not a namespace.
-                int len = p - arg;
-                if (len > 1 || (len == 1 && !ascii_haschar(namespace_char, *arg))) {
-                    break;
-                }
+    // Find the end of the name.
+    for (; eval_isnamec(*p); p++) {
+        if (*p == ':') {
+            if (has_scope) {
+                throw msg(p, "Multiple scopes");
+            }
+            has_scope = 1;
+
+            const char* namespace_char = "abglstvw";
+            // "s:" is start of "s:var", but "n:" is not and can be used in
+            // slice "[n:]". Also "xx:" is not a namespace.
+            int len = p - id;
+            if (*id != '{' && !(len == 1 && ascii_haschar(namespace_char, *id))) {
+                throw msg(p, "Bad scope, expecting one of {}", namespace_char);
             }
         }
     }
-    return p - arg;
+    return p - part;
+}
+
+/// Check for class item. "pp" points to the '['.
+// Returns a pointer to after the item.
+// If no item is found, skip the '['.
+static const char* skip_class(const char* pp) {
+    /// Check for a character class name "[:name:]".
+    const char* class_names[] = {
+        "alnum:]",
+        "alpha:]",
+        "blank:]",
+        "cntrl:]",
+        "digit:]",
+        "graph:]",
+        "lower:]",
+        "print:]",
+        "punct:]",
+        "space:]",
+        "upper:]",
+        "xdigit:]",
+        "tab:]",
+        "return:]",
+        "backspace:]",
+        "escape:]",
+        "ident:]",
+        "keyword:]",
+        "fname:]",
+    };
+    if (pp[1] == ':') {
+        for (int i = 0; i < 19; i++) {
+            int n = strlen(class_names[i]);
+            if (strncmp(pp + 2, class_names[i], n) == 0) {
+                return pp + n + 2;
+            }
+        }
+    }
+
+    // Check for an equivalence class name "[=a=]".
+    if (pp[1] == '=' && pp[2] != NUL) {
+        if (pp[3] == '=' && pp[4] == ']')
+        return pp += 5;
+    }
+
+    // Check for a collating element "[.a.]".  "pp" points to the '['.
+    if (pp[1] == '.' && pp[2] != NUL) {
+        if (pp[3] == '.' && pp[4] == ']') {
+            return pp + 5;
+        }
+    }
+
+    return pp + 1;
+}
+
+/// Skip over a "[]" range.
+/// "p" must point to the character after the '['.
+static const char* skip_anyof(const char* p) {
+    // REGEXP_INRANGE contains all characters which are always special in a []
+    // range after '\'.
+    // REGEXP_ABBR contains all characters which act as abbreviations after '\'.
+    // These are:
+    //  \n  - New line (NL).
+    //  \r  - Carriage Return (CR).
+    //  \t  - Tab (TAB).
+    //  \e  - Escape (ESC).
+    //  \b  - Backspace (Ctrl_H).
+    //  \d  - Character code in decimal, eg \d123
+    //  \o  - Character code in octal, eg \o80
+    //  \x  - Character code in hex, eg \x4a
+    //  \u  - Multibyte character code, eg \u20ac
+    //  \U  - Long multibyte character code, eg \U12345678
+    char REGEXP_INRANGE[] = "]^-n\\";
+    char REGEXP_ABBR[] = "nrtebdoxuU";
+
+    if (*p == '^') {  // Complement of range.
+        p++;
+    }
+    if (*p == ']' || *p == '-') {
+        p++;
+    }
+    while (*p != NUL && *p != ']') {
+        if (*p == '-') {
+            p++;
+            if (*p != ']' && *p != NUL) {
+                p++;
+            }
+        } else if (*p == '\\'
+            && (ascii_haschar(REGEXP_INRANGE, p[1])
+                || (!reg_cpo_lit && ascii_haschar(REGEXP_ABBR, p[1])))) {
+            p += 2;
+        } else if (*p == '[') {
+            p = skip_class(p);
+        } else {
+            p++;
+        }
+    }
+
+    if (*p == NUL) {
+        throw msg("Expecting ]", p);
+    }
+    return p;
+}
+
+/// Skip past regular expression.
+/// Stop at end of "startp" or where "delim" is found ('/', '?', etc).
+/// Take care of characters with a backslash in front of it.
+/// Skip strings inside [ and ].
+static const char* skip_regexp(const char* p, int delim) {
+    magic_T mymagic;
+    if (magic) {
+        mymagic = MAGIC_ON;
+    } else {
+        mymagic = MAGIC_ON;
+    }
+
+    while (*p != NUL && *p != delim) {
+        if ((p[0] == '[' && mymagic >= MAGIC_ON) || (p[0] == '\\' && p[1] == '[' && mymagic <= MAGIC_OFF)) {
+            p = skip_anyof(p + 1);
+        } else if (p[0] == '\\' && p[1] != NUL) {
+            p++; // skip next character
+            if (*p == 'v') {
+                mymagic = MAGIC_ALL;
+            } else if (*p == 'V') {
+                mymagic = MAGIC_NONE;
+            }
+        }
+        p++;
+    }
+    return p;
+}
+
+/// Call skip_regexp() and when the delimiter does not match give an error
+static const char* skip_regexp_err(const char *startp, int delim) {
+    const char* p = skip_regexp(startp, delim);
+    if (*p != delim) {
+        throw msg(p, "Missing delimiter after search pattern");
+    }
+    return p;
 }

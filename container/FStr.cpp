@@ -12,7 +12,7 @@ FStr::FStr(const char* s) : FStr() {
 }
 
 FStr::FStr(const char* s, int n) : FStr() {
-    if (*s) {
+    if (*s && n) {
         append(s, n);
     }
 }
