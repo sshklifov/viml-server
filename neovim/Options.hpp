@@ -1,15 +1,4 @@
 #pragma once
 
-#include <StringMap.hpp>
-
-struct OptionsMap {
-    OptionsMap();
-
-    int findVarType(const char* name, int len) const;
-
-    static const OptionsMap& getSingleton();
-
-private:
-    StringMap<int> opts;
-    int quickTab[26];
-};
+/// Type of option "opt". VAR_UKNOWN is not a valid option
+int get_option_type(const char *opt, int len);

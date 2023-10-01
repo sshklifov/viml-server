@@ -3,6 +3,7 @@
 
 #include <cinttypes>
 #include <cstdlib>
+#include <cstring>
 
 // Like strcpy() but allows overlapped source and destination.
 #define STRMOVE(d, s)       memmove((d), (s), strlen(s) + 1)

@@ -669,7 +669,7 @@ EvalExpr* get_var_special(const char*& arg, EvalFactory& factory) {
     if (*arg == '&') {
         const char* p = skip_option_scope(arg);
         int len = get_option_len(p);
-        int type = OptionsMap::getSingleton().findVarType(p, len);
+        int type = get_option_type(p, len);
         if (type == VAR_UNKNOWN) {
             throw msg(arg, "Unknown option");
         }
