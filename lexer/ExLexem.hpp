@@ -19,6 +19,8 @@ struct CmdlineResolver {
 
     CmdlineResolver() : cmdline(nullptr) {}
 
+    CmdlineResolver(const char* cmd, Vector<Fragment> frags) : fragments(frags), cmdline(cmd) {}
+
     void addFragment(int line, int col, int entryLen) {
         fragments.emplace(line, col, entryLen);
     }
@@ -73,12 +75,39 @@ struct CmdlineResolver {
         return res;
     }
 
+    const char* reverseResolve(const Position& pos) {
+        int offset = -1;
+        int fragLen = 0;
+        for (int i = 0; i < fragments.count(); ++i) {
+            if (fragments[i].line == pos.line && fragments[i].col <= pos.character) {
+                offset = fragLen + (pos.character - fragments[i].col);
+            }
+            fragLen += fragments[i].fragLen;
+        }
+        if (offset < 0) {
+            return nullptr;
+        } else {
+            return cmdline + offset;
+        }
+    }
+
 private:
     Vector<Fragment> fragments;
     const char* cmdline;
 };
 
 struct ExLexem : public exarg {
+    ExLexem() {
+        name = nullptr;
+        qargs = nullptr;
+        nextcmd = nullptr;
+
+        namelen = 0;
+        bang = false;
+        range = false;
+        cmdidx = CMD_SIZE;
+    }
+
     CmdlineResolver locator;
 };
 

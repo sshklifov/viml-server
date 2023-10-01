@@ -74,7 +74,7 @@ struct BaseNode {
     int parseErrors;
 
 protected:
-    virtual const char* parseArgs(BoundReporter& rep) { return lex.qargs; }
+    virtual const char* parseArgs(BoundReporter&) { return lex.qargs; }
 };
 
 struct GroupNode : public BaseNode {

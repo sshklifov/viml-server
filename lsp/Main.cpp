@@ -353,7 +353,7 @@ struct ReceivingServer : public RespondingServer {
         return ErrorCode::NoError;
     }
 
-    virtual ResponseError preInvokeMethod(const char* methodStr) { return ErrorCode::NoError; }
+    virtual ResponseError preInvokeMethod(const char*) { return ErrorCode::NoError; }
 
 protected:
     MethodMap methods;
@@ -444,7 +444,7 @@ struct Server : public ReceivingServer {
         struct InvokeWrapper {
             InvokeWrapper(NotifNoParams handler) : handler(handler) {}
 
-            void operator()(RespondingServer* self, const rapidjson::Document& doc) {
+            void operator()(RespondingServer* self, const rapidjson::Document&) {
                 (static_cast<Server*>(self)->*handler)();
             }
 
@@ -537,11 +537,15 @@ struct Server : public ReceivingServer {
         }
         BaseNode* node = doc->ast.findNode(referenceParams.position);
         if (node) {
-            FStr line(node->lex.name, node->lex.namelen);
-            respondError(id, ErrorCode::NoError, f("Found this: {}", line));
-        } else {
-            respondError(id, ErrorCode::NoError, "Not found");
+            const char* arg = node->lex.locator.reverseResolve(referenceParams.position);
+            if (arg) {
+                SymbolExpr* expr = node->f.findSymbol(arg);
+                if (expr) {
+                    return respondError(id, ErrorCode::NoError, f("Found this: {}", expr->pat));
+                }
+            }
         }
+        respondError(id, ErrorCode::NoError, "Not found");
     }
 
 private:
@@ -572,12 +576,12 @@ int otherMain(int argc, char** argv) {
     const char* doc = "Vim LSP";
 
     struct argp_option options[] = {
-        {"stdin",  'i', "FILE", 0, "Redirect input LSP messages"},
-        {"stdout", 'o', "FILE", 0, "Redirect output LSP messages"},
-        {0}
+        {"stdin",  'i', "FILE", 0, "Redirect input LSP messages", 0},
+        {"stdout", 'o', "FILE", 0, "Redirect output LSP messages", 0},
+        {}
     };
 
-    struct argp argp = {options, argsParser, argsDoc, doc};
+    struct argp argp = {options, argsParser, argsDoc, doc, NULL, NULL, NULL};
 
     InitOptions init;
     int errnum = argp_parse(&argp, argc, argv, 0, NULL, &init);

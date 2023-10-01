@@ -105,7 +105,7 @@ EvalExpr* get_list(const char*& arg, EvalFactory& factory);
 
 /// Get function arguments.
 /// Advances "arg" to "endchar" on success.
-Vector<FStr> get_function_args(const char*& arg, char endchar, bool force, EvalFactory& factory);
+Vector<SymbolExpr*> get_function_args(const char*& arg, const bool lambda, EvalFactory& factory);
 
 /// Parse a lambda expression and get a Funcref from "arg".
 EvalExpr* get_lambda(const char*& arg, bool force, EvalFactory& factory);

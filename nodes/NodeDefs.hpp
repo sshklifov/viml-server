@@ -15,7 +15,7 @@ struct RootNode : GroupNode {
 
     int getId() override { return CMD_SIZE; }
 
-    void parse(DiagnosticReporter& rep, const char*& nextcmd) override { assert(false); }
+    void parse(DiagnosticReporter&, const char*&) override { assert(false); }
 
     Range range() override {
         Position bad(MAXLNUM, MAXCOL);

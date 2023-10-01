@@ -61,10 +61,10 @@ struct CmdlineCreator {
             ++len;
         }
         assert(len > 0);
-        loc.addFragment(line, col, len);
+        fragments.emplace(line, col, len);
     }
 
-    const char* finish(CmdlineResolver& res) {
+    const char* finish(Vector<CmdlineResolver::Fragment>& res) {
         *writePtr = '\n';
         ++writePtr;
 
@@ -73,7 +73,7 @@ struct CmdlineCreator {
         assert(storage.len <= storage.maxlen);
         const char* cmdline = beginPtr;
 
-        res = std::move(loc);
+        res = std::move(fragments);
         writePtr = nullptr;
         beginPtr = nullptr;
         return cmdline;
@@ -81,10 +81,10 @@ struct CmdlineCreator {
 
 private:
     CmdlineStorage& storage;
-    CmdlineResolver loc;
-
     char* beginPtr;
     char* writePtr;
+
+    Vector<CmdlineResolver::Fragment> fragments;
 };
 
 /// Internal helper for parsing program line by line

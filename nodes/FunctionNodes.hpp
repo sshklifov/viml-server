@@ -75,7 +75,7 @@ struct FunctionNode : public GroupNode {
                 }
             }
             p = skipwhite(p + 1);
-            fargs = get_function_args(p, ')', 1, f);
+            fargs = get_function_args(p, false, f);
             p++;
         } catch (msg& m) {
             rep.error(m);
@@ -110,6 +110,6 @@ struct FunctionNode : public GroupNode {
 
 private:
     EvalExpr* name;
-    Vector<FStr> fargs;
+    Vector<SymbolExpr*> fargs;
     int flags;
 };

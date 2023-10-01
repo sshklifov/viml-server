@@ -37,8 +37,8 @@ struct BufferWriter {
         Object(const Object&) = delete;
         Object(Object&&) = delete;
 
-        int closed;
         BufferWriter& parent;
+        int closed;
     };
 
     BufferWriter(rapidjson::Writer<rapidjson::StringBuffer>& w) : w(w) {}

@@ -27,7 +27,6 @@ EvalExpr* eval1(const char*& arg, EvalFactory& factory) {
     EvalExpr* expr = eval2(arg, factory);
 
     if (arg[0] == '?') {
-        bool result = false;
         // Get the second variable.
         arg = skipwhite(arg + 1);
         EvalExpr* bodyTrue = eval1(arg, factory);
@@ -333,7 +332,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     // nested expression: (expression).
     case '(': {
         arg = skipwhite(arg + 1);
-        EvalExpr* expr = eval1(arg, factory);
+        expr = eval1(arg, factory);
         if (*arg != ')') {
             throw msg(arg, "Missing ')'");
         }
@@ -349,7 +348,7 @@ EvalExpr* eval9(const char*& arg, EvalFactory& factory) {
     if (not_done) {
         // Must be a variable or function name.
         // Can also be a curly-braces kind of name: {expr}.
-        if (eval_isnamec1(*arg) || *arg == '{') {
+        if (eval_isnamec1(*arg) || *arg == '{' || get_fname_script_len(arg) > 0) {
             expr = get_id(arg, factory);
         } else {
             throw msg(arg, "Invalid expression");
@@ -384,54 +383,64 @@ EvalExpr* get_list(const char*& arg, EvalFactory& factory) {
     return factory.create<ListExpr>(std::move(exprs));
 }
 
-Vector<FStr> get_function_args(const char*& arg, char endchar, bool maybe_dict, EvalFactory& factory) {
-    // TODO these two
-    int default_args = false;
-    int varargs = false;
+Vector<SymbolExpr*> get_function_args(const char*& arg, const bool lambda, EvalFactory& factory) {
+    const char endchar = (lambda ? '-' : ')');
 
-    Vector<FStr> res;
+    Vector<SymbolExpr*> res;
     bool any_default = false;
     bool mustend = false;
+    bool maybe_dict = lambda;
 
     // Isolate the arguments: "arg1, arg2, ...)"
     while (*arg != endchar) {
+        const char* varname = arg;
+        int len = 0;
         if (arg[0] == '.' && arg[1] == '.' && arg[2] == '.') {
-            varargs = true;
+            if (lambda) {
+                throw msg(arg, "... not allowed");
+            }
             maybe_dict = false;
             mustend = true;
-            arg += 3;
+
+            len = 3;
+            arg += len;
         } else {
-            int len = 0;
             while (ASCII_ISALNUM(arg[len]) || arg[len] == '_') {
                 len++;
             }
-            FStr a(arg, len);
-            if (a.empty() || isdigit(*a.str()) || a == "firstline" || a == "lastline") {
+            if (len == 0 || isdigit(*arg)
+                || (len == 9 && strncmp("firstline", arg, len) == 0)
+                || (len == 8 && strncmp("lastline", arg, len) == 0)) {
                 if (maybe_dict) {
                     return {};
                 } else {
                     throw msg(arg, "Illegal argument");
                 }
             }
+
             for (int i = 0; i < res.count(); ++i) {
-                if (a == res[i]) {
+                SymbolExpr* other = res[i];
+                if (strncmp(other->pat.str(), varname, len) == 0) {
                     throw msg(arg, "Duplicate argument name");
                 }
             }
-            res.emplace(std::move(a));
             arg += len;
 
             // Skip default args
-            if (default_args && *skipwhite(arg) == '=') {
+            const char* p = skipwhite(arg);
+            if (*p == '=') {
                 maybe_dict = false;
-                arg = skipwhite(arg) + 1;
-                arg = skipwhite(arg);
-                EvalExpr* ret = eval1(arg, factory);
-                // Trim trailing whitespace
-                while (ascii_iswhite(arg[-1])) {
+                any_default = true;
+                if (lambda) {
+                    throw msg(p, "No default arguments allowed");
+                }
+                arg = skipwhite(p + 1);
+                arg = skip_expr(arg); //  TODO don't skip
+                // Trim trailing whitespace, once is enough
+                if (ascii_iswhite(arg[-1])) {
                     arg--;
                 }
-            } else if (default_args && !maybe_dict) {
+            } else if (any_default && !maybe_dict) {
                 throw msg(arg, "Non-default argument follows default argument");
             }
 
@@ -442,7 +451,7 @@ Vector<FStr> get_function_args(const char*& arg, char endchar, bool maybe_dict, 
                 if (ascii_iswhite(*arg) && *skipwhite(arg) == ',') {
                     throw msg(arg, "No white space allowed before ','");
                 } else {
-                    mustend = false;
+                    mustend = true;
                 }
             }
         }
@@ -452,12 +461,14 @@ Vector<FStr> get_function_args(const char*& arg, char endchar, bool maybe_dict, 
                 if (endchar == '-') {
                     throw msg(arg, "Expecting '->'");
                 } else {
-                    throw msg(arg, "Expecting '}'");
+                    throw msg(arg, "Expecting ')'");
                 }
             } else {
                 return {}; // Not a function
             }
         }
+        // Now, finally add the variable
+        res.emplace(factory.create<SymbolExpr>(varname, varname + len));
     }
 
     return res;
@@ -467,7 +478,7 @@ EvalExpr* get_lambda(const char*& arg, bool maybe_dict, EvalFactory& factory) {
     // First, check if this is a lambda expression. "->" must exists.
     const char* orig_arg = arg;
     arg = skipwhite(arg + 1);
-    Vector<FStr> fargs = get_function_args(arg, '-', maybe_dict, factory);
+    Vector<SymbolExpr*> fargs = get_function_args(arg, true, factory);
     if (*arg != '-' || arg[1] != '>') {
         if (maybe_dict) {
             arg = orig_arg;
@@ -496,7 +507,6 @@ EvalExpr* get_dict_or_expand(const char*& arg, bool literal, EvalFactory& factor
     // either an expansion or the first dictionary item.
     // "{}" is an empty Dictionary.
     // "#{abc}" is never a curly-braces expression.
-    const char* start = arg;
     arg = skipwhite(arg + 1);
     if (*arg != '}' && !literal) {
         EvalExpr* expr = eval1(arg, factory);

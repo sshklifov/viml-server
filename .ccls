@@ -4,6 +4,8 @@ clang
 %c -x
 %c c++
 -std=c++17
+-Wall
+-Wextra
 -Iparser
 -Ilexer
 -Ilsp

@@ -63,16 +63,16 @@ bool ExLexer::lexNext(ExLexem& res, DiagnosticReporter& rep) {
             }
         }
 
-        CmdlineResolver resolver;
-        const char* cmdline = creator.finish(resolver);
+        Vector<CmdlineResolver::Fragment> frags;
+        const char* cmdline = creator.finish(frags);
         try {
             if (do_one_cmd(cmdline, res)) {
-                res.locator = std::move(resolver);
+                res.locator.set(cmdline, frags);
                 return true;
             }
         } catch (msg& m) {
-            int pos = m.ppos - cmdline;
-            Range range = resolver.resolve(pos, pos + 1);
+            CmdlineResolver resolver(cmdline, std::move(frags));
+            Range range = resolver.resolve(m.ppos, m.ppos + 1);
             rep.error(std::move(m.message), range);
         }
     }

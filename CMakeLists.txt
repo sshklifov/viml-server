@@ -27,6 +27,8 @@ function(run_bison_generator bison_file bison_cpp)
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endfunction()
 
+add_compile_options(-Wall -Wextra -Wno-unused-function -Wno-class-memaccess)
+
 add_subdirectory(container)
 add_subdirectory(neovim)
 add_subdirectory(lexer)

@@ -90,7 +90,7 @@ private:
         }
         const rapidjson::Value& arr = *val;
         res.resize(arr.Size());
-        for (int i = 0; i < arr.Size(); ++i) {
+        for (unsigned i = 0; i < arr.Size(); ++i) {
             val = &arr[i];
             read(res[i]);
         }

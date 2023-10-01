@@ -3,7 +3,7 @@
 #include "BaseNode.hpp"
 
 struct IfNode : public GroupNode {
-    IfNode(const ExLexem& lexem) : GroupNode(lexem), cond(nullptr), elseIfNode(nullptr) {}
+    IfNode(const ExLexem& lexem) : GroupNode(lexem), elseIfNode(nullptr), cond(nullptr) {}
 
     void enumerate(EnumCallback cb) override {
         GroupNode::enumerate(cb);

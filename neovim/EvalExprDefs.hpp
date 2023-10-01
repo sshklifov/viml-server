@@ -49,6 +49,8 @@ struct EvalFactory {
         exprs.clear();
     }
 
+    SymbolExpr* findSymbol(const char* p);
+
     int count() const { return exprs.count(); }
     EvalExpr* operator[](int i) { return exprs[i]; }
 
@@ -163,27 +165,11 @@ struct InvokeExpr : public EvalExpr {
     Vector<EvalExpr*> args;
 };
 
-struct SymbolExpr : public EvalExpr {
-    SymbolExpr(const char* begin, const char* end) : begin(begin), end(end) {}
-    SymbolExpr(const char* begin, const char* end, FStr pat, EvalFactory&& f) :
-        begin(begin), end(end), pat(std::move(pat)) {
-            depSyms = std::move(f);
-        }
-
-    int getId() override { return expr_symbol; }
-
-    const char* begin; //< Start of symbol
-    const char* end; //< End of symbol
-    FStr pat; //< Pattern of curly expansion. Empty for regular symbols
-    // TODO factory
-    EvalFactory depSyms; //< Dependent symbols if curly expansion occured
-};
-
 // TODO redo
 struct LiteralExpr : public EvalExpr {
-    LiteralExpr(VarType type, FStr tok) : lit(std::move(tok)), type(type) {}
-    LiteralExpr(VarType type, const char* begin, const char* end) : lit(begin, end), type(type) {}
-    LiteralExpr(VarType type, const char* lit, int len) : lit(lit, len), type(type) {}
+    LiteralExpr(VarType type, FStr tok) : type(type), lit(std::move(tok)) {}
+    LiteralExpr(VarType type, const char* begin, const char* end) : type(type), lit(begin, end) {}
+    LiteralExpr(VarType type, const char* lit, int len) : type(type), lit(lit, len) {}
 
     int getId() override { return expr_literal; }
 
@@ -224,10 +210,49 @@ struct NestedExpr : public EvalExpr {
 };
 
 struct LambdaExpr : public EvalExpr {
-    LambdaExpr(Vector<FStr> args, EvalExpr* body) : args(std::move(args)), body(body) {}
+    LambdaExpr(Vector<SymbolExpr*> args, EvalExpr* body) : args(std::move(args)), body(body) {}
 
     int getId() override { return expr_lambda; }
 
-    Vector<FStr> args;
+    Vector<SymbolExpr*> args;
     EvalExpr* body;
 };
+
+struct SymbolExpr : public EvalExpr {
+    SymbolExpr(const char* begin, const char* end) : begin(begin), end(end), pat(begin, end) {}
+    SymbolExpr(const char* begin, const char* end, FStr pat, EvalFactory&& f) :
+        begin(begin), end(end), pat(std::move(pat)) {
+            depSyms = std::move(f);
+        }
+
+    int getId() override { return expr_symbol; }
+
+    const char* begin; //< Start of symbol
+    const char* end; //< End of symbol
+    FStr pat; //< Pattern of curly expansion. Empty for regular symbols
+    EvalFactory depSyms; //< Dependent symbols if curly expansion occured
+};
+
+inline SymbolExpr* EvalFactory::create(const char*, const char*, FStr, EvalFactory&&) { return nullptr; }
+
+inline SymbolExpr* EvalFactory::create(const char* begin, const char* end) {
+    if (evaluate == EVAL_ALL || evaluate == EVAL_SYMBOLS_ONLY) {
+        SymbolExpr* res = new SymbolExpr(begin, end);
+        exprs.emplace(res);
+        return res;
+    } else {
+        return nullptr;
+    }
+}
+
+inline SymbolExpr* EvalFactory::findSymbol(const char* p) {
+    for (EvalExpr* expr : exprs) {
+        if (expr->getId() == EvalExpr::expr_symbol) {
+            SymbolExpr* sym = static_cast<SymbolExpr*>(expr);
+            if (p >= sym->begin && p < sym->end) {
+                return sym;
+            }
+        }
+    }
+    return nullptr;
+}
