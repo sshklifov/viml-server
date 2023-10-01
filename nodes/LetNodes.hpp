@@ -15,7 +15,7 @@ struct LetNode : public BaseNode {
         expr = nullptr;
     }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
 
         /// ":let" list all variable values
@@ -73,7 +73,7 @@ private:
 struct ConstNode : public BaseNode {
     ConstNode(const ExLexem& lexem) : BaseNode(lexem) { expr = nullptr; }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
 
         /// ":const" list all variable values
@@ -122,7 +122,7 @@ private:
 struct UnletNode : public BaseNode {
     UnletNode(ExLexem& lexem) : BaseNode(lexem) {}
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
 
         try {
@@ -155,7 +155,7 @@ private:
 struct LockvarNode : public BaseNode {
     LockvarNode(ExLexem& lexem) : BaseNode(lexem) {}
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
 
         try {

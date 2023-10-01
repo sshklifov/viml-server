@@ -78,7 +78,7 @@ enum class ErrorCode {
 struct ResponseError {
     ResponseError() : code(ErrorCode::NoError) {}
 
-    ResponseError(ErrorCode code, const char* suffix = nullptr) : code(code) {
+    ResponseError(ErrorCode code) : code(code) {
         const char* strCode = "";
         switch (code) {
         case ErrorCode::ParseError:
@@ -109,12 +109,10 @@ struct ResponseError {
             // No message
             return;
         }
-        if (suffix) {
-            message.appendf("{}: {}", strCode, suffix);
-        } else {
-            message.append(strCode);
-        }
+        message = strCode;
     }
+
+    ResponseError(ErrorCode code, FStr m) : code(code), message(m) {}
 
     
     void write(BufferWriter& wr) const {
@@ -227,6 +225,10 @@ struct RespondingServer : public EchoingServer {
         o.close();
 
         respondStr(output);
+    }
+
+    void respondError(const RequestId& id, ErrorCode code, FStr msg) {
+        respondError(id, ResponseError(code, std::move(msg)));
     }
 
 private:
@@ -373,6 +375,7 @@ struct Server : public ReceivingServer {
 
         registerMethod("initialize", &Server::initialize);
         registerMethod("shuwdown", &Server::shutdown);
+        registerMethod("textDocument/references", &Server::references);
 
         registerNotification("initialized", &Server::initialized);
         registerNotification("textDocument/didOpen", &Server::didOpen);
@@ -527,10 +530,22 @@ struct Server : public ReceivingServer {
         }
     }
 
+    void references(const RequestId& id, const ReferenceParams& referenceParams) {
+        WorkingDocument* doc = docs.find(referenceParams.textDocument);
+        if (!doc) {
+            respondError(id, ErrorCode::InvalidParams, "Document not opened");
+        }
+        BaseNode* node = doc->ast.findNode(referenceParams.position);
+        if (node) {
+            FStr line(node->lex.name, node->lex.namelen);
+            respondError(id, ErrorCode::NoError, f("Found this: {}", line));
+        } else {
+            respondError(id, ErrorCode::NoError, "Not found");
+        }
+    }
+
 private:
     enum State {NOT_INITIALIZED, INITIALIZED, SHUTDOWN, EXIT} state;
-
-    SyntaxTree ast;
     DocumentMap docs;
 };
 

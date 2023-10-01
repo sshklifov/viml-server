@@ -25,7 +25,7 @@ struct TryNode : public GroupNode {
 struct CatchNode : public GroupNode {
     CatchNode(const ExLexem& lexem) : GroupNode(lexem) {}
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
         try {
             if (ends_excmd(*p)) {  // no argument, catch all errors
@@ -57,7 +57,7 @@ struct FinallyNode : public GroupNode {
 struct ThrowNode : public BaseNode {
     ThrowNode(const ExLexem& lexem) : BaseNode(lexem) { expr = nullptr; }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
         try {
             expr = eval1(p, f);

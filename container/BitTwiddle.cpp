@@ -43,6 +43,15 @@ unsigned logOfTwo(unsigned x) {
     return r;
 }
 
+unsigned logOfTwo(uint64_t x) {
+    unsigned tt = x >> 32;
+    if (tt) {
+        return 32 + logOfTwo(tt);
+    } else {
+        return logOfTwo(x);
+    }
+}
+
 unsigned logOfTen(unsigned x) {
     unsigned t = ((logOfTwo(x) + 1) * 1233) >> 12;
     unsigned r = t - (x < tablePowTen[t]);

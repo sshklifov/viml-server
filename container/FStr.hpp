@@ -21,6 +21,7 @@ struct FStr {
     void append(int d);
     void append(unsigned u);
     void append(char c);
+    void append(void* p);
     void append(const char* s);
     void append(const char* s, int n);
     void append(const FStr& other);
@@ -79,7 +80,7 @@ private:
 };
 
 template <typename... Types>
-FStr format(const char* fmt, const Types&... args) {
+FStr f(const char* fmt, const Types&... args) {
     FStr res;
     res.appendf(fmt, args...);
     return res;

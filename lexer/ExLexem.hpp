@@ -9,6 +9,7 @@ struct ExLexem {
         cmdline = nullptr;
         name = nullptr;
         qargs = nullptr;
+        nextcmd = nullptr;
         namelen = 0;
         bang = 0;
         range = 0;
@@ -18,6 +19,7 @@ struct ExLexem {
     const char* cmdline;
     const char* name;
     const char* qargs;
+    const char* nextcmd;
 
     Locator locator;
 

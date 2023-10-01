@@ -538,7 +538,7 @@ const char* separate_nextcmd(const char* cmdline, int cmdidx) {
     return NULL;
 }
 
-int do_one_cmd(const char* cmdline, const char*& nextcmd, ExLexem& lexem) {
+int do_one_cmd(const char* cmdline, ExLexem& lexem) {
     int hasrange;
     const char* rangep;
     for (;;) {
@@ -652,14 +652,14 @@ int do_one_cmd(const char* cmdline, const char*& nextcmd, ExLexem& lexem) {
     cmdline = skip_count(cmdline, cmdidx);
     cmdline = skip_flags(cmdline, cmdidx);
 
+    // 6.9. Fill in ExLexem attributes
+
     // Check for '|' to separate commands and '"' to start comments.
     // Don't do this for ":read !cmd" and ":write !cmd".
-    nextcmd = NULL;
+    lexem.nextcmd = NULL;
     if ((cmd_argt & EX_TRLBAR) && !usefilter) {
-        nextcmd = separate_nextcmd(cmdline, cmdidx);
+        lexem.nextcmd = separate_nextcmd(cmdline, cmdidx);
     }
-
-    // 6.9. Fill in ExLexem attributes
     lexem.bang = forceit;
     lexem.range = hasrange;
     lexem.cmdidx = cmdidx;

@@ -168,7 +168,11 @@ static bool checkforcmd(const char*& pp, const char* cmd, int len) {
 /// Check if "c" is:
 /// - end of command
 /// - comment
-/// - command separator
+// - command separator
 static int ends_excmd(int c) {
-    return c == NUL || c == '|' || c == '"' || c == '\n';
+    return c == '"' || c == NUL || c == '|' || c == '\n';
+}
+
+static int ends_notrlcom(int c) {
+    return c == NUL || c == '|' || c == '\n';
 }

@@ -114,6 +114,20 @@ struct DidChangeTextDocumentParams {
     Vector<TextDocumentContentChangeEvent> contentChanges;
 };
 
+
+struct TextDocumentIdentifier {
+
+    void read(ValueReader& rd) {
+        rd.readMember("uri", uri);
+    }
+
+    /**
+     * The text document's URI.
+     */
+    FStr uri;
+
+};
+
 struct DidCloseParams {
 
     void read(ValueReader& rd) {
@@ -123,16 +137,23 @@ struct DidCloseParams {
     /**
      * The document that was closed.
      */
-    struct TextDocumentIdentifier {
+    TextDocumentIdentifier textDocument;
+};
 
-        void read(ValueReader& rd) {
-            rd.readMember("uri", uri);
-        }
+struct ReferenceParams {
 
-        /**
-         * The text document's URI.
-         */
-        FStr uri;
+    void read(ValueReader& rd) {
+        rd.readMember("textDocument", textDocument);
+        rd.readMember("position", position);
+    }
 
-    } textDocument;
+    /**
+     * The text document.
+     */
+    TextDocumentIdentifier textDocument;
+
+    /**
+     * The position inside the text document.
+     */
+    Position position;
 };

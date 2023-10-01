@@ -6,7 +6,7 @@
 struct CallNode : public BaseNode {
     CallNode(const ExLexem& lexem) : BaseNode(lexem) { expr = nullptr; }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
         try {
             expr = eval8(p, f);
@@ -30,9 +30,9 @@ private:
 struct ReturnNode : public BaseNode {
     ReturnNode(const ExLexem& lexem) : BaseNode(lexem) { expr = nullptr; }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
-        if (ends_excmd(*p)) {
+        if (ends_notrlcom(*p)) {
             return p;
         }
         try {
@@ -54,7 +54,7 @@ private:
 struct EvalNode : public BaseNode {
     EvalNode(const ExLexem& lexem) : BaseNode(lexem) { expr = nullptr; }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
         try {
             expr = eval1(p, f);
@@ -77,11 +77,11 @@ private:
 struct ExecuteNode : public BaseNode {
     ExecuteNode(const ExLexem& lexem) : BaseNode(lexem) { expr = nullptr; }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
         try {
             for (;;) {
-                if (ends_excmd(*p)) {
+                if (ends_notrlcom(*p)) {
                     return p;
                 }
                 EvalExpr* next = eval1(p, f);

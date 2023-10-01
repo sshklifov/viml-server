@@ -188,7 +188,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_bmodified] = {
     .cmd_name = "bmodified",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<IfNode>,
     .cmd_argt = 17667L,
     .cmd_addr_type = ADDR_OTHER
   },
@@ -338,7 +338,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_catch] = {
     .cmd_name = "catch",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<CatchNode>,
     .cmd_argt = 17563652L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -836,13 +836,13 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_else] = {
     .cmd_name = "else",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<ElseNode>,
     .cmd_argt = 17563904L,
     .cmd_addr_type = ADDR_NONE
   },
   [CMD_elseif] = {
     .cmd_name = "elseif",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<ElseIfNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -950,7 +950,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_finally] = {
     .cmd_name = "finally",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<FinallyNode>,
     .cmd_argt = 17563904L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -998,13 +998,13 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_for] = {
     .cmd_name = "for",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<ForNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },
   [CMD_function] = {
     .cmd_name = "function",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<FunctionNode>,
     .cmd_argt = 17563654L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -2894,7 +2894,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_try] = {
     .cmd_name = "try",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<TryNode>,
     .cmd_argt = 17563904L,
     .cmd_addr_type = ADDR_NONE
   },
@@ -3110,7 +3110,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_while] = {
     .cmd_name = "while",
-    .cmd_func = nullptr,
+    .cmd_func = defaultNodeCreator<WhileNode>,
     .cmd_argt = 17565700L,
     .cmd_addr_type = ADDR_NONE
   },

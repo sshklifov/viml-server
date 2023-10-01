@@ -46,6 +46,8 @@ struct SyntaxTree {
     void reload(const char* str);
     const Vector<Diagnostic>& diagnostics() const;
 
+    BaseNode* findNode(const Position& pos);
+
 public:
     DiagnosticReporter rep; //< Diagnostics found during parse of AST
     ExLexer lexer; //< Holds memory for the created ExLexems and allows resolving locations

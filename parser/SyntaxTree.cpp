@@ -14,10 +14,9 @@ void SyntaxTree::reload(const char* str) {
     Stack<GroupNode*> nodes;
     nodes.emplace(root); //< Guarantees that stack is never empty
 
-    const char* nextcmd = nullptr;
     ExLexem lexem;
     BoundReporter boundRep(rep, lexem);
-    while (lexer.lexNext(lexem, nextcmd, rep)) {
+    while (lexer.lexNext(lexem, rep)) {
         GroupNode* grpNode = nullptr;
         int not_done = 0;
         switch (lexem.cmdidx) {
@@ -166,7 +165,7 @@ void SyntaxTree::reload(const char* str) {
         }
 
         if (grpNode) {
-            grpNode->parse(rep, nextcmd);
+            grpNode->parse(rep, lexem.nextcmd);
         } else if (not_done) {
             ex_func_T func = cmdnames[lexem.cmdidx].cmd_func;
             if (func) {
@@ -174,7 +173,7 @@ void SyntaxTree::reload(const char* str) {
                 if (exNode) {
                     factory.add(exNode);
                     nodes.top()->body.emplace(exNode);
-                    exNode->parse(rep, nextcmd);
+                    exNode->parse(rep, lexem.nextcmd);
                 }
             }
         }
@@ -202,4 +201,8 @@ void SyntaxTree::reload(const char* str) {
 
 const Vector<Diagnostic>& SyntaxTree::diagnostics() const {
     return rep.get();
+}
+
+BaseNode* SyntaxTree::findNode(const Position& pos) {
+    return root->findNode(pos);
 }

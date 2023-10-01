@@ -62,6 +62,15 @@ struct DocumentMap {
         return present;
     }
 
+    WorkingDocument* find(const TextDocumentIdentifier& id) {
+        int pos = docs.find(id.uri);
+        if (pos < 0) {
+            return nullptr;
+        } else {
+            return &docs[pos];
+        }
+    }
+
 private:
     StringMap<WorkingDocument> docs;
 };

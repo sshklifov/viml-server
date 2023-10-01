@@ -95,8 +95,8 @@ private:
     Vector<EvalExpr*> args;
 };
 
-struct NameExpr : public EvalExpr {
-    NameExpr(EvalExpr* name) : name(name) {}
+struct SymbolExpr : public EvalExpr {
+    SymbolExpr(EvalExpr* name) : name(name) {}
 
     int getId() override { return expr_name; }
 

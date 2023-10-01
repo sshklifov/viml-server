@@ -16,12 +16,12 @@ bool ExLexer::reload(const char* str) {
 
 // TODO carriage returns
 
-bool ExLexer::lexNext(ExLexem& res, const char*& nextcmd, DiagnosticReporter& rep) {
-    if (nextcmd) {
+bool ExLexer::lexNext(ExLexem& res, DiagnosticReporter& rep) {
+    if (res.nextcmd) {
         // "res" is a command that has a bar separator
-        const char* cmdline = nextcmd;
+        const char* cmdline = res.nextcmd;
         try {
-            if (do_one_cmd(cmdline, nextcmd, res)) {
+            if (do_one_cmd(cmdline, res)) {
                 return true;
             }
         } catch (msg& m) {
@@ -58,7 +58,7 @@ bool ExLexer::lexNext(ExLexem& res, const char*& nextcmd, DiagnosticReporter& re
 
         const char* cmdline = cmdlineCreator.finish();
         try {
-            if (do_one_cmd(cmdline, nextcmd, res)) {
+            if (do_one_cmd(cmdline, res)) {
                 res.cmdline = cmdline;
                 res.locator = locator;
                 return true;

@@ -22,21 +22,42 @@ struct BaseNode {
 
     virtual void parse(DiagnosticReporter& rep, const char*& nextcmd) {
         BoundReporter boundRep(rep, lex);
-        const char* p = parseInternal(boundRep);
-        if (!p) {
-            return;
-        }
-        // Check for trailing bar
-        int cmd_argt = cmdnames[lex.cmdidx].cmd_argt;
-        if (!(cmd_argt & EX_TRLBAR)) {
+        const char* p = parseArgs(boundRep);
+        parseErrors = (p == nullptr);
+        if (!parseErrors) {
+            // Check for trailing bar
+            assert(!(cmdnames[lex.cmdidx].cmd_argt & EX_TRLBAR));
+            assert(lex.nextcmd == nullptr);
+            lex.nextcmd = p;
             if (ends_excmd(*p)) {
                 if (*p == '|') {
-                    assert(!nextcmd && "Overwriting result from do_one_cmd");
                     nextcmd = p + 1;
                 }
             } else {
                 boundRep.error("Trailing characters", p);
             }
+        }
+    }
+    
+    virtual Range range() {
+        if (parseErrors) {
+            return lex.locator.resolve();
+        } else {
+            int start = lex.name - lex.cmdline;
+            int end = lex.nextcmd - lex.cmdline;
+            return lex.locator.resolve(start, end);
+        }
+    }
+
+    virtual Range bbox() {
+        return range();
+    }
+
+    virtual BaseNode* findNode(const Position& p) {
+        if (range().has(p)) {
+            return this;
+        } else {
+            return nullptr;
         }
     }
 
@@ -51,9 +72,10 @@ struct BaseNode {
     }
 
     ExLexem lex;
+    int parseErrors;
 
 protected:
-    virtual const char* parseInternal(BoundReporter& rep) {
+    virtual const char* parseArgs(BoundReporter& rep) {
         return lex.qargs;
     }
 };
@@ -65,6 +87,37 @@ struct GroupNode : public BaseNode {
         cb(this);
         for (BaseNode* node : body) {
             node->enumerate(cb);
+        }
+    }
+
+    Range bbox() override {
+        Range res = range();
+        if (!body.empty()) {
+            res.join(body.last()->bbox());
+        }
+        return res;
+    }
+
+    BaseNode* findNode(const Position& p) override {
+        if (range().has(p)) {
+            return this;
+        }
+
+        int lo = 0;
+        int hi = body.count();
+        while (hi - lo > 1) {
+            int mid = (lo + hi) / 2;
+            int loc = body[mid]->range().locate(p);
+            if (loc < 0) {
+                hi = mid;
+            } else {
+                lo = mid;
+            }
+        }
+        if (!body.empty()) {
+            return body[lo]->findNode(p);
+        } else {
+            return nullptr;
         }
     }
 

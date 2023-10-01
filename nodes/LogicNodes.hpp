@@ -13,7 +13,7 @@ struct IfNode : public GroupNode {
         }
     }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         try {
             const char* p = lex.qargs;
             cond = eval1(p, f);

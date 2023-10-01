@@ -125,7 +125,7 @@ struct ExLexer {
     ExLexer(ExLexer&&) = delete;
 
     bool reload(const char* str);
-    bool lexNext(ExLexem& res, const char*& nextcmd, DiagnosticReporter& rep);
+    bool lexNext(ExLexem& res, DiagnosticReporter& rep);
 
 private:
     // Input program allowing to access current and next lines.

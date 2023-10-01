@@ -29,7 +29,7 @@ struct FunctionNode : public GroupNode {
         flags = 0;
     }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         const char* p = lex.qargs;
 
         // ":function" without argument: list functions.

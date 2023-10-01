@@ -218,7 +218,7 @@ EvalExpr* eval8(const char*& arg, EvalFactory& factory) {
                     arg = skip_luafunc_name(lua_funcname);
                     if (arg > lua_funcname) {
                         name = factory.create<LiteralExpr>(VAR_STRING, lua_funcname, arg);
-                        name = factory.create<NameExpr>(name);
+                        name = factory.create<SymbolExpr>(name);
                     } else {
                         throw msg(arg, "Missing name after ->");
                     }
@@ -577,7 +577,7 @@ EvalExpr* accum_expanded(const char*& arg, EvalExpr* res, EvalFactory& factory) 
         res = factory.create<BinOpExpr>(res, part, '.');
         return accum_expanded(arg, res, factory);
     } else {
-        return factory.create<NameExpr>(res);
+        return factory.create<SymbolExpr>(res);
     }
 }
 

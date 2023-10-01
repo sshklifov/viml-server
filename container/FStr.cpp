@@ -82,8 +82,34 @@ void FStr::append(char c) {
     s[len] = '\0';
 }
 
+void FStr::append(void* ptr) {
+    allocAtLeast(len + 18);
+    uint64_t addr = (uint64_t)ptr;
+    s[len++] = '0';
+    s[len++] = 'x';
+
+    if (addr == 0) {
+        s[len++] = '0';
+    } else {
+        unsigned shiftBase = (logOfTwo(addr) >> 2) << 2;
+        while (shiftBase) {
+            unsigned dig = addr >> shiftBase;
+            if (dig <= 9) {
+                s[len++] = '0' + dig;
+            } else {
+                s[len++] = 'a' + (dig - 10);
+            }
+            addr -= (static_cast<uint64_t>(dig) << shiftBase);
+            shiftBase -= 4;
+        }
+    }
+    s[len] = '\0';
+}
+
 void FStr::append(const char* other) {
-    append(other, strlen(other));
+    if (other) {
+        append(other, strlen(other));
+    }
 }
 
 void FStr::append(const char* other, int n) {
@@ -95,37 +121,40 @@ void FStr::append(const char* other, int n) {
 
 void FStr::append(int d) {
     allocAtLeast(len + 11);
-    if (d < 0) {
-        s[len++] = '-';
-        d = -d;
+
+    if (d == 0) {
+        s[len] = '0';
+    } else {
+        if (d < 0) {
+            s[len++] = '-';
+            d = -d;
+        }
+        int divBase = prevPowerOfTen(d);
+        while (d > 0) {
+            int dig = d / divBase;
+            s[len++] = '0' + dig;
+            d -= divBase * dig;
+            divBase /= 10;
+        }
     }
 
-    int divBase = prevPowerOfTen(d);
-    while (d > 9) {
-        int dig = d / divBase;
-        s[len++] = '0' + dig;
-        d -= divBase * dig;
-        divBase /= 10;
-    }
-    s[len++] = '0' + d;
     s[len] = '\0';
 }
 
 void FStr::append(unsigned u) {
+    allocAtLeast(len + 10);
     if (u == 0) {
-        append('0' + u);
-        return;
+        s[len++] = '0';
+    } else {
+        int divBase = prevPowerOfTen(u);
+        while (u > 0) {
+            unsigned dig = u / divBase;
+            s[len++] = '0' + dig;
+            u -= divBase * dig;
+            divBase /= 10;
+        }
     }
 
-    allocAtLeast(len + 10);
-    int divBase = prevPowerOfTen(u);
-    while (u > 9) {
-        unsigned dig = u / divBase;
-        s[len++] = '0' + dig;
-        u -= divBase * dig;
-        divBase /= 10;
-    }
-    s[len++] = '0' + u;
     s[len] = '\0';
 }
 

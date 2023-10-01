@@ -7,7 +7,7 @@
 struct WhileNode : public GroupNode {
     WhileNode(const ExLexem& lexem) : GroupNode(lexem), cond(nullptr) {}
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         try {
             const char* p = lex.qargs;
             cond = eval1(p, f);
@@ -35,7 +35,7 @@ struct ForNode : public GroupNode {
         elems = nullptr;
     }
 
-    const char* parseInternal(BoundReporter& rep) override {
+    const char* parseArgs(BoundReporter& rep) override {
         try {
             const char* arg = lex.qargs;
             vars = get_var_list(arg, 1, semicolon, f);

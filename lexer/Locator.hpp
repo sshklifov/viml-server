@@ -26,6 +26,7 @@ struct Locator {
     }
 
     Range resolve(int begin, int end) const {
+        assert(!fragments.empty());
         assert(begin < end);
         Range res;
         int strBegin = 0;
@@ -52,6 +53,7 @@ struct Locator {
     }
 
     Range resolve() const {
+        assert(!fragments.empty());
         Range res;
         res.start.line = fragments[0].line;
         res.start.character = fragments[0].col;
