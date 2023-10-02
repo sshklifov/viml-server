@@ -2,7 +2,7 @@
 
 #include <TextDocument.hpp>
 #include <SyntaxTree.hpp>
-#include <StringMap.hpp>
+#include <SmallStringMap.hpp>
 
 struct WorkingDocument {
     WorkingDocument(const DidOpenTextDocumentParams::TextDocumentItem& textDoc) {
@@ -72,5 +72,5 @@ struct DocumentMap {
     }
 
 private:
-    StringMap<WorkingDocument> docs;
+    SmallStringMap<WorkingDocument> docs;
 };

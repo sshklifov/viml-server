@@ -687,8 +687,8 @@ EvalExpr* get_var_indexed(const char*& p, EvalFactory& f) {
     return res;
 }
 
-EvalExpr* get_var_special(const char*& arg, EvalFactory& factory) {
-    EvalExpr* expr;
+SymbolExpr* get_var_special(const char*& arg, EvalFactory& factory) {
+    SymbolExpr* expr;
     if (*arg == '&') {
         const char* p = skip_option_scope(arg);
         int len = get_option_len(p);
@@ -696,7 +696,7 @@ EvalExpr* get_var_special(const char*& arg, EvalFactory& factory) {
         if (type == VAR_UNKNOWN) {
             throw msg(arg, "Unknown option");
         }
-        expr = factory.create<LiteralExpr>(type, arg, p + len);
+        expr = factory.create<SymbolExpr>(arg, p + len);
         arg = p + len;
     } else if (*arg == '$') {
         const char* p = arg + 1; // Skip $
@@ -704,7 +704,7 @@ EvalExpr* get_var_special(const char*& arg, EvalFactory& factory) {
         if (len == 0) {
             throw msg(arg, "Expecting environment name");
         }
-        expr = factory.create<LiteralExpr>(VAR_STRING, arg, p + len);
+        expr = factory.create<SymbolExpr>(arg, p + len);
         arg = p + len;
     } else {
         int len = valid_yank_reg(arg[1]);
@@ -712,13 +712,13 @@ EvalExpr* get_var_special(const char*& arg, EvalFactory& factory) {
             throw msg(arg, "Invalid register name");
         }
         len++; // include the "@"
-        expr = factory.create<LiteralExpr>(VAR_STRING, arg, len);
+        expr = factory.create<SymbolExpr>(arg, arg + len);
         arg += len;
     }
     return expr;
 }
 
-EvalExpr* get_var_one(const char*& arg, bool allow_special, EvalFactory& factory) {
+EvalExpr* get_var_list_one(const char*& arg, bool allow_special, EvalFactory& factory) {
     if (*arg == '@' || *arg == '$' || *arg == '&') {
         if (!allow_special) {
             throw msg(arg, "Options, settings and env variables not allowed");
@@ -737,7 +737,7 @@ Vector<EvalExpr*> get_var_list(const char*& arg, bool allow_special, int& semico
         // "[var, var]": find the matching ']'.
         for (;;) {
             arg = skipwhite(arg + 1); // skip whites after '[', ';' or ','
-            vars.emplace(get_var_one(arg, allow_special, factory));
+            vars.emplace(get_var_list_one(arg, allow_special, factory));
             arg = skipwhite(arg);
             if (*arg == ']') {
                 break;
@@ -752,7 +752,7 @@ Vector<EvalExpr*> get_var_list(const char*& arg, bool allow_special, int& semico
         }
         arg++;
     } else {
-        vars.emplace(get_var_one(arg, allow_special, factory));
+        vars.emplace(get_var_list_one(arg, allow_special, factory));
     }
     return vars;
 }

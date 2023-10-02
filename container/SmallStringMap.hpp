@@ -4,7 +4,7 @@
 #include "FStr.hpp"
 
 template <typename Value>
-struct StringMap {
+struct SmallStringMap {
     struct Entry {
         const char* key;
         Value val;
@@ -33,7 +33,7 @@ struct StringMap {
         map.remove(pos);
     }
 
-    int find(const char* key) {
+    int find(const char* key) const {
         for (int i = 0; i < map.count(); ++i) {
             if (strcmp(key, map[i].key) == 0) {
                 return i;
@@ -42,7 +42,7 @@ struct StringMap {
         return -1;
     }
 
-    int find(const FStr& f) {
+    int find(const FStr& f) const {
         return find(f.str());
     }
 
@@ -58,5 +58,8 @@ struct StringMap {
         return map[pos].val;
     }
 
+private:
     Vector<Entry> map;
 };
+
+

@@ -15,12 +15,8 @@
 #include "PublishDiagnostics.hpp"
 #include "TextDocument.hpp"
 #include "Window.hpp"
-#include <SyntaxTree.hpp>
-#include <Eval.hpp>
-#include <FStr.hpp>
 
 #include "DocumentMap.hpp"
-#include "StringMap.hpp"
 
 struct RequestId {
     enum Type {UNDEF, INT, STR};
@@ -247,7 +243,7 @@ private:
 
 struct ReceivingServer : public RespondingServer {
     using MethodHandler = std::function<void(RespondingServer*, const rapidjson::Document&)>;
-    using MethodMap = StringMap<MethodHandler>;
+    using MethodMap = SmallStringMap<MethodHandler>;
 
     ReceivingServer(const InitOptions& init) : RespondingServer(init) {}
 

@@ -134,10 +134,10 @@ EvalExpr* get_index(const char*& arg, EvalExpr* var, EvalFactory& factory);
 EvalExpr* get_var_indexed(const char*& arg, EvalFactory& factory);
 
 /// Parse one (register, env or option) variable
-EvalExpr* get_var_special(const char*& arg, EvalFactory& factory);
+SymbolExpr* get_var_special(const char*& arg, EvalFactory& factory);
 
 /// Parse one variable
-EvalExpr* get_var_one(const char*& arg, bool allow_special, EvalFactory& factory);
+EvalExpr* get_var_list_one(const char*& arg, bool allow_special, EvalFactory& factory);
 
 /// Skip over assignable variable "var" or list of variables "[var, var]".
 /// Used for ":let varvar = expr" and ":for varvar in expr".

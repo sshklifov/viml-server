@@ -38,8 +38,10 @@ struct Vector {
     }
 
     void clear() {
-        for (int i = 0; i < len; ++i) {
-            arr[i].~T();
+        if (!std::is_trivially_destructible<T>::value) {
+            for (int i = 0; i < len; ++i) {
+                arr[i].~T();
+            }
         }
         len = 0;
     }
@@ -57,7 +59,9 @@ struct Vector {
 
     void remove(int pos) {
         assert(pos < len);
-        arr[pos].~T();
+        if (!std::is_trivially_destructible<T>::value) {
+            arr[pos].~T();
+        }
         if (pos != len - 1) {
             memcpy(arr + pos, arr + len - 1, sizeof(T));
         }
@@ -82,12 +86,13 @@ struct Vector {
     const T* begin() const { return arr; }
     const T* end() const { return arr + len; }
 
-    // TODO problem?
     void resize(int n) {
         clear();
         allocAtLeast(n);
-        for (int i = 0; i < n; ++i) {
-            new(arr + i) T();
+        if (!std::is_trivially_constructible<T>::value) {
+            for (int i = 0; i < n; ++i) {
+                new(arr + i) T();
+            }
         }
         len = n;
     }

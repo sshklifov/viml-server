@@ -3,6 +3,19 @@
 #include "BaseNode.hpp"
 #include "SkipFuncs.hpp"
 
+// TODO continue from here
+struct Variable {
+    Variable(SymbolExpr* ddz) : name(name), namelen(namelen) {
+    }
+
+    bool local;
+    bool writable;
+    bool locked;
+
+    const char* name;
+    int namelen;
+};
+
 struct LetNode : public BaseNode {
     LetNode(const ExLexem& lexem) : BaseNode(lexem) { reset(); }
 
@@ -32,7 +45,7 @@ struct LetNode : public BaseNode {
                     throw msg(p, "Expecting operator");
                 } else {
                     while (!ends_excmd(*p)) {
-                        vars.emplace(get_var_one(p, 1, f));
+                        vars.emplace(get_var_list_one(p, 1, f));
                     }
                     return p;
                 }
@@ -88,7 +101,7 @@ struct ConstNode : public BaseNode {
                     throw msg(p, "Expecting '='");
                 } else {
                     while (!ends_excmd(*p)) {
-                        vars.emplace(get_var_one(p, 0, f));
+                        vars.emplace(get_var_list_one(p, 0, f));
                     }
                     return p;
                 }
