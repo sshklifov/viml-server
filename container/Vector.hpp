@@ -30,6 +30,13 @@ struct Vector {
         return *this;
     }
 
+    T& newElem() {
+        allocAtLeast(len + 1);
+        new(arr + len) T();
+        ++len;
+        return last();
+    }
+
     template <typename... Types>
     void emplace(Types&&... args) {
         allocAtLeast(len + 1);

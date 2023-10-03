@@ -17,14 +17,19 @@
 #define FC_VIM9     0x400         // defined in vim9 script file
 #define FC_LUAREF  0x800          // luaref callback
 
+// TODO function /pat/ | endfunction !!!!!!!!!!!!!!!
+
 struct FunctionNode : public GroupNode {
     FunctionNode(const ExLexem& lexem) : GroupNode(lexem) { reset(); }
 
     void reset() {
-        f.clear();
+        nameBegin = nullptr;
+        nameEnd = nullptr;
         name = nullptr;
-        fargs.clear();
         flags = 0;
+
+        f.clear();
+        fargs.clear();
     }
 
     const char* parseArgs(BoundReporter& rep) override {
@@ -35,8 +40,8 @@ struct FunctionNode : public GroupNode {
             return p;
         }
 
-        // ":function /pat": list functions matching pattern.
         try {
+            // ":function /pat": list functions matching pattern.
             if (*p == '/') {
                 p = skip_regexp(p + 1, '/');
                 if (*p == '/') {
@@ -44,28 +49,24 @@ struct FunctionNode : public GroupNode {
                 }
                 return p;
             }
-        } catch (msg& m) {
-            rep.error(m);
-            reset();
-            return nullptr;
-        }
 
-        // Get the function name.  There are these situations:
-        // func        function name
-        //             "name" == func, "fudi.fd_dict" == NULL
-        // dict.func   new dictionary entry
-        //             "name" == NULL, "fudi.fd_dict" set,
-        //             "fudi.fd_di" == NULL, "fudi.fd_newkey" == func
-        // dict.func   existing dict entry with a Funcref
-        //             "name" == func, "fudi.fd_dict" set,
-        //             "fudi.fd_di" set, "fudi.fd_newkey" == NULL
-        // dict.func   existing dict entry that's not a Funcref
-        //             "name" == NULL, "fudi.fd_dict" set,
-        //             "fudi.fd_di" set, "fudi.fd_newkey" == NULL
-        // s:func      script-local function name
-        // g:func      global function name, same as "func"
-        try {
+            // Get the function name.  There are these situations:
+            // func        function name
+            //             "name" == func, "fudi.fd_dict" == NULL
+            // dict.func   new dictionary entry
+            //             "name" == NULL, "fudi.fd_dict" set,
+            //             "fudi.fd_di" == NULL, "fudi.fd_newkey" == func
+            // dict.func   existing dict entry with a Funcref
+            //             "name" == func, "fudi.fd_dict" set,
+            //             "fudi.fd_di" set, "fudi.fd_newkey" == NULL
+            // dict.func   existing dict entry that's not a Funcref
+            //             "name" == NULL, "fudi.fd_dict" set,
+            //             "fudi.fd_di" set, "fudi.fd_newkey" == NULL
+            // s:func      script-local function name
+            // g:func      global function name, same as "func"
+            nameBegin = p;
             name = get_var_indexed(p, f);
+            nameEnd = p;
             p = skipwhite(p);
             if (*p != '(') {
                 if (ends_excmd(*p)) {
@@ -108,7 +109,8 @@ struct FunctionNode : public GroupNode {
 
     static const int id = CMD_function;
 
-private:
+    const char* nameBegin; // TODO
+    const char* nameEnd; // TODO
     EvalExpr* name;
     Vector<SymbolExpr*> fargs;
     int flags;

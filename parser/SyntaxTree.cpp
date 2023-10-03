@@ -1,4 +1,5 @@
 #include "SyntaxTree.hpp"
+#include "Algo.hpp"
 
 #include <Stack.hpp>
 #include <ExCmdsDefs.hpp>
@@ -23,7 +24,7 @@ void SyntaxTree::reload(const char* str) {
         switch (lexem.cmdidx) {
         case CMD_if:
             grpNode = f.create<IfNode>(lexem);
-            nodes.top()->body.emplace(grpNode);
+            nodes.top()->children.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
 
@@ -69,7 +70,7 @@ void SyntaxTree::reload(const char* str) {
 
         case CMD_while:
             grpNode = f.create<WhileNode>(lexem);
-            nodes.top()->body.emplace(grpNode);
+            nodes.top()->children.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
 
@@ -85,7 +86,7 @@ void SyntaxTree::reload(const char* str) {
 
         case CMD_for:
             grpNode = f.create<ForNode>(lexem);
-            nodes.top()->body.emplace(grpNode);
+            nodes.top()->children.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
 
@@ -101,7 +102,7 @@ void SyntaxTree::reload(const char* str) {
 
         case CMD_function:
             grpNode = f.create<FunctionNode>(lexem);
-            nodes.top()->body.emplace(grpNode);
+            nodes.top()->children.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
 
@@ -115,7 +116,7 @@ void SyntaxTree::reload(const char* str) {
 
         case CMD_try:
             grpNode = f.create<TryNode>(lexem);
-            nodes.top()->body.emplace(grpNode);
+            nodes.top()->children.emplace(grpNode);
             nodes.emplace(grpNode);
             break;
 
@@ -173,7 +174,7 @@ void SyntaxTree::reload(const char* str) {
                 BaseNode* exNode = (BaseNode*)func(&lexem);
                 if (exNode) {
                     f.add(exNode);
-                    nodes.top()->body.emplace(exNode);
+                    nodes.top()->children.emplace(exNode);
                     exNode->parse(rep, lexem.nextcmd);
                 }
             }
@@ -196,6 +197,50 @@ void SyntaxTree::reload(const char* str) {
             boundRep.errorName("missing endtry");
         } else {
             assert(false);
+        }
+    }
+}
+
+void SyntaxTree::symbols(int hierarchy, Vector<DocumentSymbol>& syms) {
+    struct EnumSymbolsHierarchy {
+        EnumSymbolsHierarchy(Vector<DocumentSymbol>& res) : res(res) {}
+
+        int operator()(BaseNode* node) {
+            FunctionNode* fnode = node->cast<FunctionNode>();
+            if (fnode) {
+                if (fnode->name) {
+                    DocumentSymbol& sym = res.newElem();
+                    sym.name = FStr(fnode->nameBegin, fnode->nameEnd);
+                    sym.kind = SymbolKind::Function;
+                    sym.range = fnode->lex.locator.resolve(fnode->nameBegin, fnode->nameEnd);
+                    EnumSymbolsHierarchy cb(sym.children);
+                    for (BaseNode* child : fnode->children) {
+                        cb(child);
+                    }
+                    return BaseNode::ENUM_PRUNE;
+                }
+            }
+            return BaseNode::ENUM_NEXT;
+        }
+
+    private:
+        Vector<DocumentSymbol>& res;
+    };
+
+    if (hierarchy) {
+        EnumSymbolsHierarchy cb(syms);
+        root->enumerate(cb);
+    } else {
+        for (BaseNode* node : f) {
+            FunctionNode* fnode = node->cast<FunctionNode>();
+            if (fnode) {
+                if (fnode->name) {
+                    DocumentSymbol& sym = syms.newElem();
+                    sym.name = FStr(fnode->nameBegin, fnode->nameEnd);
+                    sym.kind = SymbolKind::Function;
+                    sym.range = fnode->lex.locator.resolve(fnode->nameBegin, fnode->nameEnd);
+                }
+            }
         }
     }
 }

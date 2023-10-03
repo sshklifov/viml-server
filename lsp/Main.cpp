@@ -372,6 +372,7 @@ struct Server : public ReceivingServer {
         registerMethod("initialize", &Server::initialize);
         registerMethod("shuwdown", &Server::shutdown);
         registerMethod("textDocument/references", &Server::references);
+        registerMethod("textDocument/documentSymbol", &Server::documentSymbol);
 
         registerNotification("initialized", &Server::initialized);
         registerNotification("textDocument/didOpen", &Server::didOpen);
@@ -524,6 +525,18 @@ struct Server : public ReceivingServer {
         if (!docs.close(didCloseParams)) {
             pushLogMessage("textDocument/didClose: Document not opened");
         }
+    }
+
+    void documentSymbol(const RequestId& id, const DocumentSymbolParams& symbolParams) {
+        WorkingDocument* doc = docs.find(symbolParams.textDocument);
+        if (!doc) {
+            respondError(id, ErrorCode::InvalidParams, "Document not opened");
+        }
+
+        Vector<DocumentSymbol> res;
+        const int hierarchy = false; // TODO capability?
+        doc->ast.symbols(hierarchy, res);
+        respondResult(id, res);
     }
 
     void references(const RequestId& id, const ReferenceParams& referenceParams) {

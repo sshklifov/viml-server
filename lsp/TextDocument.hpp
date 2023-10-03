@@ -1,10 +1,9 @@
 #pragma once
 
 #include "ValueReader.hpp"
-#include "Range.hpp"
+#include "BufferWriter.hpp"
 
 struct DidOpenTextDocumentParams {
-
     void read(ValueReader& rd) {
         rd.readMember("textDocument", textDocument);
     }
@@ -46,7 +45,6 @@ struct DidOpenTextDocumentParams {
 };
 
 struct DidChangeTextDocumentParams {
-
     void read(ValueReader& rd) {
         rd.readMember("textDocument", textDocument);
         rd.readMember("contentChanges", contentChanges);
@@ -116,7 +114,6 @@ struct DidChangeTextDocumentParams {
 
 
 struct TextDocumentIdentifier {
-
     void read(ValueReader& rd) {
         rd.readMember("uri", uri);
     }
@@ -129,7 +126,6 @@ struct TextDocumentIdentifier {
 };
 
 struct DidCloseParams {
-
     void read(ValueReader& rd) {
         rd.readMember("textDocument", textDocument);
     }
@@ -141,7 +137,6 @@ struct DidCloseParams {
 };
 
 struct ReferenceParams {
-
     void read(ValueReader& rd) {
         rd.readMember("textDocument", textDocument);
         rd.readMember("position", position);
@@ -156,4 +151,91 @@ struct ReferenceParams {
      * The position inside the text document.
      */
     Position position;
+};
+
+struct DocumentSymbolParams {
+    void read(ValueReader& rd) {
+        rd.readMember("textDocument", textDocument);
+    }
+
+    /**
+     * The text document.
+     */
+    TextDocumentIdentifier textDocument;
+};
+
+enum SymbolKind {
+    File = 1,
+    Module = 2,
+    Namespace = 3,
+    Package = 4,
+    Class = 5,
+    Method = 6,
+    Property = 7,
+    Field = 8,
+    Constructor = 9,
+    Enum = 10,
+    Interface = 11,
+    Function = 12,
+    Variable = 13,
+    Constant = 14,
+    String = 15,
+    Number = 16,
+    Boolean = 17,
+    Array = 18,
+    Object = 19,
+    Key = 20,
+    Null = 21,
+    EnumMember = 22,
+    Struct = 23,
+    Event = 24,
+    Operator = 25,
+    TypeParameter = 26
+};
+
+/**
+ * Represents programming constructs like variables, classes, interfaces etc.
+ * that appear in a document. Document symbols can be hierarchical and they
+ * have two ranges: one that encloses its definition and one that points to its
+ * most interesting range, e.g. the range of an identifier.
+ */
+struct DocumentSymbol {
+    void write(BufferWriter& wr) const {
+        BufferWriter::Object o = wr.beginObject();
+        o.writeMember("name", name);
+        o.writeMember("detail", detail);
+        o.writeMember("kind", kind);
+        o.writeMember("range", range);
+        o.writeMember("selectionRange", range);
+    }
+
+    /**
+     * The name of this symbol. Will be displayed in the user interface and
+     * therefore must not be an empty string or a string only consisting of
+     * white spaces.
+     */
+    FStr name;
+
+    /**
+     * More detail for this symbol, e.g the signature of a function.
+     */
+    std::optional<FStr> detail;
+
+    /**
+     * The kind of this symbol.
+     */
+    SymbolKind kind;
+
+    /**
+     * The range enclosing this symbol not including leading/trailing whitespace
+     * but everything else like comments. This information is typically used to
+     * determine if the clients cursor is inside the symbol to reveal in the
+     * symbol in the UI.
+     */
+    Range range;
+
+    /**
+     * Children of this symbol, e.g. properties of a class.
+     */
+    Vector<DocumentSymbol> children;
 };

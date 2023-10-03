@@ -14,6 +14,10 @@ struct StaticStringMap {
         template <typename... Types>
         Entry(const char* key, Types&&... args)
         : key(key), val(std::forward<Types>(args)...) {}
+
+        bool operator<(const Entry& rhs) {
+            return strcmp(key, rhs.key) < 0;
+        }
     };
 
     StaticStringMap() {
@@ -27,7 +31,7 @@ struct StaticStringMap {
 
     template <typename... Types>
     int emplace(const char* key, Types&&... args) {
-        assert(map.empty() || strcmp(map.last().key, key) == -1);
+        assert(map.empty() || strcmp(map.last().key, key) < 0);
         if (!map.empty()) {
             int prevIdx = *map.last().key;
             int currIdx = *key;

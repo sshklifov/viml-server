@@ -5,9 +5,6 @@
 
 // TODO continue from here
 struct Variable {
-    Variable(SymbolExpr* ddz) : name(name), namelen(namelen) {
-    }
-
     bool local;
     bool writable;
     bool locked;

@@ -161,7 +161,7 @@ struct ServerCapabilities {
     /**
      * The server provides document symbol support.
      */
-    bool documentSymbolProvider = false;
+    bool documentSymbolProvider = true;
 
     /**
      * The server provides code actions. The `CodeActionOptions` return type is

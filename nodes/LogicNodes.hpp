@@ -5,11 +5,16 @@
 struct IfNode : public GroupNode {
     IfNode(const ExLexem& lexem) : GroupNode(lexem), elseIfNode(nullptr), cond(nullptr) {}
 
-    void enumerate(EnumCallback cb) override {
-        GroupNode::enumerate(cb);
-        if (elseIfNode) {
-            elseIfNode->enumerate(cb);
+    int enumerate(EnumCallback cb) override {
+        int cond = GroupNode::enumerate(cb);
+        if (cond) {
+            return cond & ENUM_STOP;
         }
+        if (elseIfNode) {
+            cond = elseIfNode->enumerate(cb);
+            return cond & ENUM_STOP;
+        }
+        return ENUM_NEXT;
     }
 
     const char* parseArgs(BoundReporter& rep) override {

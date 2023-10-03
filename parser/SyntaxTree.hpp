@@ -2,7 +2,9 @@
 
 #include <ExLexer.hpp>
 #include <NodeDefs.hpp>
+
 #include <DiagnosticReporter.hpp>
+#include <TextDocument.hpp>
 
 struct NodeFactory {
     NodeFactory() = default;
@@ -46,7 +48,9 @@ struct SyntaxTree {
     SyntaxTree(SyntaxTree&&) = delete;
 
     void reload(const char* str);
+
     const Vector<Diagnostic>& diagnostics() const;
+    void symbols(int hierarchy, Vector<DocumentSymbol>& res);
 
     BaseNode* findNode(const Position& pos);
 

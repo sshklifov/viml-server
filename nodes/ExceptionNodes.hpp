@@ -5,14 +5,22 @@
 struct TryNode : public GroupNode {
     TryNode(const ExLexem& lexem) : GroupNode(lexem), finally(nullptr) {}
 
-    void enumerate(EnumCallback cb) override {
-        GroupNode::enumerate(cb);
+    int enumerate(EnumCallback cb) override {
+        int cond = GroupNode::enumerate(cb);
+        if (cond) {
+            return cond & ENUM_STOP;
+        }
         for (GroupNode* catchNode : catchNodes) {
-            catchNode->enumerate(cb);
+            cond = catchNode->enumerate(cb);
+            if (cond) {
+                return cond & ENUM_STOP;
+            }
         }
         if (finally) {
             finally->enumerate(cb);
+            return cond & ENUM_STOP;
         }
+        return ENUM_NEXT;
     }
 
     static const int id = CMD_try;

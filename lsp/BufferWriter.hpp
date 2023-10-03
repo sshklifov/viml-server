@@ -7,6 +7,8 @@
 #include <Vector.hpp>
 #include <Diagnostic.hpp>
 
+#include <optional>
+
 struct BufferWriter {
     struct Object {
         Object(BufferWriter& parent, const char* name) : parent(parent), closed(false) {
@@ -31,6 +33,14 @@ struct BufferWriter {
         void writeMember(const char* name, const T& fwd) {
             parent.w.Key(name);
             parent.write(fwd);
+        }
+
+        template <typename T>
+        void writeMember(const char* name, const std::optional<T>& opt) {
+            if (opt.has_value()) {
+                parent.w.Key(name);
+                parent.write(opt.value());
+            }
         }
 
     private:
