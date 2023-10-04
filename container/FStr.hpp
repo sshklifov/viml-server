@@ -38,10 +38,10 @@ struct FStr {
     FStr& operator+=(const char* s);
     FStr& operator+=(const FStr& other);
 
-    bool operator==(const char* other);
-    bool operator!=(const char* other);
-    bool operator==(const FStr& other);
-    bool operator!=(const FStr& other);
+    bool operator==(const char* other) const;
+    bool operator!=(const char* other) const;
+    bool operator==(const FStr& other) const;
+    bool operator!=(const FStr& other) const;
 
     void replace(int begin, int end, const char* s);
     void clear();

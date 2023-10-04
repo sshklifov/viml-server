@@ -1,5 +1,4 @@
 #include "SyntaxTree.hpp"
-#include "Algo.hpp"
 
 #include <Stack.hpp>
 #include <ExCmdsDefs.hpp>

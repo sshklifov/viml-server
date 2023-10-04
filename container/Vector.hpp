@@ -56,8 +56,14 @@ struct Vector {
     void copy(const Vector& rhs) {
         clear();
         allocAtLeast(rhs.len);
-        for (int i = 0; i < rhs.len; ++i) {
-            new(arr + i) T(rhs.arr[i]);
+        if (std::is_trivially_copyable<T>::value) {
+            if (rhs.arr) {
+                memcpy(arr, rhs.arr, rhs.count() * sizeof(T));
+            }
+        } else {
+            for (int i = 0; i < rhs.len; ++i) {
+                new(arr + i) T(rhs.arr[i]);
+            }
         }
         len = rhs.len;
     }

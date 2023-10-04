@@ -177,19 +177,19 @@ FStr& FStr::operator+=(const FStr& other) {
     return *this;
 }
 
-bool FStr::operator==(const char* other) {
+bool FStr::operator==(const char* other) const {
     return strcmp(s, other) == 0;
 }
 
-bool FStr::operator!=(const char* other) {
+bool FStr::operator!=(const char* other) const {
     return strcmp(s, other) != 0;
 }
 
-bool FStr::operator==(const FStr& other) {
+bool FStr::operator==(const FStr& other) const {
     return *this == other.s;
 }
 
-bool FStr::operator!=(const FStr& other) {
+bool FStr::operator!=(const FStr& other) const {
     return *this != other.s;
 }
 
