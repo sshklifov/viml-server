@@ -93,15 +93,13 @@ struct TernaryExpr : public EvalExpr {
 };
 
 struct LogicOpExpr : public EvalExpr {
-    enum Type {AND, OR};
-
-    LogicOpExpr(EvalExpr* lhs, EvalExpr* rhs, Type op) : lhs(lhs), rhs(rhs), op(op) {}
+    LogicOpExpr(EvalExpr* lhs, EvalExpr* rhs, char op) : lhs(lhs), rhs(rhs), op(op) {}
 
     int getId() override { return expr_logic; }
 
     EvalExpr* lhs;
     EvalExpr* rhs;
-    Type op;
+    char op;
 };
 
 struct CmpOpExpr : public EvalExpr {

@@ -102,7 +102,7 @@ void SyntaxTree::reload(const char* str) {
         case CMD_function:
             grpNode = f.create<FunctionNode>(lexem);
             nodes.top()->children.emplace(grpNode);
-            nodes.emplace(grpNode);
+            // Don't add to stack yet, might be function listing
             break;
 
         case CMD_endfunction:
@@ -167,6 +167,12 @@ void SyntaxTree::reload(const char* str) {
 
         if (grpNode) {
             grpNode->parse(rep, lexem.nextcmd);
+            // After being parsed, check if function node is a true function
+            if (FunctionNode* fnode = grpNode->cast<FunctionNode>()) {
+                if (fnode->name) {
+                    nodes.emplace(grpNode);
+                }
+            }
         } else if (not_done) {
             ex_func_T func = cmdnames[lexem.cmdidx].cmd_func;
             if (func) {
