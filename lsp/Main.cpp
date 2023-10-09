@@ -550,7 +550,7 @@ struct Server : public ReceivingServer {
             if (arg) {
                 SymbolExpr* expr = node->f.findSymbol(arg);
                 if (expr) {
-                    return respondError(id, ErrorCode::NoError, f("Found this: {}", expr->pat));
+                    return respondError(id, ErrorCode::NoError, FStr::f("Found this: {}", expr->pat));
                 }
             }
         }

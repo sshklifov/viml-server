@@ -9,7 +9,7 @@ struct CallNode : public BaseNode {
         const char* p = lex.qargs;
         try {
             expr = eval8(p, f);
-            if (expr->getId() != EvalExpr::expr_invoke) {
+            if (expr->getId() != EvalExpr::invoke) {
                 rep.error("Does not call a function");
             }
             return p;

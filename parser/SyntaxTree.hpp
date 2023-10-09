@@ -53,6 +53,7 @@ struct SyntaxTree {
     void symbols(int hierarchy, Vector<DocumentSymbol>& res);
 
     BaseNode* findNode(const Position& pos);
+    void checkSymbols();
 
 private:
     DiagnosticReporter rep; //< Diagnostics found during parse of AST

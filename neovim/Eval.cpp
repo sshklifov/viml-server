@@ -52,7 +52,7 @@ EvalExpr* eval2(const char*& arg, EvalFactory& factory) {
         // Get the second variable.
         arg = skipwhite(arg + 2);
         EvalExpr* rhs = eval3(arg, factory);
-        expr = factory.create<LogicOpExpr>(expr, rhs, LogicOpExpr::OR);
+        expr = factory.create<LogicOpExpr>(expr, rhs, '|');
     }
     return expr;
 }
@@ -66,7 +66,7 @@ EvalExpr* eval3(const char*& arg, EvalFactory& factory) {
         // Get the second variable.
         arg = skipwhite(arg + 2);
         EvalExpr* rhs = eval4(arg, factory);
-        expr = factory.create<LogicOpExpr>(expr, rhs, LogicOpExpr::AND);
+        expr = factory.create<LogicOpExpr>(expr, rhs, '&');
     }
 
     return expr;
@@ -418,9 +418,10 @@ Vector<SymbolExpr*> get_function_args(const char*& arg, const bool lambda, EvalF
                 }
             }
 
+            StringView varView(varname, len);
             for (int i = 0; i < res.count(); ++i) {
                 SymbolExpr* other = res[i];
-                if (strncmp(other->pat.str(), varname, len) == 0) {
+                if (other->name == varView) {
                     throw msg(arg, "Duplicate argument name");
                 }
             }

@@ -27,6 +27,7 @@
 #pragma once
 
 #include "RobinHood.hpp"
+#include "FStr.hpp"
 
 #include <type_traits>
 #include <utility>
@@ -46,8 +47,8 @@
 
 #define EMH_EMPTY(n) (0 > (int)(_index[n].next))
 #define EMH_EQHASH(n, key_hash) (((uint32_t)(key_hash) & ~_mask) == (_index[n].slot & ~_mask))
-#define EMH_NEW(key, len, args, bucket, key_hash) \
-    new(_pairs + _num_filled) Entry(Key(key, len), std::forward<Types>(args)...); \
+#define EMH_NEW(key, args, bucket, key_hash) \
+    new(_pairs + _num_filled) Entry(key, args...); \
     _etail = bucket; \
     _index[bucket] = {bucket, _num_filled++ | ((uint32_t)(key_hash) & ~_mask)}
 
@@ -56,26 +57,15 @@
 
 namespace emhash8 {
 
-template <typename T>
+template <typename V>
 class StringMap {
-    struct Key {
-        const char* str;
-        int len;
-
-        Key(const char* s, int n) : str(s), len(n) {}
-
-        bool operator==(const Key& rhs) const {
-            return len == rhs.len && strncmp(str, rhs.str, len) == 0;
-        }
-    };
-
     struct Entry {
-        Key key;
-        T val;
+        FStr key;
+        V val;
 
-        template <typename... Types>
-        Entry(const Key& key, Types&&... args) :
-            key(key), val(std::forward<Types>(args)...) {}
+        template <typename KeyType, typename... Types>
+        Entry(KeyType&& key, Types&&... args) :
+            key(std::forward<KeyType>(key)), val(std::forward<Types>(args)...) {}
     };
 
     struct Index {
@@ -93,12 +83,12 @@ public:
 
     StringMap(const StringMap& rhs) {
         if (rhs.load_factor() > EMH_MIN_LOAD_FACTOR) {
-            _pairs = realloc_bucket((uint32_t)(rhs._num_buckets * rhs.max_load_factor()) + 4);
-            _index = realloc_index(rhs._num_buckets);
+            realloc_bucket((uint32_t)(rhs._num_buckets * rhs.max_load_factor()) + 4);
+            realloc_index(rhs._num_buckets);
             clone(rhs);
         } else {
             init(rhs._num_filled + 2, EMH_DEFAULT_LOAD_FACTOR);
-            for (Entry* it = rhs.begin(); it != rhs.end(); ++it) {
+            for (const Entry* it = rhs.begin(); it != rhs.end(); ++it) {
                 emplace_unique(it->key, it->val);
             }
         }
@@ -163,42 +153,68 @@ public:
     inline Entry* begin() { return _pairs; }
     inline Entry* end() { return _pairs + _num_filled; }
 
+    inline const Entry* begin() const { return _pairs; }
+    inline const Entry* end() const { return _pairs + _num_filled; }
+
     inline uint32_t count() const { return _num_filled; }
     inline bool empty() const { return _num_filled == 0; }
 
-    inline T find(const char* key, int len) noexcept {
-        int idx = find_filled_slot(Key(key, len));
-        assert(idx < count());
-        return _pairs[idx].val;
+    inline Entry* find(const char* key, int len) noexcept {
+        uint32_t idx = find_filled_slot(key, len);
+        return _pairs + idx;
+    }
+
+    inline Entry* find(const StringView& key) noexcept {
+        return find(key.begin, key.end - key.begin);
+    }
+
+    template<typename... Types>
+    void emplace_unique(FStr s, Types&&... args) {
+        check_expand_need();
+        const uint64_t key_hash = hash_bytes(s.str(), s.length());
+        uint32_t bucket = find_unique_bucket(key_hash);
+        EMH_NEW(std::move(s), std::forward<Types>(args), bucket, key_hash);
     }
 
     template<typename... Types>
     void emplace_unique(const char* key, int len, Types&&... args) {
-        check_expand_need();
-        const uint64_t key_hash = hash_bytes(key, len);
-        uint32_t bucket = find_unique_bucket(key_hash);
-        EMH_NEW(key, len, args, bucket, key_hash);
+        return emplace_unique(FStr(key, len), std::forward<Types>(args)...);
     }
 
     template<typename... Types>
-    Entry* emplace(const char* key, int len, Types&&... args) {
+    void emplace_unique(const StringView& key, Types&&... args) {
+        return emplace_unique(FStr(key.begin, key.end), std::forward<Types>(args)...);
+    }
+
+    template<typename... Types>
+    Entry* emplace(FStr s, Types&&... args) {
         check_expand_need();
 
-        const uint64_t key_hash = hash_bytes(key, len);
-        const uint32_t bucket = find_or_allocate(Key(key, len), key_hash);
+        const uint64_t key_hash = hash_bytes(s.str(), s.length());
+        const uint32_t bucket = find_or_allocate(s, key_hash);
         const bool bempty = EMH_EMPTY(bucket);
         if (bempty) {
-            EMH_NEW({key, len}, args, bucket, key_hash);
+            EMH_NEW(std::move(s), std::forward<Types>(args), bucket, key_hash);
         }
 
         const uint32_t slot = _index[bucket].slot & _mask;
         return _pairs + slot;
     }
 
+    template<typename... Types>
+    Entry* emplace(const char* key, int len, Types&&... args) {
+        return emplace(FStr(key, len), std::forward<Types>(args)...);
+    }
+
+    template<typename... Types>
+    Entry* emplace(const StringView& key, Types&&... args) {
+        return emplace(FStr(key.begin, key.end), std::forward<Types>(args)...);
+    }
+
     /// Erase an element from the hash table.
     bool erase(const char* key, int len) noexcept {
         const uint64_t key_hash = hash_bytes(key, len);
-        const uint32_t sbucket = find_filled_bucket(Key(key, len), key_hash);
+        const uint32_t sbucket = find_filled_bucket(key, len, key_hash);
         if (sbucket == EMH_INDEX_INACTIVE) {
             return 0;
         }
@@ -206,6 +222,10 @@ public:
         const uint32_t main_bucket = key_hash & _mask;
         erase_slot(sbucket, main_bucket);
         return 1;
+    }
+
+    bool erase(const char* keyBegin, const char* keyEnd) noexcept {
+        return erase(keyBegin, keyEnd - keyBegin);
     }
 
     void erase(const Entry* it) noexcept {
@@ -267,7 +287,7 @@ private:
     }
 
     void clearkv() {
-        if (!std::is_trivially_destructible<T>()) {
+        if (!std::is_trivially_destructible<V>()) {
             while (_num_filled --)
                 _pairs[_num_filled].~Entry();
         }
@@ -306,8 +326,8 @@ private:
 
         _etail = EMH_INDEX_INACTIVE;
         for (uint32_t slot = 0; slot < _num_filled; ++slot) {
-            const Key& key = _pairs[slot].key;
-            const size_t key_hash = hash_bytes(key.str, key.len);
+            const FStr& key = _pairs[slot].key;
+            const size_t key_hash = hash_bytes(key.str(), key.length());
             const uint32_t bucket = find_unique_bucket(key_hash);
             _index[bucket] = { bucket, slot | ((uint32_t)(key_hash) & ~_mask) };
         }
@@ -343,7 +363,7 @@ private:
             _index[last_bucket].slot = slot | (_index[last_bucket].slot & ~_mask);
         }
 
-        if (!std::is_trivially_destructible<T>::value) {
+        if (!std::is_trivially_destructible<V>::value) {
             _pairs[last_slot].~Entry();
         }
 
@@ -371,7 +391,7 @@ private:
 
     // Find the slot with this key, or return bucket size
     uint32_t find_slot_bucket(uint32_t slot, uint32_t& main_bucket) const {
-        const uint64_t key_hash = hash_bytes(_pairs[slot].key.str, _pairs[slot].key.len);
+        const uint64_t key_hash = hash_bytes(_pairs[slot].key.str(), _pairs[slot].key.length());
         const uint32_t bucket = main_bucket = uint32_t(key_hash & _mask);
         if (slot == (_index[bucket].slot & _mask)) {
             return bucket;
@@ -389,7 +409,7 @@ private:
     }
 
     // Find the slot with this key, or return bucket size
-    uint32_t find_filled_bucket(const Key& key, uint64_t key_hash) const noexcept {
+    uint32_t find_filled_bucket(const FStr& key, uint64_t key_hash) const noexcept {
         const uint32_t bucket = key_hash & _mask;
         uint32_t next_bucket  = _index[bucket].next;
         if (EMH_UNLIKELY((int)next_bucket < 0)) {
@@ -398,7 +418,7 @@ private:
 
         if (EMH_EQHASH(bucket, key_hash)) {
             const uint32_t slot = _index[bucket].slot & _mask;
-            if (EMH_LIKELY(key == _pairs[slot].first)) {
+            if (EMH_LIKELY(_pairs[slot].first == key)) {
                 return bucket;
             }
         }
@@ -409,7 +429,7 @@ private:
         while (true) {
             if (EMH_EQHASH(next_bucket, key_hash)) {
                 const uint32_t slot = _index[next_bucket].slot & _mask;
-                if (EMH_LIKELY(key == _pairs[slot].first)) {
+                if (EMH_LIKELY(_pairs[slot].first == key)) {
                     return next_bucket;
                 }
             }
@@ -425,16 +445,18 @@ private:
     }
 
     // Find the slot with this key, or return bucket size
-    uint32_t find_filled_slot(const Key& key) const noexcept {
-        const uint64_t key_hash = hash_bytes(key.str, key.len);
+    uint32_t find_filled_slot(const char* key, int len) const noexcept {
+        const uint64_t key_hash = hash_bytes(key, len);
         const uint32_t bucket = uint32_t(key_hash & _mask);
         uint32_t next_bucket = _index[bucket].next;
-        if ((int)next_bucket < 0)
+        if ((int)next_bucket < 0) {
             return _num_filled;
+        }
 
+        StringView keyView(key, len);
         if (EMH_EQHASH(bucket, key_hash)) {
             const uint32_t slot = _index[bucket].slot & _mask;
-            if (EMH_LIKELY(key == _pairs[slot].key)) {
+            if (EMH_LIKELY(_pairs[slot].key == keyView)) {
                 return slot;
             }
         }
@@ -445,7 +467,7 @@ private:
         while (true) {
             if (EMH_EQHASH(next_bucket, key_hash)) {
                 const uint32_t slot = _index[next_bucket].slot & _mask;
-                if (EMH_LIKELY(key == _pairs[slot].key)) {
+                if (EMH_LIKELY(_pairs[slot].key == keyView)) {
                     return slot;
                 }
             }
@@ -485,7 +507,7 @@ private:
      ** put new key in its main position; otherwise (colliding bucket is in its main
      ** position), new key goes to an empty position.
      */
-    uint32_t find_or_allocate(const Key& key, uint64_t key_hash) noexcept {
+    uint32_t find_or_allocate(const FStr& key, uint64_t key_hash) noexcept {
         const uint32_t bucket = uint32_t(key_hash & _mask);
         uint32_t next_bucket = _index[bucket].next;
         if ((int)next_bucket < 0) {
@@ -494,7 +516,7 @@ private:
 
         const uint32_t slot = _index[bucket].slot & _mask;
         if (EMH_EQHASH(bucket, key_hash)) {
-            if (EMH_LIKELY(key == _pairs[slot].key)) {
+            if (EMH_LIKELY(_pairs[slot].key == key)) {
                 return bucket;
             }
         }
@@ -512,7 +534,7 @@ private:
         while (true) {
             const uint32_t eslot = _index[next_bucket].slot & _mask;
             if (EMH_EQHASH(next_bucket, key_hash)) {
-                if (EMH_LIKELY(key == _pairs[eslot].key)) {
+                if (EMH_LIKELY(_pairs[eslot].key == key)) {
                     return next_bucket;
                 }
             }
@@ -622,13 +644,13 @@ private:
         }
     }
 
-    inline uint32_t hash_bucket(const Key& key) const noexcept {
-        return (uint32_t)hash_bytes(key.str, key.len) & _mask;
+    inline uint32_t hash_bucket(const FStr& key) const noexcept {
+        return (uint32_t)hash_bytes(key.str(), key.length()) & _mask;
     }
 
     inline uint32_t hash_main(const uint32_t bucket) const noexcept {
         const uint32_t slot = _index[bucket].slot & _mask;
-        return (uint32_t)hash_bytes(_pairs[slot].key.str, _pairs[slot].key.len) & _mask;
+        return (uint32_t)hash_bytes(_pairs[slot].key.str(), _pairs[slot].key.length()) & _mask;
     }
 
 private:

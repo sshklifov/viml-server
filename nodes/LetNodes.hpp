@@ -71,7 +71,6 @@ struct LetNode : public BaseNode {
 
     static const int id = CMD_let;
 
-private:
     Vector<EvalExpr*> vars;
     int semicolon;
     int op;

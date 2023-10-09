@@ -162,6 +162,10 @@ void FStr::append(const FStr& other) {
     append(other.s, other.len);
 }
 
+void FStr::append(const StringView& s) {
+    append(s.begin, s.end - s.begin);
+}
+
 FStr& FStr::operator+=(char c) {
     append(c);
     return *this;
@@ -191,6 +195,15 @@ bool FStr::operator==(const FStr& other) const {
 
 bool FStr::operator!=(const FStr& other) const {
     return *this != other.s;
+}
+
+bool FStr::operator==(const StringView& other) const {
+    StringView thisView(s, len);
+    return thisView == other;
+}
+bool FStr::operator!=(const StringView& other) const {
+    StringView thisView(s, len);
+    return thisView != other;
 }
 
 void FStr::replace(int begin, int end, const char* sub) {

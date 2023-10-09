@@ -204,6 +204,8 @@ void SyntaxTree::reload(const char* str) {
             assert(false);
         }
     }
+
+    checkSymbols();
 }
 
 void SyntaxTree::symbols(int hierarchy, Vector<DocumentSymbol>& syms) {
@@ -248,6 +250,68 @@ void SyntaxTree::symbols(int hierarchy, Vector<DocumentSymbol>& syms) {
             }
         }
     }
+}
+
+#include <StringMap.hpp>
+
+// Either:
+// internal -- v:
+// arg      -- a:
+// local (remove it)
+// global (else)
+
+void SyntaxTree::checkSymbols() {
+
+    struct EnumSymbols {
+        /* EnumSymbols(emhash8::StringMap<int>& globals) : globals(globals) {} */
+        EnumSymbols(DiagnosticReporter& thisRep) : thisRep(thisRep) {}
+
+        int operator()(BaseNode* node) {
+            if (FunctionNode* fnode = node->cast<FunctionNode>()) {
+                if (fnode->name) {
+                    for (SymbolExpr* sym : fnode->fargs) {
+                        locals.emplace(FStr::f("a:{}", sym->name), 1);
+                    }
+                    locals.emplace(FStr("a:0"), 1);
+                    locals.emplace(FStr("a:000"), 1);
+                    locals.emplace(FStr("a:firstline"), 1);
+                    locals.emplace(FStr("a:lastline"), 1);
+
+                    EnumSymbols cb(thisRep);
+                    for (BaseNode* child : fnode->children) {
+                        cb(child);
+                    }
+                    return BaseNode::ENUM_PRUNE;
+                }
+            } else if (LetNode* lnode = node->cast<LetNode>()) {
+                for (EvalExpr* var : lnode->vars) {
+                    SymbolExpr* sym = var->cast<SymbolExpr>();
+                    if (sym) {
+                        locals.emplace(sym->name, 1);
+                    }
+                }
+            }
+
+            for (EvalExpr* expr : node->f) {
+                if (SymbolExpr* sym = expr->cast<SymbolExpr>()) {
+                    if (locals.find(sym->name) == locals.end()) {
+                        BoundReporter boundRep(thisRep, node->lex);
+                        boundRep.error("Undefined variable", sym->name.begin);
+                    }
+                }
+            }
+            return BaseNode::ENUM_NEXT;
+        }
+
+    private:
+        DiagnosticReporter& thisRep;
+        /* emhash8::StringMap<int>& globals; */
+        emhash8::StringMap<int> locals;
+    };
+
+    /* emhash8::StringMap<int> globals; */
+    EnumSymbols test(rep);
+    root->enumerate(test);
 }
 
 const Vector<Diagnostic>& SyntaxTree::diagnostics() const {

@@ -7,25 +7,34 @@
 
 struct EvalExpr {
     enum {
-        expr_ternary,
-        expr_logic,
-        expr_compare,
-        expr_arith,
-        expr_prefix,
-        expr_index,
-        expr_index2,
-        expr_invoke,
-        expr_symbol,
-        expr_literal,
-        expr_list,
-        expr_dict,
-        expr_nest,
-        expr_lambda
+        ternary,
+        logic,
+        compare,
+        binary,
+        prefix,
+        index,
+        index2,
+        invoke,
+        symbol,
+        literal,
+        list,
+        dict,
+        nest,
+        lambda
     };
 
     virtual ~EvalExpr() {}
 
     virtual int getId() = 0;
+
+    template <typename T>
+    T* cast() {
+        if (getId() == T::id) {
+            return static_cast<T*>(this);
+        } else {
+            return nullptr;
+        }
+    }
 };
 
 struct SymbolExpr;
@@ -71,6 +80,9 @@ struct EvalFactory {
         }
     }
 
+    EvalExpr** begin() { return exprs.begin(); }
+    EvalExpr** end() { return exprs.end(); }
+
     // Regular symbol construction
     SymbolExpr* create(const char* begin, const char* end);
 
@@ -85,7 +97,9 @@ private:
 struct TernaryExpr : public EvalExpr {
     TernaryExpr(EvalExpr* cond, EvalExpr* left, EvalExpr* right) : cond(cond), left(left), right(right) {}
 
-    int getId() override { return expr_ternary; }
+    int getId() override { return id; }
+
+    static const int id = ternary;
 
     EvalExpr* cond;
     EvalExpr* left;
@@ -95,7 +109,9 @@ struct TernaryExpr : public EvalExpr {
 struct LogicOpExpr : public EvalExpr {
     LogicOpExpr(EvalExpr* lhs, EvalExpr* rhs, char op) : lhs(lhs), rhs(rhs), op(op) {}
 
-    int getId() override { return expr_logic; }
+    int getId() override { return id; }
+
+    static const int id = logic;
 
     EvalExpr* lhs;
     EvalExpr* rhs;
@@ -103,14 +119,16 @@ struct LogicOpExpr : public EvalExpr {
 };
 
 struct CmpOpExpr : public EvalExpr {
-    CmpOpExpr(EvalExpr* lhs, EvalExpr* rhs, exprtype_T enumOp, exprcase_T mod = CASE_OPTION) :
-        lhs(lhs), rhs(rhs), enumOp(enumOp), mod(mod) {}
+    CmpOpExpr(EvalExpr* lhs, EvalExpr* rhs, exprtype_T op, exprcase_T mod = CASE_OPTION) :
+        lhs(lhs), rhs(rhs), op(op), mod(mod) {}
 
-    int getId() override { return expr_compare; }
+    int getId() override { return id; }
+
+    static const int id = compare;
 
     EvalExpr* lhs;
     EvalExpr* rhs;
-    exprtype_T enumOp;
+    exprtype_T op;
     exprcase_T mod;
 };
 
@@ -118,7 +136,9 @@ struct BinOpExpr : public EvalExpr {
     BinOpExpr(EvalExpr* lhs, EvalExpr* rhs, char op) :
         lhs(lhs), rhs(rhs), op(op) {}
 
-    int getId() override { return expr_arith; }
+    int getId() override { return id; }
+
+    static const int id = binary;
 
     EvalExpr* lhs;
     EvalExpr* rhs;
@@ -128,7 +148,9 @@ struct BinOpExpr : public EvalExpr {
 struct PrefixOpExpr : public EvalExpr {
     PrefixOpExpr(EvalExpr* val, char op) : val(val), op(op) {}
 
-    int getId() override { return expr_prefix; }
+    int getId() override { return id; }
+
+    static const int id = prefix;
 
     EvalExpr* val;
     char op;
@@ -137,7 +159,9 @@ struct PrefixOpExpr : public EvalExpr {
 struct IndexExpr : public EvalExpr {
     IndexExpr(EvalExpr* what, EvalExpr* index) : what(what), index(index) {}
 
-    int getId() override { return expr_index; }
+    int getId() override { return id; }
+
+    static const int id = index;
 
     EvalExpr* what;
     EvalExpr* index;
@@ -147,7 +171,9 @@ struct IndexRangeExpr : public EvalExpr {
     IndexRangeExpr(EvalExpr* what, EvalExpr* from, EvalExpr* to) :
         what(what), from(from), to(to) {}
 
-    int getId() override { return expr_index2; }
+    int getId() override { return id; }
+
+    static const int id = index2;
 
     EvalExpr* what;
     EvalExpr* from;
@@ -157,7 +183,9 @@ struct IndexRangeExpr : public EvalExpr {
 struct InvokeExpr : public EvalExpr {
     InvokeExpr(EvalExpr* name, Vector<EvalExpr*> args) : name(name), args(std::move(args)) {}
 
-    int getId() override { return expr_invoke; }
+    int getId() override { return id; }
+    
+    static const int id = invoke;
 
     EvalExpr* name;
     Vector<EvalExpr*> args;
@@ -169,7 +197,9 @@ struct LiteralExpr : public EvalExpr {
     LiteralExpr(VarType type, const char* begin, const char* end) : type(type), lit(begin, end) {}
     LiteralExpr(VarType type, const char* lit, int len) : type(type), lit(lit, len) {}
 
-    int getId() override { return expr_literal; }
+    int getId() override { return id; }
+
+    static const int id = literal;
 
     VarType type;
     FStr lit;
@@ -178,7 +208,9 @@ struct LiteralExpr : public EvalExpr {
 struct ListExpr : public EvalExpr {
     ListExpr(Vector<EvalExpr*> elems) : elems(std::move(elems)) {}
 
-    int getId() override { return expr_list; }
+    int getId() override { return id; }
+
+    static const int id = list;
 
     Vector<EvalExpr*> elems;
 };
@@ -194,7 +226,9 @@ struct DictExpr : public EvalExpr {
 
     DictExpr(Vector<Pair> entries) : entries(std::move(entries)) {}
 
-    int getId() override { return expr_dict; }
+    int getId() override { return id; }
+
+    static const int id = dict;
 
     Vector<Pair> entries;
 };
@@ -202,7 +236,9 @@ struct DictExpr : public EvalExpr {
 struct NestedExpr : public EvalExpr {
     NestedExpr(EvalExpr* expr) : expr(expr) {}
 
-    int getId() override { return expr_nest; }
+    int getId() override { return id; }
+
+    static const int id = nest;
 
     EvalExpr* expr;
 };
@@ -210,23 +246,24 @@ struct NestedExpr : public EvalExpr {
 struct LambdaExpr : public EvalExpr {
     LambdaExpr(Vector<SymbolExpr*> args, EvalExpr* body) : args(std::move(args)), body(body) {}
 
-    int getId() override { return expr_lambda; }
+    int getId() override { return id; }
+
+    static const int id = lambda;
 
     Vector<SymbolExpr*> args;
     EvalExpr* body;
 };
 
 struct SymbolExpr : public EvalExpr {
-    SymbolExpr(const char* begin, const char* end) : begin(begin), end(end), pat(begin, end) {}
+    SymbolExpr(const char* begin, const char* end) : name(begin, end) {}
     SymbolExpr(const char* begin, const char* end, FStr pat, EvalFactory&& f) :
-        begin(begin), end(end), pat(std::move(pat)) {
-            depSyms = std::move(f);
-        }
+        name(begin, end), pat(std::move(pat)) { depSyms = std::move(f); }
 
-    int getId() override { return expr_symbol; }
+    int getId() override { return id; }
 
-    const char* begin; //< Start of symbol
-    const char* end; //< End of symbol
+    static const int id = symbol;
+
+    StringView name; //< Start and end of symbol
     FStr pat; //< Pattern of curly expansion. Empty for regular symbols
     EvalFactory depSyms; //< Dependent symbols if curly expansion occured
 };
@@ -243,11 +280,12 @@ inline SymbolExpr* EvalFactory::create(const char* begin, const char* end) {
     }
 }
 
+// TODO?!
 inline SymbolExpr* EvalFactory::findSymbol(const char* p) {
     for (EvalExpr* expr : exprs) {
-        if (expr->getId() == EvalExpr::expr_symbol) {
+        if (expr->getId() == EvalExpr::symbol) {
             SymbolExpr* sym = static_cast<SymbolExpr*>(expr);
-            if (p >= sym->begin && p < sym->end) {
+            if (p >= sym->name.begin && p < sym->name.end) {
                 return sym;
             }
         }

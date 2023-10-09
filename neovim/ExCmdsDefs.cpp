@@ -3128,6 +3128,7 @@ CommandDefinition cmdnames[549] = {
   },
   [CMD_windo] = {
     .cmd_name = "windo",
+    .cmd_func = nullptr,
     .cmd_argt = 2213L,
     .cmd_addr_type = ADDR_WINDOWS
   },

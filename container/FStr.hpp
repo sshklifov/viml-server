@@ -1,5 +1,7 @@
 #pragma once
 
+#include <StringView.hpp>
+
 #include <type_traits>
 #include <functional>
 #include <cassert>
@@ -25,6 +27,7 @@ struct FStr {
     void append(const char* s);
     void append(const char* s, int n);
     void append(const FStr& other);
+    void append(const StringView& other);
 
     template <typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = true>
     void append(T en) {
@@ -42,6 +45,8 @@ struct FStr {
     bool operator!=(const char* other) const;
     bool operator==(const FStr& other) const;
     bool operator!=(const FStr& other) const;
+    bool operator==(const StringView& other) const;
+    bool operator!=(const StringView& other) const;
 
     void replace(int begin, int end, const char* s);
     void clear();
@@ -71,6 +76,13 @@ struct FStr {
         append(fmt);
     }
 
+    template <typename... Types>
+    static FStr f(const char* fmt, const Types&... args) {
+        FStr res;
+        res.appendf(fmt, args...);
+        return res;
+    }
+
 private:
     void allocAtLeast(int n);
 
@@ -78,10 +90,3 @@ private:
     int len;
     int allocLen;
 };
-
-template <typename... Types>
-FStr f(const char* fmt, const Types&... args) {
-    FStr res;
-    res.appendf(fmt, args...);
-    return res;
-}
