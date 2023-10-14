@@ -15,6 +15,7 @@ struct EvalExpr {
         index,
         index2,
         invoke,
+        method,
         symbol,
         literal,
         list,
@@ -191,6 +192,19 @@ struct InvokeExpr : public EvalExpr {
     Vector<EvalExpr*> args;
 };
 
+struct MethodExpr : public EvalExpr {
+    MethodExpr(EvalExpr* name, EvalExpr* base, Vector<EvalExpr*> args) :
+        name(name), base(base), args(std::move(args)) {}
+
+    int getId() override { return id; }
+    
+    static const int id = method;
+
+    EvalExpr* name;
+    EvalExpr* base;
+    Vector<EvalExpr*> args;
+};
+
 // TODO redo
 struct LiteralExpr : public EvalExpr {
     LiteralExpr(VarType type, FStr tok) : type(type), lit(std::move(tok)) {}
@@ -255,17 +269,27 @@ struct LambdaExpr : public EvalExpr {
 };
 
 struct SymbolExpr : public EvalExpr {
-    SymbolExpr(const char* begin, const char* end) : name(begin, end) {}
+    SymbolExpr(const char* begin, const char* end, int flags = 0) : name(begin, end), flags(flags) {}
     SymbolExpr(const char* begin, const char* end, FStr pat, EvalFactory&& f) :
         name(begin, end), pat(std::move(pat)) { depSyms = std::move(f); }
 
     int getId() override { return id; }
 
+    void setFlags(int newFlags) { flags |= newFlags; }
+
+    bool isFunction() const { return flags & FUNCTION; }
+
     static const int id = symbol;
+
+    enum Flags {
+        FUNCTION = 1,
+        DEFINITION = 2
+    };
 
     StringView name; //< Start and end of symbol
     FStr pat; //< Pattern of curly expansion. Empty for regular symbols
     EvalFactory depSyms; //< Dependent symbols if curly expansion occured
+    int flags;
 };
 
 inline SymbolExpr* EvalFactory::create(const char*, const char*, FStr, EvalFactory&&) { return nullptr; }

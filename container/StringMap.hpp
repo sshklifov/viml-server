@@ -256,7 +256,9 @@ private:
     void max_load_factor(float mlf) {
         if (mlf < 0.992 && mlf > EMH_MIN_LOAD_FACTOR) {
             _mlf = (uint32_t)((1 << 27) / mlf);
-            if (_num_buckets > 0) rehash(_num_buckets);
+            if (_num_buckets > 0) {
+                rehash(_num_buckets);
+            }
         }
     }
 
@@ -525,8 +527,7 @@ private:
         const uint32_t kmain = hash_bucket(_pairs[slot].key);
         if (kmain != bucket) {
             return kickout_bucket(kmain, bucket);
-        }
-        else if (next_bucket == bucket) {
+        } else if (next_bucket == bucket) {
             return _index[next_bucket].next = find_empty_bucket(next_bucket);
         }
 
@@ -562,8 +563,7 @@ private:
         const uint32_t kmain = hash_main(bucket);
         if (EMH_UNLIKELY(kmain != bucket)) {
             return kickout_bucket(kmain, bucket);
-        }
-        else if (EMH_UNLIKELY(next_bucket != bucket)) {
+        } else if (EMH_UNLIKELY(next_bucket != bucket)) {
             next_bucket = find_last_bucket(next_bucket);
         }
 
@@ -657,7 +657,7 @@ private:
     Index* _index;
     Entry* _pairs;
 
-    uint32_t  _mlf;
+    uint32_t _mlf;
     uint32_t _mask;
     uint32_t _num_buckets;
     uint32_t _num_filled;

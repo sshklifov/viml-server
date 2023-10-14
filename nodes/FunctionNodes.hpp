@@ -66,6 +66,13 @@ struct FunctionNode : public GroupNode {
             // g:func      global function name, same as "func"
             nameBegin = p;
             name = get_var_indexed(p, f);
+            if (name) {
+                // TODO
+                /* SymbolExpr* sym = name->cast<SymbolExpr>(); */
+                /* if (sym) { */
+                    /* sym->setFlags(SymbolExpr::FUNCTION | SymbolExpr::DEFINITION); */
+                /* } */
+            }
             nameEnd = p;
             p = skipwhite(p);
             if (*p != '(') {

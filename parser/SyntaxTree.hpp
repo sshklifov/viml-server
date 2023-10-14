@@ -52,6 +52,7 @@ struct SyntaxTree {
     const Vector<Diagnostic>& diagnostics() const;
     void symbols(int hierarchy, Vector<DocumentSymbol>& res);
 
+    void findGlobals();
     BaseNode* findNode(const Position& pos);
     void checkSymbols();
 

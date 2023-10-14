@@ -254,6 +254,13 @@ void SyntaxTree::symbols(int hierarchy, Vector<DocumentSymbol>& syms) {
 
 #include <StringMap.hpp>
 
+void SyntaxTree::findGlobals() {
+    /* struct EnumGlobals { */
+    /*     int operator()(BaseNode* node) { */
+    /*     } */
+    /* }; */
+}
+
 // Either:
 // internal -- v:
 // arg      -- a:
@@ -295,8 +302,8 @@ void SyntaxTree::checkSymbols() {
             for (EvalExpr* expr : node->f) {
                 if (SymbolExpr* sym = expr->cast<SymbolExpr>()) {
                     if (locals.find(sym->name) == locals.end()) {
-                        BoundReporter boundRep(thisRep, node->lex);
-                        boundRep.error("Undefined variable", sym->name.begin);
+                        /* BoundReporter boundRep(thisRep, node->lex); */
+                        /* boundRep.error("Undefined variable", sym->name.begin, sym->name.end); */
                     }
                 }
             }

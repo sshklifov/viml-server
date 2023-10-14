@@ -614,11 +614,14 @@ EvalExpr* get_id(const char*& arg, EvalFactory& factory) {
 }
 
 EvalExpr* get_func(const char*& arg, EvalExpr* name, EvalExpr* base, EvalFactory& factory) {
-    Vector<EvalExpr*> fargs;
-    if (base) {
-        fargs.emplace(base);
+    if (name) {
+        SymbolExpr* sym = name->cast<SymbolExpr>();
+        if (sym) {
+            sym->setFlags(SymbolExpr::FUNCTION);
+        }
     }
 
+    Vector<EvalExpr*> fargs;
     // Get the remaining arguments.
     do {
         arg = skipwhite(arg + 1); // skip the '(' or ','
@@ -635,7 +638,12 @@ EvalExpr* get_func(const char*& arg, EvalExpr* name, EvalExpr* base, EvalFactory
         throw msg(arg, "Expecting argument");
     }
     arg++;
-    return factory.create<InvokeExpr>(name, std::move(fargs));
+
+    if (base) {
+        return factory.create<MethodExpr>(name, base, std::move(fargs));
+    } else {
+        return factory.create<InvokeExpr>(name, std::move(fargs));
+    }
 }
 
 EvalExpr* get_index(const char*& arg, EvalExpr* var, EvalFactory& factory) {

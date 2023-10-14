@@ -119,6 +119,11 @@ struct BoundReporter {
         rep.error(std::move(msg), range);
     }
 
+    void error(FStr msg, const char* begin, const char* end) {
+        Range range = lex.locator.resolve(begin, end);
+        rep.error(std::move(msg), range);
+    }
+
     void error(FStr msg) {
         Range range = lex.locator.resolve();
         rep.error(std::move(msg), range);

@@ -6,7 +6,33 @@
 #include <DoCmd.hpp>
 #include <Eval.hpp>
 
+#include <StringMap.hpp>
 #include <functional>
+
+struct Variable {
+    Variable(int global = 0, int locked = 0, VarType type = VAR_UNKNOWN) :
+        global(global), locked(locked), type(type) {}
+
+    int global;
+    int locked;
+    VarType type;
+};
+
+struct UserFunction {
+    UserFunction(int nargs = 0, int varargs = 0, int flags = 0) :
+        nargs(nargs), varargs(varargs), flags(flags) {}
+
+    int nargs;
+    int varargs;
+    int flags;
+};
+
+// TODO user commands
+
+struct EvalContext {
+    emhash8::StringMap<Variable> vars;
+    emhash8::StringMap<UserFunction> funs;
+};
 
 struct BaseNode {
     enum EnumCond {ENUM_NEXT = 0, ENUM_PRUNE = 1, ENUM_STOP = 2};
@@ -36,6 +62,10 @@ struct BaseNode {
                 boundRep.error("Trailing characters", p);
             }
         }
+    }
+
+    virtual void eval(DiagnosticReporter& rep, EvalContext& ctx) {
+        // TODO
     }
     
     virtual Range range() {

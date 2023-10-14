@@ -3,16 +3,6 @@
 #include "BaseNode.hpp"
 #include "SkipFuncs.hpp"
 
-// TODO continue from here
-struct Variable {
-    bool local;
-    bool writable;
-    bool locked;
-
-    const char* name;
-    int namelen;
-};
-
 struct LetNode : public BaseNode {
     LetNode(const ExLexem& lexem) : BaseNode(lexem) { reset(); }
 
